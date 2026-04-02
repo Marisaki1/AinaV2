@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const moment = require('moment-timezone');
 const fs = require('fs');
 const path = require('path');
@@ -27,7 +27,7 @@ function imageExists(name) {
   return name && fs.existsSync(path.join(IMG_DIR, name));
 }
 
-function formatAlarmList(alarms, guild) {
+function formatAlarmList(alarms) {
   if (!alarms.length) return null;
 
   return alarms.map((a, i) => ({
@@ -47,19 +47,19 @@ function formatAlarmList(alarms, guild) {
 async function handleSet(interaction) {
   await interaction.deferReply();
 
-  const time      = interaction.options.getString('time');
-  const message   = interaction.options.getString('message');
-  const frequency = interaction.options.getString('frequency') ?? 'once';
+  const time        = interaction.options.getString('time');
+  const message     = interaction.options.getString('message');
+  const frequency   = interaction.options.getString('frequency') ?? 'once';
   const channelsRaw = interaction.options.getString('channels');
   const membersRaw  = interaction.options.getString('members');
   const imageOpt    = interaction.options.getString('image');
 
-  // Validate time format HH:MM
   if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(time)) {
-    return interaction.editReply({ embeds: [embed.error('Invalid Time', 'Please use 24-hour format: `HH:MM` (e.g. `08:30`)')] });
+    return interaction.editReply({
+      embeds: [embed.error('Invalid Time', 'Please use 24-hour format: `HH:MM` (e.g. `08:30`)')],
+    });
   }
 
-  // Resolve channels
   let channels = [];
   if (channelsRaw) {
     for (const name of channelsRaw.split(',').map(s => s.trim())) {
@@ -69,7 +69,6 @@ async function handleSet(interaction) {
   }
   if (!channels.length) channels = [interaction.channel.name];
 
-  // Resolve members from mentions (extract IDs from "<@ID>" patterns)
   let members = [];
   if (membersRaw) {
     const ids = [...membersRaw.matchAll(/<@!?(\d+)>/g)].map(m => m[1]);
@@ -77,7 +76,6 @@ async function handleSet(interaction) {
   }
   if (!members.length) members = [interaction.user.id];
 
-  // Image
   const image = imageOpt && imageExists(imageOpt) ? imageOpt : randomImage();
 
   const alarm = { time, message, repeat: frequency, channels, members, image, createdBy: interaction.user.id };
@@ -88,11 +86,11 @@ async function handleSet(interaction) {
     .setTitle('⏰ Alarm Set!')
     .setDescription(`Alarm #${idx} will fire at **${time}** (Philippine Time)`)
     .addFields(
-      { name: 'Message',   value: message,                                    inline: false },
-      { name: 'Frequency', value: frequency.charAt(0).toUpperCase() + frequency.slice(1), inline: true },
-      { name: 'Channels',  value: channels.map(c => `#${c}`).join(', '),      inline: true },
-      { name: 'Notify',    value: members.map(id => `<@${id}>`).join(', '),   inline: true },
-      { name: 'Image',     value: image ?? 'none',                             inline: true },
+      { name: 'Message',   value: message,                                                                    inline: false },
+      { name: 'Frequency', value: frequency.charAt(0).toUpperCase() + frequency.slice(1),                    inline: true  },
+      { name: 'Channels',  value: channels.map(c => `#${c}`).join(', '),                                     inline: true  },
+      { name: 'Notify',    value: members.map(id => `<@${id}>`).join(', '),                                  inline: true  },
+      { name: 'Image',     value: image ?? 'none',                                                           inline: true  },
     )
     .setTimestamp();
 
@@ -122,7 +120,7 @@ async function handleList(interaction) {
     return interaction.reply({ embeds: [e] });
   }
 
-  const fields = formatAlarmList(alarms, interaction.guild);
+  const fields = formatAlarmList(alarms);
   e.addFields(fields);
 
   return interaction.reply({ embeds: [e] });
@@ -133,19 +131,20 @@ async function handleList(interaction) {
 async function handleEdit(interaction) {
   await interaction.deferReply();
 
-  const number  = interaction.options.getInteger('number');
-  const alarms  = alarmManager.list(interaction.guild.id);
-  const idx     = number - 1;
+  const number = interaction.options.getInteger('number');
+  const alarms = alarmManager.list(interaction.guild.id);
+  const idx    = number - 1;
 
   if (idx < 0 || idx >= alarms.length) {
-    return interaction.editReply({ embeds: [embed.error('Invalid Number', `Alarm #${number} does not exist. Use \`/alarm list\` to see alarms.`)] });
+    return interaction.editReply({
+      embeds: [embed.error('Invalid Number', `Alarm #${number} does not exist. Use \`/alarm list\` to see alarms.`)],
+    });
   }
 
-  const alarm = { ...alarms[idx] };
-
-  const time      = interaction.options.getString('time');
-  const message   = interaction.options.getString('message');
-  const frequency = interaction.options.getString('frequency');
+  const alarm       = { ...alarms[idx] };
+  const time        = interaction.options.getString('time');
+  const message     = interaction.options.getString('message');
+  const frequency   = interaction.options.getString('frequency');
   const channelsRaw = interaction.options.getString('channels');
   const membersRaw  = interaction.options.getString('members');
   const imageOpt    = interaction.options.getString('image');
@@ -177,12 +176,12 @@ async function handleEdit(interaction) {
   alarmManager.update(interaction.guild.id, idx, alarm);
 
   const e = embed.success(`Alarm #${number} Updated`, null, [
-    { name: 'Time',      value: alarm.time,                                              inline: true },
-    { name: 'Frequency', value: (alarm.repeat ?? 'once').charAt(0).toUpperCase() + (alarm.repeat ?? 'once').slice(1), inline: true },
-    { name: 'Message',   value: alarm.message,                                           inline: false },
-    { name: 'Channels',  value: (alarm.channels || []).map(c => `#${c}`).join(', '),    inline: true },
-    { name: 'Notify',    value: (alarm.members || []).map(id => `<@${id}>`).join(', '), inline: true },
-    { name: 'Image',     value: alarm.image ?? 'none',                                  inline: true },
+    { name: 'Time',      value: alarm.time,                                                                           inline: true  },
+    { name: 'Frequency', value: (alarm.repeat ?? 'once').charAt(0).toUpperCase() + (alarm.repeat ?? 'once').slice(1), inline: true  },
+    { name: 'Message',   value: alarm.message,                                                                        inline: false },
+    { name: 'Channels',  value: (alarm.channels || []).map(c => `#${c}`).join(', '),                                  inline: true  },
+    { name: 'Notify',    value: (alarm.members  || []).map(id => `<@${id}>`).join(', '),                              inline: true  },
+    { name: 'Image',     value: alarm.image ?? 'none',                                                                inline: true  },
   ]);
 
   return interaction.editReply({ embeds: [e] });
@@ -191,14 +190,19 @@ async function handleEdit(interaction) {
 // ── /alarm remove ────────────────────────────────────────────────────
 
 async function handleRemove(interaction) {
-  const number = interaction.options.getInteger('number');
+  const number  = interaction.options.getInteger('number');
   const removed = alarmManager.remove(interaction.guild.id, number - 1);
 
   if (!removed) {
-    return interaction.reply({ embeds: [embed.error('Invalid Number', `Alarm #${number} does not exist.`)], ephemeral: true });
+    return interaction.reply({
+      embeds: [embed.error('Invalid Number', `Alarm #${number} does not exist.`)],
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
-  return interaction.reply({ embeds: [embed.success(`Alarm #${number} Removed`, 'The alarm has been deleted.')] });
+  return interaction.reply({
+    embeds: [embed.success(`Alarm #${number} Removed`, 'The alarm has been deleted.')],
+  });
 }
 
 // ── /alarm images ────────────────────────────────────────────────────
@@ -217,14 +221,17 @@ async function handleImages(interaction) {
     .setTitle('🖼️ Available Alarm Images')
     .setDescription(`Use the image name in \`/alarm set\`\nExample: \`/alarm set time:08:30 message:Good morning! image:${images[0]}\``);
 
-  // Group into fields of 10
   for (let i = 0; i < images.length; i += 10) {
     const group = images.slice(i, i + 10);
-    e.addFields({ name: `Images ${i + 1}–${i + group.length}`, value: group.map(img => `• ${img}`).join('\n'), inline: false });
+    e.addFields({
+      name: `Images ${i + 1}–${i + group.length}`,
+      value: group.map(img => `• ${img}`).join('\n'),
+      inline: false,
+    });
   }
 
   const sample = images[Math.floor(Math.random() * images.length)];
-  const file = new AttachmentBuilder(path.join(IMG_DIR, sample), { name: sample });
+  const file   = new AttachmentBuilder(path.join(IMG_DIR, sample), { name: sample });
   e.setThumbnail(`attachment://${sample}`);
 
   return interaction.reply({ embeds: [e], files: [file] });
@@ -242,7 +249,7 @@ async function handleTime(interaction) {
   return interaction.reply({ embeds: [e] });
 }
 
-// ── Command Definition ───────────────────────────────────────────────
+// ── Command Definitions ───────────────────────────────────────────────
 
 const alarmCommand = {
   data: new SlashCommandBuilder()
@@ -254,8 +261,8 @@ const alarmCommand = {
       .addStringOption(o => o.setName('time').setDescription('Time in HH:MM 24-hr format (e.g. 08:30)').setRequired(true))
       .addStringOption(o => o.setName('message').setDescription('Alarm message').setRequired(true))
       .addStringOption(o => o.setName('frequency').setDescription('How often').addChoices(
-        { name: 'Once', value: 'once' },
-        { name: 'Daily', value: 'daily' },
+        { name: 'Once',   value: 'once'   },
+        { name: 'Daily',  value: 'daily'  },
         { name: 'Weekly', value: 'weekly' },
       ))
       .addStringOption(o => o.setName('channels').setDescription('Channel names, comma-separated'))
@@ -273,8 +280,8 @@ const alarmCommand = {
       .addStringOption(o => o.setName('time').setDescription('New time HH:MM'))
       .addStringOption(o => o.setName('message').setDescription('New message'))
       .addStringOption(o => o.setName('frequency').setDescription('New frequency').addChoices(
-        { name: 'Once', value: 'once' },
-        { name: 'Daily', value: 'daily' },
+        { name: 'Once',   value: 'once'   },
+        { name: 'Daily',  value: 'daily'  },
         { name: 'Weekly', value: 'weekly' },
       ))
       .addStringOption(o => o.setName('channels').setDescription('New channels'))

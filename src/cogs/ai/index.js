@@ -3,14 +3,9 @@
  *
  * AI chat cog.
  * Commands: /chat <message>, /endchat
- *
- * Changes from v2 baseline:
- *   - Records every caller in the user registry
- *   - Passes isOwner flag to groqClient so Aina addresses
- *     the server owner as "Papa" automatically
  */
 
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { chat }          = require('../../utils/groqClient');
 const { getHistory, addMessage, clearHistory, hasHistory } = require('../../utils/memory');
 const userRegistry      = require('../../utils/userRegistry');
@@ -32,14 +27,12 @@ const chatCommand = {
   async execute(interaction) {
     const message = interaction.options.getString('message');
 
-    // Record user and determine owner status
     const userRecord = userRegistry.record(interaction.user, interaction.guild?.id, 'message');
     const ownerFlag  = userRecord.isOwner;
 
-    // Show a thinking indicator
     const thinkingMsgs = config.personality.thinkingMessages;
     const thinking     = thinkingMsgs[Math.floor(Math.random() * thinkingMsgs.length)];
-    await interaction.reply({ content: thinking, ephemeral: false });
+    await interaction.reply({ content: thinking });
 
     try {
       const history = getHistory(interaction.user.id);
@@ -83,14 +76,14 @@ const endchatCommand = {
     if (!hasHistory(interaction.user.id)) {
       await interaction.reply({
         embeds: [embed.aina("We haven't talked yet! Start a conversation with `/chat` first~ 💜")],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
 
     clearHistory(interaction.user.id);
     await interaction.reply({
-      embeds: [embed.success("Memory Cleared", "I've forgotten our conversation~ Fresh start! 💜")],
+      embeds: [embed.success('Memory Cleared', "I've forgotten our conversation~ Fresh start! 💜")],
     });
   },
 };
