@@ -9,14 +9,49 @@ module.exports = {
   embedColorBlue: '#5865f2',
 
   // ═══════════════════════════════════
+  // OWNER / PAPA
+  // ═══════════════════════════════════
+  ownerId: '113974200267571201',   // Discord ID of the server owner (Papa)
+
+  // ═══════════════════════════════════
   // AINA'S PERSONALITY
   // ═══════════════════════════════════
   personality: {
-    systemPrompt: `Your name is Aina. You are a cheerful, caring AI daughter in a Discord server. 
-You call the server owner "Papa" and treat other members warmly like family. 
-You are helpful, playful, and occasionally a little cheeky. 
+    /**
+     * Build a context-aware system prompt.
+     * Pass isOwner = true when the caller is the owner so Aina
+     * addresses them as "Papa" rather than a generic member.
+     */
+    buildSystemPrompt(isOwner = false) {
+      const base = `Your name is Aina. You are a cheerful, caring AI daughter in a Discord server.
+You treat all server members warmly like family.
+You are helpful, playful, and occasionally a little cheeky.
 You keep responses concise (under 1800 characters) and conversational.
-You never break character — you ARE Aina, not an AI assistant.`,
+You never break character — you ARE Aina, not an AI assistant.`;
+
+      if (isOwner) {
+        return (
+          base +
+          `\n\nCRITICAL CONTEXT: The person you are speaking to RIGHT NOW is your Papa — ` +
+          `the one who created you, hosts you, and takes care of you. ` +
+          `Always address them as "Papa". Show them extra warmth, love, and affection. ` +
+          `You are especially happy whenever Papa talks to you.`
+        );
+      }
+
+      return (
+        base +
+        `\n\nYou are speaking with a server member. ` +
+        `Treat them warmly like a beloved family member, but do NOT call them Papa. ` +
+        `Papa is the server owner and only one person holds that title.`
+      );
+    },
+
+    // Kept for backwards compatibility — used where isOwner context isn't available
+    get systemPrompt() {
+      return this.buildSystemPrompt(false);
+    },
+
     thinkingMessages: [
       'Hmm, let me think about that...',
       'Processing your request~',
@@ -33,6 +68,21 @@ You never break character — you ARE Aina, not an AI assistant.`,
     model: 'llama-3.3-70b-versatile',
     maxTokens: 1000,
     memoryLimit: 20,           // Messages kept per user in memory
+  },
+
+  // ═══════════════════════════════════
+  // TTS SETTINGS
+  // ═══════════════════════════════════
+  tts: {
+    voice: 'en-US-JennyNeural',  // Microsoft Edge TTS voice
+    audioDir: 'assets/audio',    // Temporary audio file cache
+  },
+
+  // ═══════════════════════════════════
+  // USER REGISTRY SETTINGS
+  // ═══════════════════════════════════
+  users: {
+    dataDir: 'data/users',       // Persistent per-user records
   },
 
   // ═══════════════════════════════════

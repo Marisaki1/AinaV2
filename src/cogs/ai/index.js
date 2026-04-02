@@ -1,8 +1,23 @@
+/**
+ * src/cogs/ai/index.js
+ *
+ * AI chat cog.
+ * Commands: /chat <message>, /endchat
+ *
+ * Changes from v2 baseline:
+ *   - Records every caller in the user registry
+ *   - Passes isOwner flag to groqClient so Aina addresses
+ *     the server owner as "Papa" automatically
+ */
+
 const { SlashCommandBuilder } = require('discord.js');
-const { chat } = require('../../utils/groqClient');
+const { chat }          = require('../../utils/groqClient');
 const { getHistory, addMessage, clearHistory, hasHistory } = require('../../utils/memory');
-const embed = require('../../utils/embed');
-const config = require('../../../config/config');
+const userRegistry      = require('../../utils/userRegistry');
+const embed             = require('../../utils/embed');
+const config            = require('../../../config/config');
+
+// ── /chat ────────────────────────────────────────────────────────────
 
 const chatCommand = {
   data: new SlashCommandBuilder()
@@ -17,21 +32,29 @@ const chatCommand = {
   async execute(interaction) {
     const message = interaction.options.getString('message');
 
-    // Pick a random thinking message
-    const msgs = config.personality.thinkingMessages;
-    const thinking = msgs[Math.floor(Math.random() * msgs.length)];
+    // Record user and determine owner status
+    const userRecord = userRegistry.record(interaction.user, interaction.guild?.id, 'message');
+    const ownerFlag  = userRecord.isOwner;
+
+    // Show a thinking indicator
+    const thinkingMsgs = config.personality.thinkingMessages;
+    const thinking     = thinkingMsgs[Math.floor(Math.random() * thinkingMsgs.length)];
     await interaction.reply({ content: thinking, ephemeral: false });
 
     try {
       const history = getHistory(interaction.user.id);
       addMessage(interaction.user.id, 'user', message);
 
-      const response = await chat([...history, { role: 'user', content: message }]);
+      const response = await chat(
+        [...history, { role: 'user', content: message }],
+        { isOwner: ownerFlag },
+      );
+
       addMessage(interaction.user.id, 'assistant', response);
 
       const e = embed.aina(response);
       e.setAuthor({
-        name: 'Aina',
+        name:    'Aina',
         iconURL: interaction.client.user.displayAvatarURL(),
       });
       e.setFooter({ text: 'Use /endchat to clear our chat memory~' });
@@ -47,15 +70,19 @@ const chatCommand = {
   },
 };
 
+// ── /endchat ─────────────────────────────────────────────────────────
+
 const endchatCommand = {
   data: new SlashCommandBuilder()
     .setName('endchat')
-    .setDescription('Clear Aina\'s memory of your conversation'),
+    .setDescription("Clear Aina's memory of your conversation"),
 
   async execute(interaction) {
+    userRegistry.record(interaction.user, interaction.guild?.id, 'command');
+
     if (!hasHistory(interaction.user.id)) {
       await interaction.reply({
-        embeds: [embed.aina('We haven\'t talked yet! Start a conversation with `/chat` first~ 💜')],
+        embeds: [embed.aina("We haven't talked yet! Start a conversation with `/chat` first~ 💜")],
         ephemeral: true,
       });
       return;
@@ -63,11 +90,9 @@ const endchatCommand = {
 
     clearHistory(interaction.user.id);
     await interaction.reply({
-      embeds: [embed.success('Memory Cleared', 'I\'ve forgotten our conversation~ Fresh start! 💜')],
+      embeds: [embed.success("Memory Cleared", "I've forgotten our conversation~ Fresh start! 💜")],
     });
   },
 };
 
-module.exports = {
-  commands: [chatCommand, endchatCommand],
-};
+module.exports = { commands: [chatCommand, endchatCommand] };
