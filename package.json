@@ -1,0 +1,20 @@
+{
+  "name": "aina",
+  "version": "2.0.0",
+  "description": "Aina - Your AI daughter Discord bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "groq-sdk": "^0.9.1",
+    "dotenv": "^16.4.5",
+    "node-cron": "^3.0.3",
+    "moment-timezone": "^0.5.45"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
