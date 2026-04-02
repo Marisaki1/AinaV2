@@ -119,3 +119,4 @@ They'll appear in `/alarm images` and can be used with `/alarm set image:filenam
 - [ ] Bot invited with scopes: `bot` + `applications.commands`
 - [ ] Permissions: Send Messages, Read Message History, View Channels, Use External Emojis, Add Reactions
 - [ ] Developer Mode enabled → Server ID copied → pasted into `config.js`
+# AinaV2
