@@ -18,8 +18,6 @@ async function handleFabulaInteraction(interaction, client) {
     const id = interaction.customId;
     if (!id.startsWith('fab_')) return;
 
-    // Extract resourceKey and targetUserId from IDs like "fab_qk_hp_12345"
-    // or section IDs like "fab_sec_equipment_12345"
     const parts = id.split('_');
 
     // ── Quick-action vital buttons (fab_qk_<resource>_<userId>) ──────
@@ -65,12 +63,6 @@ async function handleFabulaInteraction(interaction, client) {
         });
       }
     }
-
-    // ── Attribute array selection during creation ──────────────────────
-    if (parts[1] === 'array') {
-      const arrayType = parts[2]; // JACK | STANDARD | SPECIALIZED
-      return charHandler.handleArraySelection(interaction, arrayType);
-    }
   }
 
   // ── Modal submissions ─────────────────────────────────────────────
@@ -78,14 +70,12 @@ async function handleFabulaInteraction(interaction, client) {
     const id = interaction.customId;
     if (!id.startsWith('fab_')) return;
 
-    // Character creation steps
-    if (id === 'fab_step1') return charHandler.handleStep1Submit(interaction);
-    if (id === 'fab_step2') return charHandler.handleStep2Submit(interaction);
-    if (id === 'fab_step3') return charHandler.handleStep3Submit(interaction);
+    // Character creation (single modal)
+    if (id === 'fab_create')           return charHandler.handleCreateSubmit(interaction);
 
     // Character editing
-    if (id === 'fab_edit_identity')   return charHandler.handleEditIdentitySubmit(interaction);
-    if (id === 'fab_edit_attributes') return charHandler.handleEditAttributesSubmit(interaction);
+    if (id === 'fab_edit_identity')    return charHandler.handleEditIdentitySubmit(interaction);
+    if (id === 'fab_edit_attributes')  return charHandler.handleEditAttributesSubmit(interaction);
 
     // Quick-action resource modals (fab_qkm_<resource>)
     if (id.startsWith('fab_qkm_')) {
@@ -102,7 +92,7 @@ async function handleSectionButton(interaction, section, targetUserId, client) {
 
   if (!char) {
     return interaction.reply({
-      embeds: [embed.error('Character Not Found', "That character no longer exists.")],
+      embeds: [embed.error('Character Not Found', 'That character no longer exists.')],
       flags: MessageFlags.Ephemeral,
     });
   }

@@ -5,21 +5,17 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  EmbedBuilder,
   MessageFlags,
 } = require('discord.js');
 
-const fabulaManager  = require('../utils/fabulaManager');
+const fabulaManager      = require('../utils/fabulaManager');
 const { buildMainSheet } = require('../utils/sheetBuilder');
-const { ATTRIBUTE_ARRAYS, DICE_VALUES } = require('../utils/constants');
-const embed = require('../../../utils/embed');
-const config = require('../../../../config/config');
-
-// Holds partial data while a user steps through creation
-// Map<userId, { name, pronouns, imageUrl, theme, origin, attributes?, arrayType? }>
-const pendingCreations = new Map();
+const { DICE_VALUES }    = require('../utils/constants');
+const embed              = require('../../../utils/embed');
 
 // ── /fab character create ─────────────────────────────────────────────
+// Single modal, 5 fields max (Discord limit).
+// Everything else (pronouns, image, attributes) is editable afterwards.
 
 async function handleCreate(interaction) {
   if (fabulaManager.exists(interaction.guild.id, interaction.user.id)) {
@@ -33,266 +29,98 @@ async function handleCreate(interaction) {
   }
 
   const modal = new ModalBuilder()
-    .setCustomId('fab_step1')
-    .setTitle('Create Character — Step 1 of 3');
+    .setCustomId('fab_create')
+    .setTitle('Create Your Character');
 
   modal.addComponents(
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('name').setLabel('Character Name')
-        .setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(50),
+        .setCustomId('name')
+        .setLabel('Character Name')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setMaxLength(50),
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('pronouns').setLabel('Pronouns')
-        .setStyle(TextInputStyle.Short).setRequired(false)
-        .setPlaceholder('e.g. She/Her, He/Him, They/Them').setMaxLength(30),
+        .setCustomId('maxHp')
+        .setLabel('Max HP')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setPlaceholder('e.g. 40')
+        .setMaxLength(5),
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('imageUrl').setLabel('Character Image URL (optional)')
-        .setStyle(TextInputStyle.Short).setRequired(false)
-        .setPlaceholder('https://i.imgur.com/example.png'),
+        .setCustomId('maxMp')
+        .setLabel('Max MP')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setPlaceholder('e.g. 30')
+        .setMaxLength(5),
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('theme').setLabel('Theme / Background')
-        .setStyle(TextInputStyle.Short).setRequired(false)
-        .setPlaceholder('e.g. The Exiled Knight').setMaxLength(100),
+        .setCustomId('maxIp')
+        .setLabel('Max IP')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setPlaceholder('e.g. 6')
+        .setMaxLength(3),
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('origin').setLabel('Origin')
-        .setStyle(TextInputStyle.Short).setRequired(false)
-        .setPlaceholder('e.g. High Elf from the Northern Reaches').setMaxLength(100),
+        .setCustomId('level')
+        .setLabel('Starting Level (default: 1)')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(false)
+        .setPlaceholder('e.g. 5')
+        .setMaxLength(3),
     ),
   );
 
   await interaction.showModal(modal);
 }
 
-// ── Step 1 modal submit → show attribute array selection ──────────────
+// ── fab_create modal submit ───────────────────────────────────────────
 
-async function handleStep1Submit(interaction) {
-  const name     = interaction.fields.getTextInputValue('name').trim();
-  const pronouns = interaction.fields.getTextInputValue('pronouns').trim() || 'They/Them';
-  const imageUrl = interaction.fields.getTextInputValue('imageUrl').trim() || null;
-  const theme    = interaction.fields.getTextInputValue('theme').trim();
-  const origin   = interaction.fields.getTextInputValue('origin').trim();
-
-  pendingCreations.set(interaction.user.id, { name, pronouns, imageUrl, theme, origin });
-
-  const e = new EmbedBuilder()
-    .setColor(config.embedColor)
-    .setTitle(`Creating ${name} — Step 2 of 3`)
-    .setDescription(
-      'Choose your **Attribute Array**.\n' +
-      'This sets the dice pool for **MIG** (Might), **DEX** (Dexterity), **INS** (Insight), and **WLP** (Willpower).',
-    )
-    .addFields(
-      {
-        name:   '🃏 Jack of All Trades',
-        value:  '`d8 • d8 • d8 • d8`\nAll four attributes share the same die — a versatile generalist.',
-        inline: false,
-      },
-      {
-        name:   '⚖️ Standard',
-        value:  '`d10 • d8 • d8 • d6`\nOne strong suit, one weakness — the most common choice.',
-        inline: false,
-      },
-      {
-        name:   '🎯 Specialized',
-        value:  '`d10 • d10 • d6 • d6`\nTwo strong suits, two weaknesses — high risk, high reward.',
-        inline: false,
-      },
-    );
-
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('fab_array_JACK').setLabel('🃏 Jack of All Trades').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId('fab_array_STANDARD').setLabel('⚖️ Standard').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('fab_array_SPECIALIZED').setLabel('🎯 Specialized').setStyle(ButtonStyle.Danger),
-  );
-
-  await interaction.reply({ embeds: [e], components: [row], flags: MessageFlags.Ephemeral });
-}
-
-// ── Attribute array button → if JACK go to step 3, else show step 2 modal ──
-
-async function handleArraySelection(interaction, arrayType) {
-  const pending = pendingCreations.get(interaction.user.id);
-  if (!pending) {
-    return interaction.reply({
-      embeds: [embed.error('Session Expired', 'Use `/fab character create` to start over.')],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-
-  pending.arrayType = arrayType;
-  pendingCreations.set(interaction.user.id, pending);
-
-  if (arrayType === 'JACK') {
-    pending.attributes = { MIG: 'd8', DEX: 'd8', INS: 'd8', WLP: 'd8' };
-    pendingCreations.set(interaction.user.id, pending);
-    await showStep3Modal(interaction);
-  } else {
-    const pool = ATTRIBUTE_ARRAYS[arrayType].pool.join(', ');
-    const modal = new ModalBuilder()
-      .setCustomId('fab_step2')
-      .setTitle(`Assign Attributes — ${ATTRIBUTE_ARRAYS[arrayType].label}`);
-
-    modal.addComponents(
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder()
-          .setCustomId('MIG').setLabel(`MIG — Might (pool: ${pool})`)
-          .setStyle(TextInputStyle.Short).setRequired(true)
-          .setPlaceholder('d6, d8, or d10').setMaxLength(3),
-      ),
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder()
-          .setCustomId('DEX').setLabel(`DEX — Dexterity (pool: ${pool})`)
-          .setStyle(TextInputStyle.Short).setRequired(true)
-          .setPlaceholder('d6, d8, or d10').setMaxLength(3),
-      ),
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder()
-          .setCustomId('INS').setLabel(`INS — Insight (pool: ${pool})`)
-          .setStyle(TextInputStyle.Short).setRequired(true)
-          .setPlaceholder('d6, d8, or d10').setMaxLength(3),
-      ),
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder()
-          .setCustomId('WLP').setLabel(`WLP — Willpower (pool: ${pool})`)
-          .setStyle(TextInputStyle.Short).setRequired(true)
-          .setPlaceholder('d6, d8, or d10').setMaxLength(3),
-      ),
-    );
-
-    await interaction.showModal(modal);
-  }
-}
-
-// ── Step 2 modal submit → validate pool, then show step 3 ─────────────
-
-async function handleStep2Submit(interaction) {
-  const pending = pendingCreations.get(interaction.user.id);
-  if (!pending) {
-    return interaction.reply({
-      embeds: [embed.error('Session Expired', 'Use `/fab character create` to restart.')],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-
-  const input = {};
-  for (const key of ['MIG', 'DEX', 'INS', 'WLP']) {
-    input[key] = interaction.fields.getTextInputValue(key).trim().toLowerCase();
-  }
-
-  const validDice = ['d6', 'd8', 'd10'];
-  for (const [attr, die] of Object.entries(input)) {
-    if (!validDice.includes(die)) {
-      return interaction.reply({
-        embeds: [embed.error('Invalid Die', `"${die}" for ${attr} is not valid. Please use d6, d8, or d10.`)],
-        flags: MessageFlags.Ephemeral,
-      });
-    }
-  }
-
-  // Validate exact pool usage
-  const pool        = [...ATTRIBUTE_ARRAYS[pending.arrayType].pool].sort();
-  const sortedInput = Object.values(input).sort();
-  if (JSON.stringify(sortedInput) !== JSON.stringify(pool)) {
-    return interaction.reply({
-      embeds: [embed.error(
-        'Wrong Dice Pool',
-        `Your array requires exactly: **${pool.join(', ')}**\nYou entered: **${Object.values(input).join(', ')}**\n\nMake sure every die is used exactly once.`,
-      )],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-
-  pending.attributes = input;
-  pendingCreations.set(interaction.user.id, pending);
-  await showStep3Modal(interaction);
-}
-
-async function showStep3Modal(interaction) {
-  const modal = new ModalBuilder()
-    .setCustomId('fab_step3')
-    .setTitle('Character Stats — Step 3 of 3');
-
-  modal.addComponents(
-    new ActionRowBuilder().addComponents(
-      new TextInputBuilder()
-        .setCustomId('maxHp').setLabel('Max HP')
-        .setStyle(TextInputStyle.Short).setRequired(true)
-        .setPlaceholder('e.g. 40').setMaxLength(4),
-    ),
-    new ActionRowBuilder().addComponents(
-      new TextInputBuilder()
-        .setCustomId('maxMp').setLabel('Max MP')
-        .setStyle(TextInputStyle.Short).setRequired(true)
-        .setPlaceholder('e.g. 30').setMaxLength(4),
-    ),
-    new ActionRowBuilder().addComponents(
-      new TextInputBuilder()
-        .setCustomId('maxIp').setLabel('Max IP')
-        .setStyle(TextInputStyle.Short).setRequired(true)
-        .setPlaceholder('e.g. 6').setMaxLength(3),
-    ),
-    new ActionRowBuilder().addComponents(
-      new TextInputBuilder()
-        .setCustomId('level').setLabel('Starting Level')
-        .setStyle(TextInputStyle.Short).setRequired(true)
-        .setPlaceholder('e.g. 5').setMaxLength(3),
-    ),
-    new ActionRowBuilder().addComponents(
-      new TextInputBuilder()
-        .setCustomId('zenit').setLabel('Starting Zenit (currency, optional)')
-        .setStyle(TextInputStyle.Short).setRequired(false)
-        .setPlaceholder('e.g. 500').setMaxLength(9),
-    ),
-  );
-
-  await interaction.showModal(modal);
-}
-
-// ── Step 3 modal submit → finalize character ──────────────────────────
-
-async function handleStep3Submit(interaction) {
-  const pending = pendingCreations.get(interaction.user.id);
-  if (!pending) {
-    return interaction.reply({
-      embeds: [embed.error('Session Expired', 'Use `/fab character create` to restart.')],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-
+async function handleCreateSubmit(interaction) {
+  const name  = interaction.fields.getTextInputValue('name').trim();
   const maxHp = parseInt(interaction.fields.getTextInputValue('maxHp'));
   const maxMp = parseInt(interaction.fields.getTextInputValue('maxMp'));
   const maxIp = parseInt(interaction.fields.getTextInputValue('maxIp'));
-  const level = parseInt(interaction.fields.getTextInputValue('level'));
-  const zenit = parseInt(interaction.fields.getTextInputValue('zenit') || '0') || 0;
+  const rawLv = interaction.fields.getTextInputValue('level').trim();
+  const level = rawLv ? parseInt(rawLv) : 1;
 
-  if ([maxHp, maxMp, maxIp, level].some(n => isNaN(n) || n < 0)) {
+  if (!name) {
     return interaction.reply({
-      embeds: [embed.error('Invalid Values', 'HP, MP, IP, and Level must be positive numbers.')],
+      embeds: [embed.error('Invalid Name', 'Character name cannot be empty.')],
       flags: MessageFlags.Ephemeral,
     });
   }
 
-  const { arrayType, ...rest } = pending;
+  if ([maxHp, maxMp, maxIp].some(n => isNaN(n) || n < 0)) {
+    return interaction.reply({
+      embeds: [embed.error('Invalid Values', 'HP, MP, and IP must be positive numbers.')],
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
+  if (isNaN(level) || level < 1) {
+    return interaction.reply({
+      embeds: [embed.error('Invalid Level', 'Level must be a positive number (minimum 1).')],
+      flags: MessageFlags.Ephemeral,
+    });
+  }
 
   const char = fabulaManager.create(interaction.guild.id, interaction.user.id, {
-    ...rest,
+    name,
     hp:    { current: maxHp, max: maxHp },
     mp:    { current: maxMp, max: maxMp },
     ip:    { current: maxIp, max: maxIp },
-    level: Math.max(1, level),
-    zenit,
+    level: Math.min(level, 50),
     fabulaPoints: 3,
   });
-
-  pendingCreations.delete(interaction.user.id);
 
   const sheet = buildMainSheet(char, interaction.user.id);
 
@@ -300,7 +128,13 @@ async function handleStep3Submit(interaction) {
     embeds: [
       embed.success(
         `${char.name} has entered the world! ✨`,
-        `Your Fabula Ultima character has been created.\nUse the buttons below to manage your sheet~`,
+        [
+          `Your character has been created with **HP ${maxHp} · MP ${maxMp} · IP ${maxIp}** at Level **${char.level}**.`,
+          ``,
+          `Use \`/fab character edit-identity\` to set pronouns, image, theme, and origin.`,
+          `Use \`/fab character edit-attributes\` to assign MIG / DEX / INS / WLP dice.`,
+          `Use the buttons below to adjust vitals on the fly.`,
+        ].join('\n'),
       ),
       ...sheet.embeds,
     ],
@@ -392,6 +226,7 @@ async function handleEditIdentitySubmit(interaction) {
   const char = fabulaManager.update(interaction.guild.id, interaction.user.id, {
     name, pronouns, imageUrl, theme, origin,
   });
+
   if (!char) {
     return interaction.reply({
       embeds: [embed.error('Not Found', "Couldn't find your character.")],
@@ -418,30 +253,30 @@ async function handleEditAttributes(interaction) {
 
   const modal = new ModalBuilder()
     .setCustomId('fab_edit_attributes')
-    .setTitle('Edit Attributes');
+    .setTitle('Edit Attributes  (d6 / d8 / d10 / d12)');
 
   modal.addComponents(
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('MIG').setLabel('MIG — Might (d6 / d8 / d10 / d12)')
+        .setCustomId('MIG').setLabel('MIG — Might')
         .setStyle(TextInputStyle.Short).setRequired(true)
         .setValue(char.attributes.MIG).setMaxLength(3),
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('DEX').setLabel('DEX — Dexterity (d6 / d8 / d10 / d12)')
+        .setCustomId('DEX').setLabel('DEX — Dexterity')
         .setStyle(TextInputStyle.Short).setRequired(true)
         .setValue(char.attributes.DEX).setMaxLength(3),
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('INS').setLabel('INS — Insight (d6 / d8 / d10 / d12)')
+        .setCustomId('INS').setLabel('INS — Insight')
         .setStyle(TextInputStyle.Short).setRequired(true)
         .setValue(char.attributes.INS).setMaxLength(3),
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('WLP').setLabel('WLP — Willpower (d6 / d8 / d10 / d12)')
+        .setCustomId('WLP').setLabel('WLP — Willpower')
         .setStyle(TextInputStyle.Short).setRequired(true)
         .setValue(char.attributes.WLP).setMaxLength(3),
     ),
@@ -528,11 +363,12 @@ async function handleShare(interaction) {
 
 module.exports = {
   handleCreate,
-  handleStep1Submit, handleArraySelection, handleStep2Submit, handleStep3Submit,
+  handleCreateSubmit,
   handleView,
-  handleEditIdentity, handleEditIdentitySubmit,
-  handleEditAttributes, handleEditAttributesSubmit,
+  handleEditIdentity,
+  handleEditIdentitySubmit,
+  handleEditAttributes,
+  handleEditAttributesSubmit,
   handleDelete,
   handleShare,
-  pendingCreations,
 };
