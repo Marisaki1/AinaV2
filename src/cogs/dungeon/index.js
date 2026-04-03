@@ -1,6 +1,6 @@
 const {
   SlashCommandBuilder, EmbedBuilder,
-  ActionRowBuilder, ButtonBuilder, ButtonStyle,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags,
 } = require('discord.js');
 const dungeonManager = require('../../utils/dungeonManager');
 const embed = require('../../utils/embed');
@@ -10,19 +10,15 @@ const moment = require('moment-timezone');
 
 // ── Shared UI builder ────────────────────────────────────────────────
 
-/**
- * Build the embed + button rows for the dungeon map message.
- * Exported so interactionCreate.js can also call it on button presses.
- */
 function buildDungeonMessage(state, render, event = null) {
   const e = new EmbedBuilder()
     .setColor(config.embedColor)
     .setTitle(`🏰 ${state.name}`)
     .setDescription(`\`\`\`\n${render.map}\n\`\`\``)
     .addFields(
-      { name: '📍 Floor',   value: `${render.floorNum} / ${render.totalFloors}`, inline: true },
-      { name: '👣 Steps',   value: String(render.steps),                         inline: true },
-      { name: '👥 Players', value: state.players.map(id => `<@${id}>`).join(', '), inline: false },
+      { name: '📍 Floor',   value: `${render.floorNum} / ${render.totalFloors}`,        inline: true  },
+      { name: '👣 Steps',   value: String(render.steps),                                inline: true  },
+      { name: '👥 Players', value: state.players.map(id => `<@${id}>`).join(', '),      inline: false },
     );
 
   if (event) {
@@ -31,7 +27,6 @@ function buildDungeonMessage(state, render, event = null) {
 
   e.setFooter({ text: 'Use the buttons below to move • Fog of war is active' });
 
-  // Movement buttons row
   const moveRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(DUNGEON_BUTTONS.UP).setEmoji('⬆️').setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId(DUNGEON_BUTTONS.DOWN).setEmoji('⬇️').setStyle(ButtonStyle.Secondary),
@@ -40,7 +35,6 @@ function buildDungeonMessage(state, render, event = null) {
     new ButtonBuilder().setCustomId(DUNGEON_BUTTONS.INTERACT).setEmoji('✅').setStyle(ButtonStyle.Primary),
   );
 
-  // Control buttons row
   const controlRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(DUNGEON_BUTTONS.STATUS).setLabel('Status').setEmoji('📊').setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId(DUNGEON_BUTTONS.QUIT).setLabel('Flee').setEmoji('🏃').setStyle(ButtonStyle.Danger),
@@ -55,15 +49,15 @@ async function handleCreate(interaction) {
   if (dungeonManager.get(interaction.guild.id)) {
     return interaction.reply({
       embeds: [embed.error('Dungeon Already Active', 'There\'s already an active dungeon! Use `/dungeon end` first.')],
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
   const sizeKey       = interaction.options.getString('size')       ?? 'MEDIUM';
-  const complexityKey = interaction.options.getString('complexity')  ?? 'NORMAL';
-  const floorsKey     = interaction.options.getString('floors')      ?? 'SMALL';
-  const difficultyKey = interaction.options.getString('difficulty')  ?? 'NORMAL';
-  const name          = interaction.options.getString('name')        ?? `${sizeKey} Dungeon`;
+  const complexityKey = interaction.options.getString('complexity') ?? 'NORMAL';
+  const floorsKey     = interaction.options.getString('floors')     ?? 'SMALL';
+  const difficultyKey = interaction.options.getString('difficulty') ?? 'NORMAL';
+  const name          = interaction.options.getString('name')       ?? `${sizeKey} Dungeon`;
 
   await interaction.deferReply();
 
@@ -87,11 +81,17 @@ async function handleCreate(interaction) {
 async function handleJoin(interaction) {
   const state = dungeonManager.get(interaction.guild.id);
   if (!state) {
-    return interaction.reply({ embeds: [embed.error('No Dungeon', 'No active dungeon to join. Use `/dungeon create`.')], ephemeral: true });
+    return interaction.reply({
+      embeds: [embed.error('No Dungeon', 'No active dungeon to join. Use `/dungeon create`.')],
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
   if (state.players.includes(interaction.user.id)) {
-    return interaction.reply({ embeds: [embed.info('Already In', 'You\'re already in this dungeon!')], ephemeral: true });
+    return interaction.reply({
+      embeds: [embed.info('Already In', 'You\'re already in this dungeon!')],
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
   dungeonManager.addPlayer(interaction.guild.id, interaction.user.id);
@@ -106,18 +106,24 @@ async function handleJoin(interaction) {
 async function handleLeave(interaction) {
   const state = dungeonManager.get(interaction.guild.id);
   if (!state || !state.players.includes(interaction.user.id)) {
-    return interaction.reply({ embeds: [embed.error('Not In Dungeon', 'You\'re not in an active dungeon.')], ephemeral: true });
+    return interaction.reply({
+      embeds: [embed.error('Not In Dungeon', 'You\'re not in an active dungeon.')],
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
   dungeonManager.removePlayer(interaction.guild.id, interaction.user.id);
 
-  // If leader left and no players remain, end the dungeon
   if (!dungeonManager.get(interaction.guild.id)?.players?.length) {
     dungeonManager.remove(interaction.guild.id);
-    return interaction.reply({ embeds: [embed.info('Dungeon Ended', 'Everyone left — the dungeon has been closed.')] });
+    return interaction.reply({
+      embeds: [embed.info('Dungeon Ended', 'Everyone left — the dungeon has been closed.')],
+    });
   }
 
-  return interaction.reply({ embeds: [embed.success('Left', `${interaction.user} has left the dungeon. Stay safe out there!`)] });
+  return interaction.reply({
+    embeds: [embed.success('Left', `${interaction.user} has left the dungeon. Stay safe out there!`)],
+  });
 }
 
 // ── /dungeon status ──────────────────────────────────────────────────
@@ -125,7 +131,10 @@ async function handleLeave(interaction) {
 async function handleStatus(interaction) {
   const state = dungeonManager.get(interaction.guild.id);
   if (!state) {
-    return interaction.reply({ embeds: [embed.error('No Dungeon', 'No active dungeon in this server.')], ephemeral: true });
+    return interaction.reply({
+      embeds: [embed.error('No Dungeon', 'No active dungeon in this server.')],
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
   const render = dungeonManager.renderCurrent(interaction.guild.id);
@@ -138,10 +147,16 @@ async function handleStatus(interaction) {
 async function handleSave(interaction) {
   const state = dungeonManager.get(interaction.guild.id);
   if (!state) {
-    return interaction.reply({ embeds: [embed.error('No Dungeon', 'No active dungeon to save.')], ephemeral: true });
+    return interaction.reply({
+      embeds: [embed.error('No Dungeon', 'No active dungeon to save.')],
+      flags: MessageFlags.Ephemeral,
+    });
   }
   if (state.leaderId !== interaction.user.id) {
-    return interaction.reply({ embeds: [embed.error('Not Leader', 'Only the dungeon leader can save.')], ephemeral: true });
+    return interaction.reply({
+      embeds: [embed.error('Not Leader', 'Only the dungeon leader can save.')],
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
   const id = dungeonManager.saveState(interaction.guild.id);
@@ -156,7 +171,9 @@ async function handleList(interaction) {
   const saves = dungeonManager.listSaved(interaction.guild.id);
 
   if (!saves.length) {
-    return interaction.reply({ embeds: [embed.info('No Saves', 'No saved dungeons found. Use `/dungeon save` to save your progress.')] });
+    return interaction.reply({
+      embeds: [embed.info('No Saves', 'No saved dungeons found. Use `/dungeon save` to save your progress.')],
+    });
   }
 
   const fields = saves.slice(0, 10).map(s => ({
@@ -177,14 +194,20 @@ async function handleList(interaction) {
 
 async function handleLoad(interaction) {
   if (dungeonManager.get(interaction.guild.id)) {
-    return interaction.reply({ embeds: [embed.error('Dungeon Already Active', 'End the current dungeon first with `/dungeon end`.')], ephemeral: true });
+    return interaction.reply({
+      embeds: [embed.error('Dungeon Already Active', 'End the current dungeon first with `/dungeon end`.')],
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
   const dungeonId = interaction.options.getString('id');
   const state     = dungeonManager.loadState(dungeonId, interaction.guild.id);
 
   if (!state) {
-    return interaction.reply({ embeds: [embed.error('Not Found', `No saved dungeon with ID \`${dungeonId}\`.`)], ephemeral: true });
+    return interaction.reply({
+      embeds: [embed.error('Not Found', `No saved dungeon with ID \`${dungeonId}\`.`)],
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
   await interaction.deferReply();
@@ -200,14 +223,20 @@ async function handleLoad(interaction) {
 async function handleEnd(interaction) {
   const state = dungeonManager.get(interaction.guild.id);
   if (!state) {
-    return interaction.reply({ embeds: [embed.error('No Dungeon', 'No active dungeon.')], ephemeral: true });
+    return interaction.reply({
+      embeds: [embed.error('No Dungeon', 'No active dungeon.')],
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
   const isLeader = state.leaderId === interaction.user.id;
   const isAdmin  = interaction.memberPermissions.has('Administrator');
 
   if (!isLeader && !isAdmin) {
-    return interaction.reply({ embeds: [embed.error('Not Authorised', 'Only the dungeon leader or an admin can end the dungeon.')], ephemeral: true });
+    return interaction.reply({
+      embeds: [embed.error('Not Authorised', 'Only the dungeon leader or an admin can end the dungeon.')],
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
   dungeonManager.remove(interaction.guild.id);
@@ -219,10 +248,10 @@ async function handleEnd(interaction) {
 
 // ── Command Definition ───────────────────────────────────────────────
 
-const SIZE_CHOICES        = ['SMALL', 'MEDIUM', 'LARGE'].map(v => ({ name: v.charAt(0) + v.slice(1).toLowerCase(), value: v }));
-const COMPLEXITY_CHOICES  = ['EASY', 'NORMAL', 'HARD'].map(v => ({ name: v.charAt(0) + v.slice(1).toLowerCase(), value: v }));
-const FLOORS_CHOICES      = ['SMALL', 'MEDIUM', 'LARGE', 'EXTREME'].map(v => ({ name: v.charAt(0) + v.slice(1).toLowerCase(), value: v }));
-const DIFFICULTY_CHOICES  = ['EASY', 'NORMAL', 'HARD', 'LUNATIC'].map(v => ({ name: v.charAt(0) + v.slice(1).toLowerCase(), value: v }));
+const SIZE_CHOICES       = ['SMALL', 'MEDIUM', 'LARGE'].map(v => ({ name: v.charAt(0) + v.slice(1).toLowerCase(), value: v }));
+const COMPLEXITY_CHOICES = ['EASY', 'NORMAL', 'HARD'].map(v => ({ name: v.charAt(0) + v.slice(1).toLowerCase(), value: v }));
+const FLOORS_CHOICES     = ['SMALL', 'MEDIUM', 'LARGE', 'EXTREME'].map(v => ({ name: v.charAt(0) + v.slice(1).toLowerCase(), value: v }));
+const DIFFICULTY_CHOICES = ['EASY', 'NORMAL', 'HARD', 'LUNATIC'].map(v => ({ name: v.charAt(0) + v.slice(1).toLowerCase(), value: v }));
 
 const dungeonCommand = {
   data: new SlashCommandBuilder()

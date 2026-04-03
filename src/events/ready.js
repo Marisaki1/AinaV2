@@ -2,14 +2,14 @@ const { ActivityType } = require('discord.js');
 const { logSession } = require('../handlers/historyHandler');
 
 module.exports = {
-  name: 'ready',
+  name: 'clientReady',   // Fixed: was 'ready' (deprecated in discord.js v14)
   once: true,
   async execute(client) {
     console.log(`✅ ${client.user.tag} is online!`);
     console.log(`🌐 Connected to ${client.guilds.cache.size} server(s)`);
 
     client.user.setPresence({
-      activities: [{ name: 'with Papa~ (!help)', type: ActivityType.Playing }],
+      activities: [{ name: 'with Papa~ (/help)', type: ActivityType.Playing }],
       status: 'online',
     });
 

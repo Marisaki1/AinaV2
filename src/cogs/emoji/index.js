@@ -1,15 +1,14 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const emojiManager = require('../../utils/emojiManager');
 const embed = require('../../utils/embed');
 const config = require('../../../config/config');
-const { timedelta } = require('moment-timezone');
 const moment = require('moment-timezone');
 
 // ── /emoji stats ────────────────────────────────────────────────────
 
 async function handleStats(interaction) {
-  const limit = interaction.options.getInteger('limit') ?? 10;
-  const data  = emojiManager.load(interaction.guild.id);
+  const limit  = interaction.options.getInteger('limit') ?? 10;
+  const data   = emojiManager.load(interaction.guild.id);
   const sorted = Object.entries(data.emojis)
     .sort((a, b) => b[1].count - a[1].count)
     .slice(0, limit);
@@ -40,8 +39,8 @@ async function handleStats(interaction) {
 // ── /emoji sticker-stats ────────────────────────────────────────────
 
 async function handleStickerStats(interaction) {
-  const limit = interaction.options.getInteger('limit') ?? 10;
-  const data  = emojiManager.load(interaction.guild.id);
+  const limit  = interaction.options.getInteger('limit') ?? 10;
+  const data   = emojiManager.load(interaction.guild.id);
   const sorted = Object.entries(data.stickers)
     .sort((a, b) => b[1].count - a[1].count)
     .slice(0, limit);
@@ -51,7 +50,7 @@ async function handleStickerStats(interaction) {
   }
 
   let desc = '';
-  for (const [i, [id, info]] of sorted.entries()) {
+  for (const [i, [, info]] of sorted.entries()) {
     const last = moment(info.lastUsed).format('YYYY-MM-DD HH:mm');
     desc += `**${i + 1}.** 🏷️ ${info.name}\n`;
     desc += `   📈 **${info.count}** uses | 🕐 Last: ${last}\n\n`;
@@ -71,17 +70,22 @@ async function handleStickerStats(interaction) {
 
 async function handleInfo(interaction) {
   const emojiInput = interaction.options.getString('emoji');
+  const match      = emojiInput.match(/<a?:(\w+):(\d+)>/);
 
-  // Parse the emoji ID from the input string (<:name:id> or <a:name:id>)
-  const match = emojiInput.match(/<a?:(\w+):(\d+)>/);
   if (!match) {
-    return interaction.reply({ embeds: [embed.error('Invalid Emoji', 'Please provide a custom server emoji.')], ephemeral: true });
+    return interaction.reply({
+      embeds: [embed.error('Invalid Emoji', 'Please provide a custom server emoji.')],
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
   const [, name, id] = match;
   const emojiObj = interaction.guild.emojis.cache.get(id);
   if (!emojiObj) {
-    return interaction.reply({ embeds: [embed.error('Not Found', 'That emoji is not from this server.')], ephemeral: true });
+    return interaction.reply({
+      embeds: [embed.error('Not Found', 'That emoji is not from this server.')],
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
   const data = emojiManager.load(interaction.guild.id);
@@ -95,12 +99,12 @@ async function handleInfo(interaction) {
     .setColor(config.embedColorGreen)
     .setTitle(`📊 Emoji Info: ${emojiObj}`)
     .addFields(
-      { name: 'Name',       value: `\`:${info.name}:\``, inline: true },
-      { name: 'ID',         value: id,                    inline: true },
-      { name: 'Total Uses', value: String(info.count),    inline: true },
-      { name: 'First Used', value: moment(info.firstUsed).format('YYYY-MM-DD HH:mm'), inline: true },
-      { name: 'Last Used',  value: moment(info.lastUsed).format('YYYY-MM-DD HH:mm'),  inline: true },
-      { name: 'Animated',   value: emojiObj.animated ? 'Yes' : 'No',                  inline: true },
+      { name: 'Name',       value: `\`:${info.name}:\``,                                     inline: true },
+      { name: 'ID',         value: id,                                                        inline: true },
+      { name: 'Total Uses', value: String(info.count),                                        inline: true },
+      { name: 'First Used', value: moment(info.firstUsed).format('YYYY-MM-DD HH:mm'),         inline: true },
+      { name: 'Last Used',  value: moment(info.lastUsed).format('YYYY-MM-DD HH:mm'),          inline: true },
+      { name: 'Animated',   value: emojiObj.animated ? 'Yes' : 'No',                         inline: true },
     )
     .setThumbnail(emojiObj.url)
     .setTimestamp();
@@ -115,13 +119,20 @@ async function handleScan(interaction) {
   const channel = interaction.options.getChannel('channel');
 
   if (days > config.emoji.maxScanDays) {
-    return interaction.reply({ embeds: [embed.error('Too Many Days', `Maximum scan period is ${config.emoji.maxScanDays} days.`)], ephemeral: true });
+    return interaction.reply({
+      embeds: [embed.error('Too Many Days', `Maximum scan period is ${config.emoji.maxScanDays} days.`)],
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
-  await interaction.reply({ embeds: [embed.info('🔍 Scanning...', `Scanning the last **${days}** days of messages. This may take a while!`)] });
+  await interaction.reply({
+    embeds: [embed.info('🔍 Scanning...', `Scanning the last **${days}** days of messages. This may take a while!`)],
+  });
 
   const cutoff  = new Date(Date.now() - days * 86400000);
-  const toScan  = channel ? [channel] : [...interaction.guild.channels.cache.values()].filter(c => c.isTextBased());
+  const toScan  = channel
+    ? [channel]
+    : [...interaction.guild.channels.cache.values()].filter(c => c.isTextBased());
 
   let totalMessages = 0, totalEmojis = 0, totalStickers = 0;
 
@@ -132,14 +143,12 @@ async function handleScan(interaction) {
       for await (const msg of fetchAllMessages(ch, cutoff)) {
         totalMessages++;
 
-        // Emojis in content
         const matches = emojiManager.extractCustomEmojiIds(msg.content);
         for (const { id, name } of matches) {
           const emojiObj = interaction.guild.emojis.cache.get(id);
           if (emojiObj) { emojiManager.updateEmoji(interaction.guild.id, id, name, msg.createdAt); totalEmojis++; }
         }
 
-        // Reactions
         for (const reaction of msg.reactions.cache.values()) {
           if (reaction.emoji.id) {
             const emojiObj = interaction.guild.emojis.cache.get(reaction.emoji.id);
@@ -152,7 +161,6 @@ async function handleScan(interaction) {
           }
         }
 
-        // Stickers
         if (msg.stickers?.size) {
           for (const sticker of msg.stickers.values()) {
             if (sticker.guildId === interaction.guild.id) {
@@ -166,16 +174,15 @@ async function handleScan(interaction) {
   }
 
   const resultEmbed = embed.success('Scan Complete!', null, [
-    { name: '📅 Period',     value: `${days} days`,         inline: true },
-    { name: '📨 Messages',   value: String(totalMessages),   inline: true },
-    { name: '😀 Emojis',     value: String(totalEmojis),     inline: true },
-    { name: '🏷️ Stickers',   value: String(totalStickers),   inline: true },
+    { name: '📅 Period',     value: `${days} days`,       inline: true },
+    { name: '📨 Messages',   value: String(totalMessages), inline: true },
+    { name: '😀 Emojis',     value: String(totalEmojis),   inline: true },
+    { name: '🏷️ Stickers',   value: String(totalStickers), inline: true },
   ]);
 
   return interaction.editReply({ embeds: [resultEmbed] });
 }
 
-// Async generator to paginate through message history
 async function* fetchAllMessages(channel, after) {
   let lastId = null;
   while (true) {
@@ -200,21 +207,23 @@ async function* fetchAllMessages(channel, after) {
 
 async function handleClear(interaction) {
   emojiManager.clearStats(interaction.guild.id);
-  return interaction.reply({ embeds: [embed.success('Stats Cleared', 'All emoji and sticker stats have been wiped for this server.')] });
+  return interaction.reply({
+    embeds: [embed.success('Stats Cleared', 'All emoji and sticker stats have been wiped for this server.')],
+  });
 }
 
 // ── /emoji tracking ─────────────────────────────────────────────────
 
 async function handleTracking(interaction) {
-  const data = emojiManager.load(interaction.guild.id);
+  const data             = emojiManager.load(interaction.guild.id);
   const totalEmojiUses   = Object.values(data.emojis).reduce((sum, e) => sum + e.count, 0);
   const totalStickerUses = Object.values(data.stickers).reduce((sum, s) => sum + s.count, 0);
 
   const e = embed.info(`📊 Tracking Overview — ${interaction.guild.name}`, null, [
-    { name: '📱 Tracked Emojis',   value: String(Object.keys(data.emojis).length),   inline: true },
-    { name: '🏷️ Tracked Stickers', value: String(Object.keys(data.stickers).length), inline: true },
-    { name: '📈 Total Emoji Uses',   value: String(totalEmojiUses),                   inline: true },
-    { name: '📈 Total Sticker Uses', value: String(totalStickerUses),                 inline: true },
+    { name: '📱 Tracked Emojis',    value: String(Object.keys(data.emojis).length),   inline: true },
+    { name: '🏷️ Tracked Stickers',  value: String(Object.keys(data.stickers).length), inline: true },
+    { name: '📈 Total Emoji Uses',   value: String(totalEmojiUses),                    inline: true },
+    { name: '📈 Total Sticker Uses', value: String(totalStickerUses),                  inline: true },
   ]);
 
   return interaction.reply({ embeds: [e] });
@@ -259,10 +268,12 @@ const emojiCommand = {
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
 
-    // Admin-only commands
     if (['scan', 'clear'].includes(sub)) {
       if (!interaction.memberPermissions.has(PermissionFlagsBits.Administrator)) {
-        return interaction.reply({ embeds: [embed.error('Permission Denied', 'Only admins can use this.')], ephemeral: true });
+        return interaction.reply({
+          embeds: [embed.error('Permission Denied', 'Only admins can use this.')],
+          flags: MessageFlags.Ephemeral,
+        });
       }
     }
 
@@ -274,12 +285,11 @@ const emojiCommand = {
     if (sub === 'tracking')      return handleTracking(interaction);
   },
 
-  // This cog also needs reaction tracking
   events: {
-    messageReactionAdd: async (reaction, user, client) => {
+    messageReactionAdd: async (reaction, user) => {
       if (user.bot || !reaction.message.guild) return;
-      if (!reaction.emoji.id) return; // Only custom emojis
-      const guild  = reaction.message.guild;
+      if (!reaction.emoji.id) return;
+      const guild    = reaction.message.guild;
       const emojiObj = guild.emojis.cache.get(reaction.emoji.id);
       if (emojiObj) emojiManager.updateEmoji(guild.id, String(emojiObj.id), emojiObj.name);
     },

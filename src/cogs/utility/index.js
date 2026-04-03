@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const embed = require('../../utils/embed');
 const config = require('../../../config/config');
 
@@ -10,10 +10,11 @@ const helpCommand = {
       .setName('category')
       .setDescription('Get help for a specific category')
       .addChoices(
-        { name: 'Alarms',  value: 'alarms'  },
-        { name: 'Dungeon', value: 'dungeon' },
-        { name: 'Emoji',   value: 'emoji'   },
-        { name: 'AI Chat', value: 'ai'      },
+        { name: 'Alarms',        value: 'alarms'  },
+        { name: 'Dungeon',       value: 'dungeon' },
+        { name: 'Emoji',         value: 'emoji'   },
+        { name: 'AI Chat',       value: 'ai'      },
+        { name: 'Text-to-Voice', value: 'ttv'     },
       )
     ),
 
@@ -21,7 +22,6 @@ const helpCommand = {
     const category = interaction.options.getString('category');
 
     if (!category) {
-      // Main help overview
       const e = new EmbedBuilder()
         .setColor(config.embedColor)
         .setTitle('Aina is here to help, Papa~ 💜')
@@ -75,6 +75,15 @@ const helpCommand = {
             inline: false,
           },
           {
+            name: '🔊 Text-to-Voice',
+            value: [
+              '`/ttv join` — Aina joins your voice channel',
+              '`/ttv say` — Aina speaks text aloud',
+              '`/ttv leave` — Aina leaves the voice channel',
+            ].join('\n'),
+            inline: false,
+          },
+          {
             name: '❓ Utility',
             value: '`/help` — This menu\n`/ping` — Check if I\'m awake',
             inline: false,
@@ -117,6 +126,8 @@ const helpCommand = {
           { name: '/emoji sticker-stats [limit]', value: 'Shows the top N most-used stickers.', inline: false },
           { name: '/emoji info <emoji>', value: 'Detailed usage info for a specific emoji.', inline: false },
           { name: '/emoji scan [days] [channel]', value: 'Scan message history. Admin only.', inline: false },
+          { name: '/emoji clear', value: 'Wipe all emoji/sticker stats for this server. Admin only.', inline: false },
+          { name: '/emoji tracking', value: 'Shows total counts of tracked emojis and stickers.', inline: false },
         ),
 
       ai: new EmbedBuilder()
@@ -127,6 +138,17 @@ const helpCommand = {
           { name: '/chat <message>', value: 'Send a message to Aina. She\'ll respond in her personality.', inline: false },
           { name: '/endchat', value: 'Clears Aina\'s memory of your conversation so you can start fresh.', inline: false },
           { name: '@mention', value: 'You can also just @mention Aina anywhere to chat!', inline: false },
+        ),
+
+      ttv: new EmbedBuilder()
+        .setColor(config.embedColor)
+        .setTitle('🔊 Text-to-Voice Help')
+        .setDescription('Aina can speak text aloud in voice channels using Microsoft Edge TTS!\n\n**Requirements:** Aina must have the **Connect** and **Speak** permissions in the target voice channel.')
+        .addFields(
+          { name: '/ttv join [channel]', value: 'Aina joins your current voice channel. Optionally specify a different channel by name.', inline: false },
+          { name: '/ttv say <text>', value: 'Aina reads the given text aloud in the voice channel she\'s connected to. Max **500 characters**.', inline: false },
+          { name: '/ttv leave', value: 'Aina disconnects from the voice channel.', inline: false },
+          { name: '⚙️ Voice', value: `Currently using: \`${require('../../../config/config').tts.voice}\``, inline: false },
         ),
     };
 

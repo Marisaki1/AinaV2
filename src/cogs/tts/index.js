@@ -3,30 +3,23 @@
  *
  * Text-to-Speech cog.
  * Commands:
- *   /tts join [channel] — Aina joins a voice channel (picker or named)
- *   /tts leave          — Aina disconnects from the voice channel
- *   /tts say <text>     — Aina speaks the given text aloud
+ *   /ttv join [channel] — Aina joins a voice channel
+ *   /ttv leave          — Aina disconnects from the voice channel
+ *   /ttv say <text>     — Aina speaks the given text aloud
  */
 
-const { SlashCommandBuilder, ChannelType } = require('discord.js');
-const ttsManager  = require('../../utils/ttsManager');
-const embed       = require('../../utils/embed');
+const { SlashCommandBuilder, ChannelType, MessageFlags } = require('discord.js');
+const ttsManager   = require('../../utils/ttsManager');
+const embed        = require('../../utils/embed');
 const userRegistry = require('../../utils/userRegistry');
 
-// ── /tts join ────────────────────────────────────────────────────────
+// ── /ttv join ────────────────────────────────────────────────────────
 
 async function handleJoin(interaction) {
   userRegistry.record(interaction.user, interaction.guild.id, 'command');
 
-  // If a specific channel was provided, use it directly
   const targetChannel = interaction.options.getChannel('channel');
-
-  let voiceChannel = targetChannel;
-
-  // Otherwise, try the caller's current voice channel
-  if (!voiceChannel) {
-    voiceChannel = interaction.member.voice?.channel ?? null;
-  }
+  let voiceChannel = targetChannel ?? interaction.member.voice?.channel ?? null;
 
   if (!voiceChannel) {
     return interaction.reply({
@@ -34,18 +27,17 @@ async function handleJoin(interaction) {
         'No Voice Channel',
         'Please join a voice channel first, or pass one using the `channel` option.',
       )],
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
   if (voiceChannel.type !== ChannelType.GuildVoice) {
     return interaction.reply({
       embeds: [embed.error('Invalid Channel', 'That is not a voice channel.')],
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
-  // Check bot permissions in that channel
   const permissions = voiceChannel.permissionsFor(interaction.guild.members.me);
   if (!permissions?.has('Connect') || !permissions?.has('Speak')) {
     return interaction.reply({
@@ -53,7 +45,7 @@ async function handleJoin(interaction) {
         'Missing Permissions',
         `I don't have permission to join or speak in **${voiceChannel.name}**.`,
       )],
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
@@ -61,22 +53,21 @@ async function handleJoin(interaction) {
 
   try {
     await ttsManager.join(voiceChannel);
-
     return interaction.editReply({
       embeds: [embed.success(
         'Joined Voice Channel',
-        `I've joined **${voiceChannel.name}**~ 🎙️\nUse \`/tts say\` to make me speak!`,
+        `I've joined **${voiceChannel.name}**~ 🎙️\nUse \`/ttv say\` to make me speak!`,
       )],
     });
   } catch (err) {
-    console.error('[TTS] Join error:', err.message);
+    console.error('[TTV] Join error:', err.message);
     return interaction.editReply({
       embeds: [embed.error('Connection Failed', `Could not join **${voiceChannel.name}**: ${err.message}`)],
     });
   }
 }
 
-// ── /tts leave ───────────────────────────────────────────────────────
+// ── /ttv leave ───────────────────────────────────────────────────────
 
 async function handleLeave(interaction) {
   userRegistry.record(interaction.user, interaction.guild.id, 'command');
@@ -86,7 +77,7 @@ async function handleLeave(interaction) {
   if (!disconnected) {
     return interaction.reply({
       embeds: [embed.error('Not Connected', "I'm not in a voice channel right now.")],
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
@@ -95,15 +86,15 @@ async function handleLeave(interaction) {
   });
 }
 
-// ── /tts say ─────────────────────────────────────────────────────────
+// ── /ttv say ─────────────────────────────────────────────────────────
 
 async function handleSay(interaction) {
   userRegistry.record(interaction.user, interaction.guild.id, 'command');
 
   if (!ttsManager.isConnected(interaction.guild.id)) {
     return interaction.reply({
-      embeds: [embed.error('Not Connected', 'Use `/tts join` to put me in a voice channel first.')],
-      ephemeral: true,
+      embeds: [embed.error('Not Connected', 'Use `/ttv join` to put me in a voice channel first.')],
+      flags: MessageFlags.Ephemeral,
     });
   }
 
@@ -111,8 +102,8 @@ async function handleSay(interaction) {
 
   if (text.length > 500) {
     return interaction.reply({
-      embeds: [embed.error('Text Too Long', 'Please keep TTS messages under 500 characters.')],
-      ephemeral: true,
+      embeds: [embed.error('Text Too Long', 'Please keep TTV messages under 500 characters.')],
+      flags: MessageFlags.Ephemeral,
     });
   }
 
@@ -120,24 +111,30 @@ async function handleSay(interaction) {
 
   try {
     await ttsManager.speak(interaction.guild.id, text);
-
     return interaction.editReply({
       embeds: [embed.success('Speaking~', `🔊 **"${text}"**`)],
     });
   } catch (err) {
-    console.error('[TTS] Speak error:', err.message);
+    // Log full error details so we can see what's really failing
+    console.error('[TTV] handleSay caught error:');
+    console.error('  type   :', typeof err);
+    console.error('  value  :', err);
+    console.error('  message:', err?.message);
+    console.error('  stack  :', err?.stack);
+
+    const userMsg = err?.message ?? `Unknown error (type: ${typeof err}, value: ${JSON.stringify(err)})`;
     return interaction.editReply({
-      embeds: [embed.error('TTS Failed', err.message)],
+      embeds: [embed.error('TTV Failed', userMsg)],
     });
   }
 }
 
 // ── Command Definition ────────────────────────────────────────────────
 
-const ttsCommand = {
+const ttvCommand = {
   data: new SlashCommandBuilder()
-    .setName('tts')
-    .setDescription("Control Aina's text-to-speech in voice channels")
+    .setName('ttv')
+    .setDescription("Control Aina's text-to-voice in voice channels")
     .addSubcommand(sub => sub
       .setName('join')
       .setDescription('Aina joins a voice channel')
@@ -170,4 +167,4 @@ const ttsCommand = {
   },
 };
 
-module.exports = { commands: [ttsCommand] };
+module.exports = { commands: [ttvCommand] };

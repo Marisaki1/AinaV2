@@ -1,3 +1,4 @@
+const { MessageFlags } = require('discord.js');
 const { logCommand, logError } = require('../handlers/historyHandler');
 const embed = require('../utils/embed');
 const { DUNGEON_BUTTONS } = require('../../config/constants');
@@ -18,7 +19,10 @@ module.exports = {
       } catch (err) {
         console.error(`[Command] Error in /${interaction.commandName}:`, err.message);
         logError(`command:${interaction.commandName}`, err);
-        const reply = { embeds: [embed.error('Something went wrong', err.message)], ephemeral: true };
+        const reply = {
+          embeds: [embed.error('Something went wrong', err.message)],
+          flags: MessageFlags.Ephemeral,
+        };
         if (interaction.replied || interaction.deferred) {
           await interaction.followUp(reply);
         } else {
@@ -28,7 +32,7 @@ module.exports = {
       return;
     }
 
-    // ── Reaction Tracking for Emojis ───────────────────────────
+    // ── Non-button components — skip ───────────────────────────
     if (interaction.isMessageComponent && !interaction.isButton()) return;
 
     // ── Dungeon Buttons ────────────────────────────────────────
@@ -39,13 +43,18 @@ module.exports = {
 
       const state = dungeonManager.get(guild.id);
       if (!state) {
-        await interaction.reply({ embeds: [embed.error('No Active Dungeon', 'There is no active dungeon in this server.')], ephemeral: true });
+        await interaction.reply({
+          embeds: [embed.error('No Active Dungeon', 'There is no active dungeon in this server.')],
+          flags: MessageFlags.Ephemeral,
+        });
         return;
       }
 
-      // Only players in the dungeon can press buttons
       if (!state.players.includes(user.id)) {
-        await interaction.reply({ embeds: [embed.error('Not Your Dungeon', 'You are not part of this dungeon!')], ephemeral: true });
+        await interaction.reply({
+          embeds: [embed.error('Not Your Dungeon', 'You are not part of this dungeon!')],
+          flags: MessageFlags.Ephemeral,
+        });
         return;
       }
 
@@ -68,10 +77,10 @@ module.exports = {
 
       // Movement
       const dirMap = {
-        [DUNGEON_BUTTONS.UP]:    { dr: -1, dc: 0 },
-        [DUNGEON_BUTTONS.DOWN]:  { dr:  1, dc: 0 },
-        [DUNGEON_BUTTONS.LEFT]:  { dr:  0, dc: -1 },
-        [DUNGEON_BUTTONS.RIGHT]: { dr:  0, dc:  1 },
+        [DUNGEON_BUTTONS.UP]:       { dr: -1, dc:  0 },
+        [DUNGEON_BUTTONS.DOWN]:     { dr:  1, dc:  0 },
+        [DUNGEON_BUTTONS.LEFT]:     { dr:  0, dc: -1 },
+        [DUNGEON_BUTTONS.RIGHT]:    { dr:  0, dc:  1 },
         [DUNGEON_BUTTONS.INTERACT]: null,
       };
 
@@ -79,16 +88,12 @@ module.exports = {
       let result;
 
       if (dir === null) {
-        // Interact — placeholder for future combat/chest UI
         result = { moved: true, event: { msg: '✋ Nothing to interact with here.' } };
       } else {
         result = dungeonManager.move(guild.id, dir.dr, dir.dc);
       }
 
-      if (!result.moved && dir !== null) {
-        // Hit a wall — no update needed, just ignore
-        return;
-      }
+      if (!result.moved && dir !== null) return;
 
       if (result.won) {
         dungeonManager.remove(guild.id);
