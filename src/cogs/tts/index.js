@@ -115,9 +115,16 @@ async function handleSay(interaction) {
       embeds: [embed.success('Speaking~', `🔊 **"${text}"**`)],
     });
   } catch (err) {
-    console.error('[TTV] Speak error:', err.message);
+    // Log full error details so we can see what's really failing
+    console.error('[TTV] handleSay caught error:');
+    console.error('  type   :', typeof err);
+    console.error('  value  :', err);
+    console.error('  message:', err?.message);
+    console.error('  stack  :', err?.stack);
+
+    const userMsg = err?.message ?? `Unknown error (type: ${typeof err}, value: ${JSON.stringify(err)})`;
     return interaction.editReply({
-      embeds: [embed.error('TTV Failed', err.message)],
+      embeds: [embed.error('TTV Failed', userMsg)],
     });
   }
 }

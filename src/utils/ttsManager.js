@@ -1,5 +1,5 @@
 /**
- * ttsManager.js — with diagnostic logging to identify voice connection failure point
+ * ttsManager.js
  */
 
 const {
@@ -18,9 +18,6 @@ const path   = require('path');
 const config = require('../../config/config');
 
 // ── Explicitly initialise libsodium-wrappers before any voice ops ────
-// Without awaiting sodium.ready, the async-init sodium lib may not be ready
-// when Discord tries to encrypt the first UDP voice packet, causing the
-// handshake to stall indefinitely.
 let sodiumReady = false;
 (async () => {
   try {
@@ -51,12 +48,17 @@ function ensureAudioDir() {
 
 async function synthesise(text) {
   ensureAudioDir();
+
   const tts = new MsEdgeTTS();
+
+  // setMetadata() opens the WebSocket connection to Edge TTS
   await tts.setMetadata(config.tts.voice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
-  const filename = `tts_${Date.now()}.mp3`;
-  const filepath = path.resolve(config.tts.audioDir, filename);
-  await tts.toFile(filepath, text);
-  return filepath;
+
+  // v2 API: first arg is a folder, library generates the filename.
+  // Returns { audioFilePath } with the full path of the written file.
+  const { audioFilePath } = await tts.toFile(config.tts.audioDir, text);
+
+  return audioFilePath;
 }
 
 // ── Public API ────────────────────────────────────────────────────────
@@ -87,7 +89,6 @@ async function join(voiceChannel) {
     selfMute:       false,
   });
 
-  // Log every state transition so we can see exactly where it stops
   connection.on('stateChange', (oldState, newState) => {
     console.log(`[TTV] State: ${oldState.status} → ${newState.status}`);
   });
@@ -110,7 +111,6 @@ async function join(voiceChannel) {
     );
   }
 
-  // Only attach lifecycle watcher after connection is confirmed Ready
   connection.on(VoiceConnectionStatus.Disconnected, () => {
     console.log('[TTV] Unexpected disconnect from guild', guildId);
     try { connection.destroy(); } catch { /* already gone */ }
@@ -151,8 +151,11 @@ async function speak(guildId, text) {
   const cleanup = () => {
     try { fs.unlinkSync(filepath); } catch { /* ignore */ }
   };
-  player.once(AudioPlayerStatus.Idle,  cleanup);
-  player.once('error',                  cleanup);
+  player.once(AudioPlayerStatus.Idle, cleanup);
+  player.once('error', (err) => {
+    console.error('[TTV] AudioPlayer error:', err.message);
+    cleanup();
+  });
 }
 
 function isConnected(guildId) {
