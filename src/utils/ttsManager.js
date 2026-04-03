@@ -1,15 +1,5 @@
 /**
- * ttsManager.js
- *
- * Manages voice channel connections and Microsoft Edge TTS playback.
- * Wraps @discordjs/voice and msedge-tts into a clean stateful interface.
- *
- * State is stored per guild so multiple servers can each have
- * their own independent voice session.
- *
- * Required packages (add to package.json if not present):
- *   npm install @discordjs/voice msedge-tts @discordjs/opus
- *   sudo apt install -y ffmpeg   (or equivalent for your OS)
+ * ttsManager.js — with diagnostic logging to identify voice connection failure point
  */
 
 const {
@@ -23,12 +13,34 @@ const {
 } = require('@discordjs/voice');
 
 const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
-const fs   = require('fs');
-const path = require('path');
+const fs     = require('fs');
+const path   = require('path');
 const config = require('../../config/config');
 
-// ── Active player registry — one player per guild ────────────────────
-// Map<guildId, AudioPlayer>
+// ── Explicitly initialise libsodium-wrappers before any voice ops ────
+// Without awaiting sodium.ready, the async-init sodium lib may not be ready
+// when Discord tries to encrypt the first UDP voice packet, causing the
+// handshake to stall indefinitely.
+let sodiumReady = false;
+(async () => {
+  try {
+    const sodium = require('libsodium-wrappers');
+    await sodium.ready;
+    sodiumReady = true;
+    console.log('[TTV] libsodium-wrappers initialised ✓');
+  } catch {
+    try {
+      require('tweetnacl');
+      sodiumReady = true;
+      console.log('[TTV] tweetnacl detected as encryption backend ✓');
+    } catch {
+      console.warn('[TTV] ⚠️  No encryption library found! Voice will not work.');
+      console.warn('[TTV] Run: npm install libsodium-wrappers');
+    }
+  }
+})();
+
+// ── Active player registry ────────────────────────────────────────────
 const players = new Map();
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -37,122 +49,116 @@ function ensureAudioDir() {
   fs.mkdirSync(config.tts.audioDir, { recursive: true });
 }
 
-/**
- * Synthesise text → temporary MP3 file using Microsoft Edge TTS.
- *
- * @param {string} text
- * @returns {Promise<string>} Absolute path to the generated MP3
- */
 async function synthesise(text) {
   ensureAudioDir();
-
   const tts = new MsEdgeTTS();
-  await tts.setMetadata(
-    config.tts.voice,
-    OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3
-  );
-
+  await tts.setMetadata(config.tts.voice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
   const filename = `tts_${Date.now()}.mp3`;
   const filepath = path.resolve(config.tts.audioDir, filename);
-
   await tts.toFile(filepath, text);
   return filepath;
 }
 
 // ── Public API ────────────────────────────────────────────────────────
 
-/**
- * Join a Discord voice channel.
- *
- * @param {import('discord.js').VoiceChannel} voiceChannel
- * @returns {Promise<import('@discordjs/voice').VoiceConnection>}
- */
 async function join(voiceChannel) {
-  const connection = joinVoiceChannel({
-    channelId:      voiceChannel.id,
-    guildId:        voiceChannel.guild.id,
-    adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-    selfDeaf:       false,
-  });
+  const guildId = voiceChannel.guild.id;
 
-  // Wait until the connection is ready (or fail within 5 s)
-  await entersState(connection, VoiceConnectionStatus.Ready, 5_000);
-
-  // Create or reuse a player for this guild
-  if (!players.has(voiceChannel.guild.id)) {
-    const player = createAudioPlayer();
-    players.set(voiceChannel.guild.id, player);
+  if (!sodiumReady) {
+    throw new Error('Encryption library not ready. Run `npm install libsodium-wrappers` and restart.');
   }
 
-  connection.subscribe(players.get(voiceChannel.guild.id));
+  // Destroy any stale connection first
+  const existing = getVoiceConnection(guildId);
+  if (existing) {
+    console.log('[TTV] Destroying stale connection for guild', guildId);
+    existing.destroy();
+    players.delete(guildId);
+    await new Promise(r => setTimeout(r, 500));
+  }
+
+  console.log(`[TTV] Attempting to join #${voiceChannel.name} (${voiceChannel.id}) in guild ${guildId}`);
+
+  const connection = joinVoiceChannel({
+    channelId:      voiceChannel.id,
+    guildId,
+    adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+    selfDeaf:       false,
+    selfMute:       false,
+  });
+
+  // Log every state transition so we can see exactly where it stops
+  connection.on('stateChange', (oldState, newState) => {
+    console.log(`[TTV] State: ${oldState.status} → ${newState.status}`);
+  });
+
+  connection.on('error', err => {
+    console.error('[TTV] Connection error:', err.message);
+  });
+
+  try {
+    await entersState(connection, VoiceConnectionStatus.Ready, 15_000);
+    console.log('[TTV] Connection reached Ready ✓');
+  } catch (err) {
+    const lastState = connection.state?.status ?? 'unknown';
+    console.error('[TTV] Failed to reach Ready. Stuck at:', lastState);
+    connection.destroy();
+    players.delete(guildId);
+    throw new Error(
+      `Voice handshake failed (stuck at: **${lastState}**).\n` +
+      'Check the bot console for the full state trace.'
+    );
+  }
+
+  // Only attach lifecycle watcher after connection is confirmed Ready
+  connection.on(VoiceConnectionStatus.Disconnected, () => {
+    console.log('[TTV] Unexpected disconnect from guild', guildId);
+    try { connection.destroy(); } catch { /* already gone */ }
+    players.delete(guildId);
+  });
+
+  const player = createAudioPlayer();
+  players.set(guildId, player);
+  connection.subscribe(player);
+
+  console.log('[TTV] Player subscribed ✓');
   return connection;
 }
 
-/**
- * Disconnect from the active voice channel in a guild.
- *
- * @param {string} guildId
- * @returns {boolean} true if a connection existed and was destroyed
- */
 function leave(guildId) {
   const connection = getVoiceConnection(guildId);
   if (!connection) return false;
-
   connection.destroy();
   players.delete(guildId);
   return true;
 }
 
-/**
- * Speak text in the guild's current voice channel.
- * Synthesises audio via Edge TTS, streams it, then deletes the temp file.
- *
- * @param {string} guildId
- * @param {string} text
- * @returns {Promise<void>}
- * @throws {Error} if the bot is not in a voice channel in that guild
- */
 async function speak(guildId, text) {
   const connection = getVoiceConnection(guildId);
   if (!connection) {
-    throw new Error('Aina is not in a voice channel. Use `/tts join` first.');
+    throw new Error('Aina is not in a voice channel. Use `/ttv join` first.');
   }
 
   const player = players.get(guildId);
   if (!player) {
-    throw new Error('Audio player not initialised. Please `/tts leave` and `/tts join` again.');
+    throw new Error('Audio player not initialised. Please use `/ttv leave` then `/ttv join` again.');
   }
 
   const filepath = await synthesise(text);
-
   const resource = createAudioResource(filepath);
   player.play(resource);
 
-  // Clean up the temp file once playback is finished or errors out
   const cleanup = () => {
     try { fs.unlinkSync(filepath); } catch { /* ignore */ }
   };
-
   player.once(AudioPlayerStatus.Idle,  cleanup);
   player.once('error',                  cleanup);
 }
 
-/**
- * Returns true if the bot is currently connected to a voice channel in the guild.
- *
- * @param {string} guildId
- * @returns {boolean}
- */
 function isConnected(guildId) {
   return !!getVoiceConnection(guildId);
 }
 
-/**
- * Returns the VoiceConnection for the guild, or null.
- *
- * @param {string} guildId
- * @returns {import('@discordjs/voice').VoiceConnection|null}
- */
 function getConnection(guildId) {
   return getVoiceConnection(guildId) ?? null;
 }
