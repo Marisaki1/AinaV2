@@ -23,27 +23,6 @@ function requireChar(interaction) {
   return char;
 }
 
-/**
- * Parse a value string that may be absolute ("32"), additive ("+10"), or subtractive ("-5").
- * Returns { mode: 'set'|'add'|'sub', amount: number } or null if invalid.
- */
-function parseValueInput(raw) {
-  const str = String(raw).trim();
-  if (str.startsWith('+')) {
-    const n = parseInt(str.slice(1));
-    if (isNaN(n)) return null;
-    return { mode: 'add', amount: n };
-  }
-  if (str.startsWith('-')) {
-    const n = parseInt(str.slice(1));
-    if (isNaN(n)) return null;
-    return { mode: 'sub', amount: n };
-  }
-  const n = parseInt(str);
-  if (isNaN(n)) return null;
-  return { mode: 'set', amount: n };
-}
-
 /** Apply a parsed value to a current pool value, clamped between 0 and max (if provided). */
 function applyValue(current, max, parsed) {
   if (parsed.mode === 'set') return Math.max(0, max != null ? Math.min(parsed.amount, max) : parsed.amount);
@@ -141,11 +120,11 @@ async function handleLevel(interaction) {
 // ── Quick-action modal (triggered by main-sheet buttons) ──────────────
 
 const QUICK_LABELS = {
-  hp:    { label: 'HP',             emoji: '❤️',  pool: true  },
-  mp:    { label: 'MP',             emoji: '💙',  pool: true  },
-  ip:    { label: 'IP',             emoji: '⚙️',   pool: true  },
-  fp:    { label: 'Fabula Points',  emoji: '✨',  pool: false },
-  zenit: { label: 'Zenit',          emoji: '💰',  pool: false },
+  hp:    { label: 'HP',            emoji: '❤️',  pool: true  },
+  mp:    { label: 'MP',            emoji: '💙',  pool: true  },
+  ip:    { label: 'IP',            emoji: '⚙️',   pool: true  },
+  fp:    { label: 'Fabula Points', emoji: '✨',  pool: false },
+  zenit: { label: 'Zenit',         emoji: '💰',  pool: false },
 };
 
 async function handleQuickModal(interaction, resourceKey, targetUserId) {
@@ -166,11 +145,29 @@ async function handleQuickModal(interaction, resourceKey, targetUserId) {
   modal.addComponents(
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('value')
-        .setLabel('Value  (+10 add  •  -5 subtract  •  25 set)')
+        .setCustomId('add')
+        .setLabel(`➕ Add to ${meta.label}`)
         .setStyle(TextInputStyle.Short)
-        .setRequired(true)
-        .setPlaceholder('e.g.  25, +10, or -5')
+        .setRequired(false)
+        .setPlaceholder('e.g. 10')
+        .setMaxLength(8),
+    ),
+    new ActionRowBuilder().addComponents(
+      new TextInputBuilder()
+        .setCustomId('subtract')
+        .setLabel(`➖ Subtract from ${meta.label}`)
+        .setStyle(TextInputStyle.Short)
+        .setRequired(false)
+        .setPlaceholder('e.g. 5')
+        .setMaxLength(8),
+    ),
+    new ActionRowBuilder().addComponents(
+      new TextInputBuilder()
+        .setCustomId('set')
+        .setLabel(`🔢 Set ${meta.label} to exact value`)
+        .setStyle(TextInputStyle.Short)
+        .setRequired(false)
+        .setPlaceholder('e.g. 25')
         .setMaxLength(8),
     ),
   );
@@ -182,12 +179,27 @@ async function handleQuickModalSubmit(interaction, resourceKey) {
   const char = requireChar(interaction);
   if (!char) return;
 
-  const raw    = interaction.fields.getTextInputValue('value');
-  const parsed = parseValueInput(raw);
+  const addRaw      = interaction.fields.getTextInputValue('add').trim();
+  const subtractRaw = interaction.fields.getTextInputValue('subtract').trim();
+  const setRaw      = interaction.fields.getTextInputValue('set').trim();
+
+  let parsed = null;
+
+  // Priority: Set > Add > Subtract
+  if (setRaw) {
+    const n = parseInt(setRaw);
+    if (!isNaN(n)) parsed = { mode: 'set', amount: n };
+  } else if (addRaw) {
+    const n = parseInt(addRaw);
+    if (!isNaN(n)) parsed = { mode: 'add', amount: n };
+  } else if (subtractRaw) {
+    const n = parseInt(subtractRaw);
+    if (!isNaN(n)) parsed = { mode: 'sub', amount: n };
+  }
 
   if (!parsed) {
     return interaction.reply({
-      embeds: [embed.error('Invalid Input', 'Enter a number like `25`, `+10`, or `-5`.')],
+      embeds: [embed.error('Invalid Input', 'Please fill in one of the three fields with a number.')],
       flags: MessageFlags.Ephemeral,
     });
   }

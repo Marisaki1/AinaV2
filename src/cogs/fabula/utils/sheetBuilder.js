@@ -177,6 +177,7 @@ function buildEquipmentEmbed(char) {
       { name: '🔮 Total MDEF', value: String(char.mdef),                   inline: true },
       { name: '⚡ Initiative',  value: char.initiative,                     inline: true },
     )
+    .setFooter({ text: 'Use /fab equipment to manage weapons, armor, accessories, and items.' })
     .setTimestamp();
 }
 
@@ -186,6 +187,7 @@ function buildSkillsEmbed(char) {
   const embed = new EmbedBuilder()
     .setColor(config.embedColor)
     .setTitle(`🎓 Classes & Skills — ${char.name}`)
+    .setFooter({ text: 'Use /fab class and /fab skill to manage classes and skills.' })
     .setTimestamp();
 
   if (char.classes.length === 0) {
@@ -215,6 +217,7 @@ function buildSpellsEmbed(char) {
   const embed = new EmbedBuilder()
     .setColor(config.embedColorBlue)
     .setTitle(`🔮 Spells & Abilities — ${char.name}`)
+    .setFooter({ text: 'Use /fab spell and /fab ability to manage spells and abilities.' })
     .setTimestamp();
 
   if (char.spells.length === 0 && char.abilities.length === 0) {
@@ -254,6 +257,7 @@ function buildBondsEmbed(char) {
   const embed = new EmbedBuilder()
     .setColor(config.embedColorGreen)
     .setTitle(`🤝 Bonds & Identity — ${char.name}`)
+    .setFooter({ text: 'Use /fab bond and /fab identity to manage bonds, traits, and quirks.' })
     .setTimestamp();
 
   const bondText = char.bonds.length > 0
@@ -281,6 +285,7 @@ function buildStatusEmbed(char) {
   const embed = new EmbedBuilder()
     .setColor(hasStatus ? config.embedColorRed : config.embedColorGreen)
     .setTitle(`⚠️ Status Effects — ${char.name}`)
+    .setFooter({ text: 'Use /fab status add, remove, or clear to manage status effects.' })
     .setTimestamp();
 
   if (!hasStatus) {

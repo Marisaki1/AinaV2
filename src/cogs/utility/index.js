@@ -10,11 +10,12 @@ const helpCommand = {
       .setName('category')
       .setDescription('Get help for a specific category')
       .addChoices(
-        { name: 'Alarms',        value: 'alarms'  },
-        { name: 'Dungeon',       value: 'dungeon' },
-        { name: 'Emoji',         value: 'emoji'   },
-        { name: 'AI Chat',       value: 'ai'      },
-        { name: 'Text-to-Voice', value: 'ttv'     },
+        { name: 'Alarms',          value: 'alarms'  },
+        { name: 'Dungeon',         value: 'dungeon' },
+        { name: 'Emoji',           value: 'emoji'   },
+        { name: 'AI Chat',         value: 'ai'      },
+        { name: 'Text-to-Voice',   value: 'ttv'     },
+        { name: 'Fabula Ultima',   value: 'fab'     },
       )
     ),
 
@@ -84,12 +85,25 @@ const helpCommand = {
             inline: false,
           },
           {
+            name: '📜 Fabula Ultima',
+            value: [
+              '`/fab character` — Create, view, or edit your character',
+              '`/fab hp/mp/ip/fp/zenit` — Manage vitals & resources',
+              '`/fab equipment` — Manage weapons, armor & items',
+              '`/fab class` / `/fab skill` — Manage classes and skills',
+              '`/fab spell` / `/fab ability` — Manage spells and abilities',
+              '`/fab status` — Apply or clear status effects',
+              '`/fab bond` / `/fab identity` — Manage bonds, traits & quirks',
+            ].join('\n'),
+            inline: false,
+          },
+          {
             name: '❓ Utility',
             value: '`/help` — This menu\n`/ping` — Check if I\'m awake',
             inline: false,
           },
         )
-        .setFooter({ text: 'I\'m always here for you, Papa~ 💜' });
+        .setFooter({ text: 'I\'m always here to help~' });
 
       return interaction.reply({ embeds: [e] });
     }
@@ -149,6 +163,71 @@ const helpCommand = {
           { name: '/ttv say <text>', value: 'Aina reads the given text aloud in the voice channel she\'s connected to. Max **500 characters**.', inline: false },
           { name: '/ttv leave', value: 'Aina disconnects from the voice channel.', inline: false },
           { name: '⚙️ Voice', value: `Currently using: \`${require('../../../config/config').tts.voice}\``, inline: false },
+        ),
+
+      fab: new EmbedBuilder()
+        .setColor(config.embedColor)
+        .setTitle('📜 Fabula Ultima Help')
+        .setDescription('Full character sheet tracker for Fabula Ultima TTPRG. Use the buttons on your sheet to quickly update vitals!')
+        .addFields(
+          {
+            name: '🧙 Character',
+            value: [
+              '`/fab character create` — Start a new character (wizard modal)',
+              '`/fab character view [user]` — View your or someone\'s sheet',
+              '`/fab character edit-identity` — Edit name, pronouns, image, theme, origin',
+              '`/fab character edit-attributes` — Set MIG / DEX / INS / WLP dice',
+              '`/fab character share` — Post your sheet publicly in this channel',
+              '`/fab character delete` — Permanently delete your character',
+            ].join('\n'),
+            inline: false,
+          },
+          {
+            name: '💛 Vitals & Resources',
+            value: [
+              '`/fab hp set/add/remove/max` — Manage Hit Points',
+              '`/fab mp set/add/remove/max` — Manage Mind Points',
+              '`/fab ip set/add/remove/max` — Manage Inventory Points',
+              '`/fab fp set/add/remove` — Manage Fabula Points',
+              '`/fab zenit set/add/remove` — Manage Zenit (currency)',
+              '`/fab exp set/add` — Manage Experience Points',
+              '`/fab level set/up` — Manage character level',
+              '*You can also click the ❤️ 💙 ⚙️ ✨ 💰 buttons on your sheet!*',
+            ].join('\n'),
+            inline: false,
+          },
+          {
+            name: '📋 Equipment',
+            value: [
+              '`/fab equipment mainhand/offhand` — Set weapons',
+              '`/fab equipment armor/shield` — Set armor and shield',
+              '`/fab equipment accessory-add/remove` — Manage accessories (slots 1–3)',
+              '`/fab equipment item-add/remove` — Manage inventory items',
+              '`/fab equipment stats` — Update total DEF, MDEF, Initiative',
+              '`/fab equipment clear` — Unequip a slot',
+            ].join('\n'),
+            inline: false,
+          },
+          {
+            name: '🎓 Classes, Skills & Spells',
+            value: [
+              '`/fab class add/edit/remove/view` — Manage classes',
+              '`/fab skill add/edit/remove` — Manage skills within a class',
+              '`/fab spell add/edit/remove/list` — Manage spells',
+              '`/fab ability add/edit/remove` — Manage special abilities',
+            ].join('\n'),
+            inline: false,
+          },
+          {
+            name: '⚠️ Status, Bonds & Identity',
+            value: [
+              '`/fab status add/remove/clear/view` — Manage status effects',
+              '`/fab bond add/edit/remove/view` — Manage bonds',
+              '`/fab identity trait-add/trait-remove` — Manage traits',
+              '`/fab identity quirk` — Set your character quirk',
+            ].join('\n'),
+            inline: false,
+          },
         ),
     };
 
