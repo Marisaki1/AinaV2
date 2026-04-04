@@ -7,6 +7,7 @@ const classHandler     = require('./handlers/classHandler');
 const spellHandler     = require('./handlers/spellHandler');
 const statusHandler    = require('./handlers/statusHandler');
 const bondHandler      = require('./handlers/bondHandler');
+const rollHandler      = require('./handlers/rollHandler');
 const { handleFabulaInteraction } = require('./handlers/interactionHandler');
 
 const { STATUS_NAMES, ALL_BOND_FEELINGS, DAMAGE_TYPES, WEAPON_CATEGORIES } = require('./utils/constants');
@@ -15,6 +16,14 @@ const { STATUS_NAMES, ALL_BOND_FEELINGS, DAMAGE_TYPES, WEAPON_CATEGORIES } = req
 
 const userOpt = o => o.setName('user').setDescription('Target user (defaults to you)').setRequired(false);
 const intVal  = (o, label, min = 0) => o.setName('value').setDescription(label).setRequired(true).setMinValue(min);
+
+// ── Attribute choices (shared) ────────────────────────────────────────
+const ATTR_CHOICES = [
+  { name: 'Might (MIG)',       value: 'MIG' },
+  { name: 'Dexterity (DEX)',   value: 'DEX' },
+  { name: 'Insight (INS)',     value: 'INS' },
+  { name: 'Willpower (WLP)',   value: 'WLP' },
+];
 
 // ── /fab slash command ────────────────────────────────────────────────
 
@@ -111,6 +120,49 @@ const fabCommand = {
       .addSubcommand(s => s.setName('set').setDescription('Set level to a specific value (1–50)')
         .addIntegerOption(o => o.setName('value').setDescription('New level').setRequired(true).setMinValue(1).setMaxValue(50)))
       .addSubcommand(s => s.setName('up').setDescription('Increment level by 1')),
+    )
+
+    // ── /fab roll ───────────────────────────────────────────────────
+    .addSubcommandGroup(g => g
+      .setName('roll').setDescription('Roll your character\'s attribute dice')
+      .addSubcommand(s => s
+        .setName('dice')
+        .setDescription('Roll one or more attributes (can repeat the same attribute)')
+        .addStringOption(o => o
+          .setName('attr1')
+          .setDescription('First attribute to roll')
+          .setRequired(true)
+          .addChoices(...ATTR_CHOICES))
+        .addStringOption(o => o
+          .setName('attr2')
+          .setDescription('Second attribute to roll (optional)')
+          .setRequired(false)
+          .addChoices(...ATTR_CHOICES))
+        .addStringOption(o => o
+          .setName('attr3')
+          .setDescription('Third attribute to roll (optional)')
+          .setRequired(false)
+          .addChoices(...ATTR_CHOICES))
+        .addStringOption(o => o
+          .setName('attr4')
+          .setDescription('Fourth attribute to roll (optional)')
+          .setRequired(false)
+          .addChoices(...ATTR_CHOICES))
+        .addStringOption(o => o
+          .setName('attr5')
+          .setDescription('Fifth attribute to roll (optional)')
+          .setRequired(false)
+          .addChoices(...ATTR_CHOICES)),
+      ),
+    )
+
+    // ── /fab show ───────────────────────────────────────────────────
+    .addSubcommandGroup(g => g
+      .setName('show').setDescription('Quickly display a character value')
+      .addSubcommand(s => s
+        .setName('zenit')
+        .setDescription('Display your current Zenit balance'),
+      ),
     )
 
     // ── /fab equipment ──────────────────────────────────────────────
@@ -296,7 +348,7 @@ const fabCommand = {
         if (sub === 'share')           return charHandler.handleShare(interaction);
       }
 
-      // hp / mp / ip
+      // hp / mp / ip / fp / zenit / exp / level
       if (group === 'hp')    return resourceHandler.handleHp(interaction);
       if (group === 'mp')    return resourceHandler.handleMp(interaction);
       if (group === 'ip')    return resourceHandler.handleIp(interaction);
@@ -304,6 +356,16 @@ const fabCommand = {
       if (group === 'zenit') return resourceHandler.handleZenit(interaction);
       if (group === 'exp')   return resourceHandler.handleExp(interaction);
       if (group === 'level') return resourceHandler.handleLevel(interaction);
+
+      // roll
+      if (group === 'roll') {
+        if (sub === 'dice') return rollHandler.handleRoll(interaction);
+      }
+
+      // show
+      if (group === 'show') {
+        return rollHandler.handleShow(interaction);
+      }
 
       // equipment
       if (group === 'equipment') {
