@@ -43,63 +43,48 @@ const helpCommand = {
           {
             name: '🏰 Dungeon Commands',
             value: [
-              '`/dungeon create` — Start a new dungeon (with options)',
-              '`/dungeon join` — Join the active dungeon',
-              '`/dungeon leave` — Leave the dungeon',
-              '`/dungeon status` — View the current map',
-              '`/dungeon save` — Save dungeon progress',
-              '`/dungeon list` — List saved dungeons',
-              '`/dungeon load` — Load a saved dungeon',
-              '`/dungeon end` — End the dungeon (leader only)',
+              '`/dungeon create` — Start a new dungeon',
+              '`/dungeon join/leave/status/save/list/end` — Manage dungeon',
+              '`/dungeon load id` — Load saved dungeon',
             ].join('\n'),
             inline: false,
           },
           {
-            name: '📊 Emoji Tracker Commands',
+            name: '📊 Emoji Tracker',
             value: [
               '`/emoji stats` — Top emoji usage',
               '`/emoji sticker-stats` — Top sticker usage',
-              '`/emoji info` — Info for a specific emoji',
-              '`/emoji tracking` — Overview of all tracked data',
-              '`/emoji scan` — Scan history *(Admin)*',
-              '`/emoji clear` — Clear all stats *(Admin)*',
+              '`/emoji info` / `/emoji tracking` / `/emoji scan` / `/emoji clear`',
             ].join('\n'),
             inline: false,
           },
           {
             name: '💬 AI Chat',
-            value: [
-              '`/chat` — Talk with Aina',
-              '`/endchat` — Clear Aina\'s chat memory',
-              '@mention Aina — Also works for chatting!',
-            ].join('\n'),
+            value: '`/chat` — Talk with Aina\n`/endchat` — Clear memory\n@mention Aina — Also works!',
             inline: false,
           },
           {
             name: '🔊 Text-to-Voice',
-            value: [
-              '`/ttv join` — Aina joins your voice channel',
-              '`/ttv say` — Aina speaks text aloud',
-              '`/ttv leave` — Aina leaves the voice channel',
-            ].join('\n'),
+            value: '`/ttv join` · `/ttv say` · `/ttv leave`',
             inline: false,
           },
           {
             name: '📜 Fabula Ultima',
             value: [
               '`/fab character` — Create, view, or edit your character',
-              '`/fab hp/mp/ip/fp/zenit` — Manage vitals & resources',
-              '`/fab equipment` — Manage weapons, armor & items',
-              '`/fab class` / `/fab skill` — Manage classes and skills',
-              '`/fab spell` / `/fab ability` — Manage spells and abilities',
-              '`/fab status` — Apply or clear status effects',
-              '`/fab bond` / `/fab identity` — Manage bonds, traits & quirks',
+              '`/fab hp/mp/ip/fp/zenit/exp/level` — Manage vitals',
+              '`/fab roll dice` — Roll 1–2 attributes + modifier',
+              '`/fab equipment` — Weapons (with accuracy die!), armor, items',
+              '`/fab class` / `/fab skill` — Classes (auto-calc level!)',
+              '`/fab spell` / `/fab ability` — Spells (with multi-target MP!)',
+              '`/fab status` — Status effects (auto die reductions!)',
+              '`/fab bond` / `/fab identity` — Bonds, traits, quirks',
             ].join('\n'),
             inline: false,
           },
           {
             name: '❓ Utility',
-            value: '`/help` — This menu\n`/ping` — Check if I\'m awake',
+            value: '`/help [category]` · `/ping`',
             inline: false,
           },
         )
@@ -108,40 +93,40 @@ const helpCommand = {
       return interaction.reply({ embeds: [e] });
     }
 
-    // Category-specific help
+    // ── Category-specific help ──────────────────────────────────────
     const pages = {
       alarms: new EmbedBuilder()
         .setColor(config.embedColor)
         .setTitle('⏰ Alarm Help')
         .addFields(
-          { name: '/alarm set', value: 'Set a new alarm.\n**Options:** `time` (HH:MM, required), `message` (required), `frequency` (once/daily/weekly), `channels` (comma-separated names), `members` (mentions), `image` (filename)', inline: false },
-          { name: '/alarm list', value: 'Show all active alarms for this server.', inline: false },
-          { name: '/alarm edit', value: 'Edit any field of an existing alarm by its number.', inline: false },
-          { name: '/alarm remove', value: 'Delete an alarm by its number from `/alarm list`.', inline: false },
-          { name: '/alarm images', value: 'See all available alarm images. Upload your images to `assets/images/alarms/`.', inline: false },
-          { name: '/time', value: 'Shows the current Philippine time (Asia/Manila).', inline: false },
+          { name: '/alarm set', value: '**Options:** `time` (HH:MM, required), `message` (required), `frequency` (once/daily/weekly), `channels`, `members`, `image`', inline: false },
+          { name: '/alarm list', value: 'Show all active alarms.', inline: false },
+          { name: '/alarm edit <number>', value: 'Edit any field of an alarm.', inline: false },
+          { name: '/alarm remove <number>', value: 'Delete an alarm.', inline: false },
+          { name: '/alarm images', value: 'See available alarm images.', inline: false },
+          { name: '/time', value: 'Current Philippine time (Asia/Manila).', inline: false },
         ),
 
       dungeon: new EmbedBuilder()
         .setColor(config.embedColor)
         .setTitle('🏰 Dungeon Help')
-        .setDescription('Use emoji buttons to move through procedurally generated dungeons!\n\n⬆️⬇️⬅️➡️ = Move | ✅ = Interact | 📊 = Status | 🏃 = Flee')
+        .setDescription('Use emoji buttons to move!\n⬆️⬇️⬅️➡️ = Move | ✅ = Interact | 📊 = Status | 🏃 = Flee')
         .addFields(
-          { name: 'Create Options', value: '**Size:** SMALL / MEDIUM / LARGE\n**Complexity:** EASY / NORMAL / HARD\n**Floors:** SMALL (1-3) / MEDIUM (4-6) / LARGE (7-10) / EXTREME (20)\n**Difficulty:** EASY / NORMAL / HARD / LUNATIC', inline: false },
+          { name: 'Create Options', value: '**Size:** SMALL / MEDIUM / LARGE\n**Complexity:** EASY / NORMAL / HARD\n**Floors:** SMALL (1–3) / MEDIUM (4–6) / LARGE (7–10) / EXTREME (20)\n**Difficulty:** EASY / NORMAL / HARD / LUNATIC', inline: false },
           { name: 'Dungeon Elements', value: '🏠 Start | 🏆 Goal | 🧱 Wall | ⬜ Path | 🌫️ Fog\n⬇️ Stairs Down | ⬆️ Stairs Up | 🎁 Chest | ⚠️ Trap | 👹 Enemy', inline: false },
         ),
 
       emoji: new EmbedBuilder()
         .setColor(config.embedColor)
         .setTitle('📊 Emoji Tracker Help')
-        .setDescription('Aina automatically tracks custom emoji and sticker usage. Use `/emoji scan` to catch up on past messages.')
+        .setDescription('Aina auto-tracks custom emoji and sticker usage.')
         .addFields(
-          { name: '/emoji stats [limit]', value: 'Shows the top N most-used emojis (default 10).', inline: false },
-          { name: '/emoji sticker-stats [limit]', value: 'Shows the top N most-used stickers.', inline: false },
-          { name: '/emoji info <emoji>', value: 'Detailed usage info for a specific emoji.', inline: false },
-          { name: '/emoji scan [days] [channel]', value: 'Scan message history. Admin only.', inline: false },
-          { name: '/emoji clear', value: 'Wipe all emoji/sticker stats for this server. Admin only.', inline: false },
-          { name: '/emoji tracking', value: 'Shows total counts of tracked emojis and stickers.', inline: false },
+          { name: '/emoji stats [limit]', value: 'Top N most-used emojis.', inline: false },
+          { name: '/emoji sticker-stats [limit]', value: 'Top N most-used stickers.', inline: false },
+          { name: '/emoji info <emoji>', value: 'Detailed info for a specific emoji.', inline: false },
+          { name: '/emoji scan [days] [channel]', value: 'Scan history. **Admin only.**', inline: false },
+          { name: '/emoji clear', value: 'Wipe all stats. **Admin only.**', inline: false },
+          { name: '/emoji tracking', value: 'Overview of tracked counts.', inline: false },
         ),
 
       ai: new EmbedBuilder()
@@ -149,82 +134,108 @@ const helpCommand = {
         .setTitle('💬 AI Chat Help')
         .setDescription('Talk to Aina using Groq AI! She remembers your conversation history.')
         .addFields(
-          { name: '/chat <message>', value: 'Send a message to Aina. She\'ll respond in her personality.', inline: false },
-          { name: '/endchat', value: 'Clears Aina\'s memory of your conversation so you can start fresh.', inline: false },
-          { name: '@mention', value: 'You can also just @mention Aina anywhere to chat!', inline: false },
+          { name: '/chat <message>', value: 'Send a message to Aina.', inline: false },
+          { name: '/endchat', value: 'Clears Aina\'s memory of your chat.', inline: false },
+          { name: '@mention', value: 'You can also @mention Aina anywhere to chat!', inline: false },
         ),
 
       ttv: new EmbedBuilder()
         .setColor(config.embedColor)
         .setTitle('🔊 Text-to-Voice Help')
-        .setDescription('Aina can speak text aloud in voice channels using Microsoft Edge TTS!\n\n**Requirements:** Aina must have the **Connect** and **Speak** permissions in the target voice channel.')
+        .setDescription(`Aina can speak text aloud in voice channels!\n\n**Voice:** \`${config.tts.voice}\``)
         .addFields(
-          { name: '/ttv join [channel]', value: 'Aina joins your current voice channel. Optionally specify a different channel by name.', inline: false },
-          { name: '/ttv say <text>', value: 'Aina reads the given text aloud in the voice channel she\'s connected to. Max **500 characters**.', inline: false },
-          { name: '/ttv leave', value: 'Aina disconnects from the voice channel.', inline: false },
-          { name: '⚙️ Voice', value: `Currently using: \`${require('../../../config/config').tts.voice}\``, inline: false },
+          { name: '/ttv join [channel]', value: 'Aina joins your voice channel.', inline: false },
+          { name: '/ttv say <text>', value: 'Aina speaks the text (max 500 chars).', inline: false },
+          { name: '/ttv leave', value: 'Aina disconnects.', inline: false },
         ),
 
       fab: new EmbedBuilder()
         .setColor(config.embedColor)
         .setTitle('📜 Fabula Ultima Help')
-        .setDescription('Full character sheet tracker for Fabula Ultima TTPRG. Use the buttons on your sheet to quickly update vitals!')
+        .setDescription('Full character sheet tracker. Use the buttons on your sheet for quick vital edits!')
         .addFields(
           {
             name: '🧙 Character',
             value: [
-              '`/fab character create` — Start a new character (wizard modal)',
-              '`/fab character view [user]` — View your or someone\'s sheet',
-              '`/fab character edit-identity` — Edit name, pronouns, image, theme, origin',
+              '`/fab character create` — Wizard (no level field — auto-calculated from classes)',
+              '`/fab character view [user]` — View sheet',
+              '`/fab character edit-identity` — Edit name, pronouns, image, **Identity**, **Theme**',
               '`/fab character edit-attributes` — Set MIG / DEX / INS / WLP dice',
-              '`/fab character share` — Post your sheet publicly in this channel',
-              '`/fab character delete` — Permanently delete your character',
+              '`/fab character share` — Post sheet publicly',
+              '`/fab character delete` — Delete character',
             ].join('\n'),
             inline: false,
           },
           {
             name: '💛 Vitals & Resources',
             value: [
-              '`/fab hp set/add/remove/max` — Manage Hit Points',
-              '`/fab mp set/add/remove/max` — Manage Mind Points',
-              '`/fab ip set/add/remove/max` — Manage Inventory Points',
-              '`/fab fp set/add/remove` — Manage Fabula Points',
-              '`/fab zenit set/add/remove` — Manage Zenit (currency)',
-              '`/fab exp set/add` — Manage Experience Points',
-              '`/fab level set/up` — Manage character level',
-              '*You can also click the ❤️ 💙 ⚙️ ✨ 💰 buttons on your sheet!*',
+              '`/fab hp/mp/ip set|add|remove|max` — Manage pools',
+              '`/fab fp/zenit/exp set|add|remove` — Manage flat values',
+              '`/fab level set|up` — Manual level override',
+              '**⚡ Level auto-syncs = sum of class levels when classes change**',
+              '*Click ❤️ 💙 ⚙️ ✨ 💰 on your sheet for a quick-edit form (fill ONE field only!)*',
+              '*The HP/MP/IP quick form also includes a **Set MAX** field.*',
             ].join('\n'),
             inline: false,
           },
           {
             name: '📋 Equipment',
             value: [
-              '`/fab equipment mainhand/offhand` — Set weapons',
-              '`/fab equipment armor/shield` — Set armor and shield',
-              '`/fab equipment accessory-add/remove` — Manage accessories (slots 1–3)',
-              '`/fab equipment item-add/remove` — Manage inventory items',
-              '`/fab equipment stats` — Update total DEF, MDEF, Initiative',
+              '`/fab equipment mainhand/offhand` — Set weapons with **accuracy-die** (d6–d12) + **accuracy-bonus**',
+              '`/fab equipment armor/shield` — **DEF/MDEF auto-sync** when equipped/cleared',
+              '`/fab equipment accessory-add/remove` — Slots 1–3',
+              '`/fab equipment item-add/remove` — Inventory',
+              '`/fab equipment stats` — Manual DEF/MDEF/Initiative override',
               '`/fab equipment clear` — Unequip a slot',
             ].join('\n'),
             inline: false,
           },
           {
-            name: '🎓 Classes, Skills & Spells',
+            name: '🎓 Classes & Skills',
             value: [
               '`/fab class add/edit/remove/view` — Manage classes',
-              '`/fab skill add/edit/remove` — Manage skills within a class',
-              '`/fab spell add/edit/remove/list` — Manage spells',
-              '`/fab ability add/edit/remove` — Manage special abilities',
+              '**⚡ Character level = sum of class levels (auto-updates)**',
+              '`/fab skill add/edit/remove` — Skills now have an optional **level** parameter',
             ].join('\n'),
             inline: false,
           },
           {
-            name: '⚠️ Status, Bonds & Identity',
+            name: '🔮 Spells & Abilities',
+            value: [
+              '`/fab spell add/edit/remove/list` — Spells now have **mp-cost-multi** for multi-target cost',
+              '`/fab ability add/edit/remove` — Special abilities',
+            ].join('\n'),
+            inline: false,
+          },
+          {
+            name: '🎲 Dice Rolls',
+            value: [
+              '`/fab roll dice [attr1] [attr2] [modifier]` — Roll 1–2 attributes + flat modifier',
+              '*Effective die sizes (reduced by status effects) used automatically.*',
+              '*Modifier is a signed integer: e.g. `5` adds 5, `-9` subtracts 9.*',
+            ].join('\n'),
+            inline: false,
+          },
+          {
+            name: '⚠️ Status Effects',
             value: [
               '`/fab status add/remove/clear/view` — Manage status effects',
-              '`/fab bond add/edit/remove/view` — Manage bonds',
-              '`/fab identity trait-add/trait-remove` — Manage traits',
-              '`/fab identity quirk` — Set your character quirk',
+              '**⚡ Status effects automatically reduce attribute die sizes (min d6):**',
+              '• Weak → MIG −1 step → HP max −10',
+              '• Shaken → WLP −1 step → MP max −10',
+              '• Slow → DEX −1 step → DEF −2',
+              '• Dazed → INS −1 step → MDEF −2',
+              '• Enraged → DEX & INS −1 step each',
+              '• Poisoned → MIG & WLP −1 step each',
+              '*Penalties shown on sheet and in /fab status view.*',
+            ].join('\n'),
+            inline: false,
+          },
+          {
+            name: '🤝 Bonds & Identity',
+            value: [
+              '`/fab bond add/edit/remove/view`',
+              '`/fab identity trait-add/trait-remove/quirk`',
             ].join('\n'),
             inline: false,
           },
@@ -243,7 +254,7 @@ const pingCommand = {
   async execute(interaction) {
     const start = Date.now();
     await interaction.reply({ content: '🏓 Pinging...' });
-    const latency = Date.now() - start;
+    const latency   = Date.now() - start;
     const wsLatency = interaction.client.ws.ping;
 
     await interaction.editReply({

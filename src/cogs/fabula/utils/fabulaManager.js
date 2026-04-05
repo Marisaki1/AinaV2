@@ -31,13 +31,30 @@ function deepMerge(target, source) {
   return result;
 }
 
+/**
+ * Migrate legacy field names from old character saves:
+ *   theme  → identity   (old "Theme / Background" label)
+ *   origin → theme      (old "Origin" label)
+ */
+function migrateFields(data) {
+  if (!data) return data;
+  if ('origin' in data && !('identity' in data)) {
+    // Old character: theme=old-theme, origin=old-origin
+    data.identity = data.theme ?? '';
+    data.theme    = data.origin;
+    delete data.origin;
+  }
+  return data;
+}
+
 // ── Public API ────────────────────────────────────────────────────────
 
 function load(guildId, userId) {
   const fp = filePath(guildId, userId);
   if (!fs.existsSync(fp)) return null;
   try {
-    return JSON.parse(fs.readFileSync(fp, 'utf-8'));
+    const data = JSON.parse(fs.readFileSync(fp, 'utf-8'));
+    return migrateFields(data);
   } catch {
     return null;
   }
@@ -52,15 +69,11 @@ function create(guildId, userId, characterData) {
   const data = {
     ...DEFAULT_CHARACTER,
     ...characterData,
-    // ensure nested defaults are preserved
     attributes: { ...DEFAULT_CHARACTER.attributes, ...(characterData.attributes ?? {}) },
     hp:         { ...DEFAULT_CHARACTER.hp,         ...(characterData.hp         ?? {}) },
     mp:         { ...DEFAULT_CHARACTER.mp,         ...(characterData.mp         ?? {}) },
     ip:         { ...DEFAULT_CHARACTER.ip,         ...(characterData.ip         ?? {}) },
-    equipment: {
-      ...DEFAULT_CHARACTER.equipment,
-      ...(characterData.equipment ?? {}),
-    },
+    equipment:  { ...DEFAULT_CHARACTER.equipment,  ...(characterData.equipment  ?? {}) },
     userId,
     guildId,
     createdAt:  new Date().toISOString(),
@@ -93,4 +106,43 @@ function exists(guildId, userId) {
   return fs.existsSync(filePath(guildId, userId));
 }
 
-module.exports = { load, save, create, update, remove, exists };
+// ── Auto-sync helpers ─────────────────────────────────────────────────
+
+/**
+ * Recalculate def + mdef from equipped armor and shield, then save.
+ * Called automatically after any equipment change.
+ */
+function syncEquipmentStats(guildId, userId) {
+  const data = load(guildId, userId);
+  if (!data) return null;
+
+  const eq   = data.equipment ?? {};
+  let def    = 0;
+  let mdef   = 0;
+
+  if (eq.armor) {
+    def  += eq.armor.def  ?? 0;
+    mdef += eq.armor.mdef ?? 0;
+  }
+  if (eq.shield) {
+    def  += eq.shield.def  ?? 0;
+    mdef += eq.shield.mdef ?? 0;
+  }
+
+  return update(guildId, userId, { def, mdef });
+}
+
+/**
+ * Recalculate character level as the sum of all class levels.
+ * Minimum 0 (no classes = level 0).
+ * Called automatically after any class add/edit/remove.
+ */
+function recalcLevel(guildId, userId) {
+  const data = load(guildId, userId);
+  if (!data) return null;
+
+  const level = (data.classes ?? []).reduce((sum, c) => sum + (c.level ?? 0), 0);
+  return update(guildId, userId, { level });
+}
+
+module.exports = { load, save, create, update, remove, exists, syncEquipmentStats, recalcLevel };

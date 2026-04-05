@@ -10,20 +10,26 @@ const bondHandler      = require('./handlers/bondHandler');
 const rollHandler      = require('./handlers/rollHandler');
 const { handleFabulaInteraction } = require('./handlers/interactionHandler');
 
-const { STATUS_NAMES, ALL_BOND_FEELINGS, DAMAGE_TYPES, WEAPON_CATEGORIES } = require('./utils/constants');
+const {
+  STATUS_NAMES, ALL_BOND_FEELINGS,
+  DAMAGE_TYPES, WEAPON_CATEGORIES, DICE_VALUES,
+} = require('./utils/constants');
 
 // ── Reusable option builders ──────────────────────────────────────────
 
 const userOpt = o => o.setName('user').setDescription('Target user (defaults to you)').setRequired(false);
 const intVal  = (o, label, min = 0) => o.setName('value').setDescription(label).setRequired(true).setMinValue(min);
 
-// ── Attribute choices (shared) ────────────────────────────────────────
+// ── Attribute choices ─────────────────────────────────────────────────
 const ATTR_CHOICES = [
   { name: 'Might (MIG)',       value: 'MIG' },
   { name: 'Dexterity (DEX)',   value: 'DEX' },
   { name: 'Insight (INS)',     value: 'INS' },
   { name: 'Willpower (WLP)',   value: 'WLP' },
 ];
+
+// ── Dice choices ──────────────────────────────────────────────────────
+const DICE_CHOICES = DICE_VALUES.map(d => ({ name: d, value: d }));
 
 // ── /fab slash command ────────────────────────────────────────────────
 
@@ -35,13 +41,13 @@ const fabCommand = {
     // ── /fab character ──────────────────────────────────────────────
     .addSubcommandGroup(g => g
       .setName('character').setDescription('Manage your character')
-      .addSubcommand(s => s.setName('create').setDescription('Create a new character (multi-step wizard)'))
+      .addSubcommand(s => s.setName('create').setDescription('Create a new character'))
       .addSubcommand(s => s.setName('view').setDescription('View a character sheet')
         .addUserOption(userOpt))
-      .addSubcommand(s => s.setName('edit-identity').setDescription('Edit name, pronouns, image, theme, origin'))
+      .addSubcommand(s => s.setName('edit-identity').setDescription('Edit name, pronouns, image, identity, theme'))
       .addSubcommand(s => s.setName('edit-attributes').setDescription('Edit MIG, DEX, INS, WLP dice'))
       .addSubcommand(s => s.setName('delete').setDescription('Delete your character permanently'))
-      .addSubcommand(s => s.setName('share').setDescription('Post your character sheet publicly in this channel')),
+      .addSubcommand(s => s.setName('share').setDescription('Post your character sheet publicly')),
     )
 
     // ── /fab hp ─────────────────────────────────────────────────────
@@ -86,7 +92,7 @@ const fabCommand = {
     // ── /fab fp ─────────────────────────────────────────────────────
     .addSubcommandGroup(g => g
       .setName('fp').setDescription('Manage Fabula Points')
-      .addSubcommand(s => s.setName('set').setDescription('Set Fabula Points to an exact value')
+      .addSubcommand(s => s.setName('set').setDescription('Set Fabula Points')
         .addIntegerOption(o => intVal(o, 'New value', 0)))
       .addSubcommand(s => s.setName('add').setDescription('Gain Fabula Points')
         .addIntegerOption(o => intVal(o, 'Amount', 1)))
@@ -97,7 +103,7 @@ const fabCommand = {
     // ── /fab zenit ──────────────────────────────────────────────────
     .addSubcommandGroup(g => g
       .setName('zenit').setDescription('Manage Zenit (currency)')
-      .addSubcommand(s => s.setName('set').setDescription('Set Zenit to an exact value')
+      .addSubcommand(s => s.setName('set').setDescription('Set Zenit')
         .addIntegerOption(o => intVal(o, 'New value', 0)))
       .addSubcommand(s => s.setName('add').setDescription('Gain Zenit')
         .addIntegerOption(o => intVal(o, 'Amount', 1)))
@@ -108,61 +114,48 @@ const fabCommand = {
     // ── /fab exp ────────────────────────────────────────────────────
     .addSubcommandGroup(g => g
       .setName('exp').setDescription('Manage Experience Points')
-      .addSubcommand(s => s.setName('set').setDescription('Set EXP to an exact value')
+      .addSubcommand(s => s.setName('set').setDescription('Set EXP')
         .addIntegerOption(o => intVal(o, 'New EXP value', 0)))
       .addSubcommand(s => s.setName('add').setDescription('Add EXP')
         .addIntegerOption(o => intVal(o, 'Amount to add', 1))),
     )
 
     // ── /fab level ──────────────────────────────────────────────────
+    // Note: level auto-calculates from class levels. These are manual overrides.
     .addSubcommandGroup(g => g
-      .setName('level').setDescription('Manage character level')
-      .addSubcommand(s => s.setName('set').setDescription('Set level to a specific value (1–50)')
-        .addIntegerOption(o => o.setName('value').setDescription('New level').setRequired(true).setMinValue(1).setMaxValue(50)))
+      .setName('level').setDescription('Manage character level (auto-syncs from classes)')
+      .addSubcommand(s => s.setName('set').setDescription('Manually set level')
+        .addIntegerOption(o => o.setName('value').setDescription('New level').setRequired(true).setMinValue(0)))
       .addSubcommand(s => s.setName('up').setDescription('Increment level by 1')),
     )
 
     // ── /fab roll ───────────────────────────────────────────────────
+    // Simplified: up to 2 attributes + optional modifier
     .addSubcommandGroup(g => g
-      .setName('roll').setDescription('Roll your character\'s attribute dice')
+      .setName('roll').setDescription('Roll attribute dice')
       .addSubcommand(s => s
         .setName('dice')
-        .setDescription('Roll one or more attributes (can repeat the same attribute)')
+        .setDescription('Roll 1–2 attributes + optional modifier (uses effective die sizes from status effects)')
         .addStringOption(o => o
           .setName('attr1')
-          .setDescription('First attribute to roll')
+          .setDescription('First attribute')
           .setRequired(true)
           .addChoices(...ATTR_CHOICES))
         .addStringOption(o => o
           .setName('attr2')
-          .setDescription('Second attribute to roll (optional)')
+          .setDescription('Second attribute (optional)')
           .setRequired(false)
           .addChoices(...ATTR_CHOICES))
-        .addStringOption(o => o
-          .setName('attr3')
-          .setDescription('Third attribute to roll (optional)')
-          .setRequired(false)
-          .addChoices(...ATTR_CHOICES))
-        .addStringOption(o => o
-          .setName('attr4')
-          .setDescription('Fourth attribute to roll (optional)')
-          .setRequired(false)
-          .addChoices(...ATTR_CHOICES))
-        .addStringOption(o => o
-          .setName('attr5')
-          .setDescription('Fifth attribute to roll (optional)')
-          .setRequired(false)
-          .addChoices(...ATTR_CHOICES)),
+        .addIntegerOption(o => o
+          .setName('modifier')
+          .setDescription('Flat modifier added to total (e.g. 3 or −9)'))
       ),
     )
 
     // ── /fab show ───────────────────────────────────────────────────
     .addSubcommandGroup(g => g
       .setName('show').setDescription('Quickly display a character value')
-      .addSubcommand(s => s
-        .setName('zenit')
-        .setDescription('Display your current Zenit balance'),
-      ),
+      .addSubcommand(s => s.setName('zenit').setDescription('Display your current Zenit balance')),
     )
 
     // ── /fab equipment ──────────────────────────────────────────────
@@ -172,7 +165,8 @@ const fabCommand = {
         .addUserOption(userOpt))
       .addSubcommand(s => s.setName('mainhand').setDescription('Set main hand weapon')
         .addStringOption(o => o.setName('name').setDescription('Weapon name').setRequired(true))
-        .addStringOption(o => o.setName('accuracy').setDescription('Accuracy bonus (e.g. +1)'))
+        .addStringOption(o => o.setName('accuracy-die').setDescription('Accuracy die (e.g. d8)').addChoices(...DICE_CHOICES))
+        .addIntegerOption(o => o.setName('accuracy-bonus').setDescription('Accuracy flat bonus (can be negative, e.g. 2 or −1)'))
         .addStringOption(o => o.setName('damage').setDescription('Damage dice (e.g. d8+6)'))
         .addStringOption(o => o.setName('damage-type').setDescription('Damage type').addChoices(
           ...DAMAGE_TYPES.map(t => ({ name: t, value: t })),
@@ -183,7 +177,8 @@ const fabCommand = {
         .addStringOption(o => o.setName('quality').setDescription('Special quality or note')))
       .addSubcommand(s => s.setName('offhand').setDescription('Set off hand weapon or item')
         .addStringOption(o => o.setName('name').setDescription('Item name').setRequired(true))
-        .addStringOption(o => o.setName('accuracy').setDescription('Accuracy bonus'))
+        .addStringOption(o => o.setName('accuracy-die').setDescription('Accuracy die').addChoices(...DICE_CHOICES))
+        .addIntegerOption(o => o.setName('accuracy-bonus').setDescription('Accuracy flat bonus'))
         .addStringOption(o => o.setName('damage').setDescription('Damage dice'))
         .addStringOption(o => o.setName('damage-type').setDescription('Damage type').addChoices(
           ...DAMAGE_TYPES.map(t => ({ name: t, value: t })),
@@ -198,24 +193,24 @@ const fabCommand = {
         .addIntegerOption(o => o.setName('mdef').setDescription('MDEF bonus').setMinValue(0))
         .addIntegerOption(o => o.setName('initiative').setDescription('Initiative modifier (can be negative)'))
         .addStringOption(o => o.setName('quality').setDescription('Special quality')))
-      .addSubcommand(s => s.setName('shield').setDescription('Set shield')
+      .addSubcommand(s => s.setName('shield').setDescription('Set shield — DEF/MDEF auto-synced')
         .addStringOption(o => o.setName('name').setDescription('Shield name').setRequired(true))
         .addIntegerOption(o => o.setName('def').setDescription('DEF bonus').setMinValue(0))
         .addIntegerOption(o => o.setName('mdef').setDescription('MDEF bonus').setMinValue(0))
         .addStringOption(o => o.setName('quality').setDescription('Special quality')))
       .addSubcommand(s => s.setName('accessory-add').setDescription('Set an accessory (slots 1–3)')
-        .addIntegerOption(o => o.setName('slot').setDescription('Slot number (1, 2, or 3)').setRequired(true).setMinValue(1).setMaxValue(3))
+        .addIntegerOption(o => o.setName('slot').setDescription('Slot number (1–3)').setRequired(true).setMinValue(1).setMaxValue(3))
         .addStringOption(o => o.setName('name').setDescription('Accessory name').setRequired(true))
         .addStringOption(o => o.setName('effect').setDescription('Effect or note')))
       .addSubcommand(s => s.setName('accessory-remove').setDescription('Remove an accessory by slot')
-        .addIntegerOption(o => o.setName('slot').setDescription('Slot to clear (1, 2, or 3)').setRequired(true).setMinValue(1).setMaxValue(3)))
-      .addSubcommand(s => s.setName('item-add').setDescription('Add an item to your inventory')
+        .addIntegerOption(o => o.setName('slot').setDescription('Slot (1–3)').setRequired(true).setMinValue(1).setMaxValue(3)))
+      .addSubcommand(s => s.setName('item-add').setDescription('Add an item to inventory')
         .addStringOption(o => o.setName('name').setDescription('Item name').setRequired(true))
         .addIntegerOption(o => o.setName('qty').setDescription('Quantity (default 1)').setMinValue(1))
         .addStringOption(o => o.setName('desc').setDescription('Description')))
       .addSubcommand(s => s.setName('item-remove').setDescription('Remove an item from inventory')
         .addStringOption(o => o.setName('name').setDescription('Item name').setRequired(true))
-        .addIntegerOption(o => o.setName('qty').setDescription('Quantity to remove (omit to remove all)').setMinValue(1)))
+        .addIntegerOption(o => o.setName('qty').setDescription('Quantity to remove (omit = remove all)').setMinValue(1)))
       .addSubcommand(s => s.setName('clear').setDescription('Unequip a gear slot')
         .addStringOption(o => o.setName('slot').setDescription('Slot to clear').setRequired(true).addChoices(
           { name: 'Main Hand', value: 'mainhand' },
@@ -223,7 +218,7 @@ const fabCommand = {
           { name: 'Armor',     value: 'armor'    },
           { name: 'Shield',    value: 'shield'   },
         )))
-      .addSubcommand(s => s.setName('stats').setDescription('Update DEF, MDEF, and Initiative totals')
+      .addSubcommand(s => s.setName('stats').setDescription('Manually override DEF, MDEF, and Initiative')
         .addIntegerOption(o => o.setName('def').setDescription('Total DEF').setMinValue(0))
         .addIntegerOption(o => o.setName('mdef').setDescription('Total MDEF').setMinValue(0))
         .addStringOption(o => o.setName('initiative').setDescription('Initiative string (e.g. d6+2)'))),
@@ -231,7 +226,7 @@ const fabCommand = {
 
     // ── /fab class ──────────────────────────────────────────────────
     .addSubcommandGroup(g => g
-      .setName('class').setDescription('Manage character classes')
+      .setName('class').setDescription('Manage character classes — character level auto-syncs')
       .addSubcommand(s => s.setName('add').setDescription('Add a class')
         .addStringOption(o => o.setName('name').setDescription('Class name').setRequired(true))
         .addIntegerOption(o => o.setName('level').setDescription('Class level (1–6)').setMinValue(1).setMaxValue(6)))
@@ -250,11 +245,13 @@ const fabCommand = {
       .addSubcommand(s => s.setName('add').setDescription('Add a skill to a class')
         .addStringOption(o => o.setName('class').setDescription('Parent class name').setRequired(true))
         .addStringOption(o => o.setName('name').setDescription('Skill name').setRequired(true))
+        .addIntegerOption(o => o.setName('level').setDescription('Skill level (optional)').setMinValue(1).setMaxValue(10))
         .addStringOption(o => o.setName('description').setDescription('Skill description')))
-      .addSubcommand(s => s.setName('edit').setDescription('Edit a skill description')
+      .addSubcommand(s => s.setName('edit').setDescription('Edit a skill')
         .addStringOption(o => o.setName('class').setDescription('Parent class name').setRequired(true))
         .addStringOption(o => o.setName('name').setDescription('Skill name').setRequired(true))
-        .addStringOption(o => o.setName('description').setDescription('New description').setRequired(true)))
+        .addIntegerOption(o => o.setName('level').setDescription('New skill level').setMinValue(1).setMaxValue(10))
+        .addStringOption(o => o.setName('description').setDescription('New description')))
       .addSubcommand(s => s.setName('remove').setDescription('Remove a skill from a class')
         .addStringOption(o => o.setName('class').setDescription('Parent class name').setRequired(true))
         .addStringOption(o => o.setName('name').setDescription('Skill name').setRequired(true))),
@@ -263,14 +260,16 @@ const fabCommand = {
     // ── /fab spell ──────────────────────────────────────────────────
     .addSubcommandGroup(g => g
       .setName('spell').setDescription('Manage spells')
-      .addSubcommand(s => s.setName('add').setDescription('Add a spell to your list')
+      .addSubcommand(s => s.setName('add').setDescription('Add a spell')
         .addStringOption(o => o.setName('name').setDescription('Spell name').setRequired(true))
-        .addIntegerOption(o => o.setName('mp-cost').setDescription('MP cost').setMinValue(0))
+        .addIntegerOption(o => o.setName('mp-cost').setDescription('MP cost (single target)').setMinValue(0))
+        .addIntegerOption(o => o.setName('mp-cost-multi').setDescription('MP cost (multi-target)').setMinValue(0))
         .addStringOption(o => o.setName('target').setDescription('Target description (e.g. One enemy)'))
         .addStringOption(o => o.setName('description').setDescription('Spell effect')))
       .addSubcommand(s => s.setName('edit').setDescription('Edit a spell')
         .addStringOption(o => o.setName('name').setDescription('Spell name').setRequired(true))
-        .addIntegerOption(o => o.setName('mp-cost').setDescription('New MP cost').setMinValue(0))
+        .addIntegerOption(o => o.setName('mp-cost').setDescription('New MP cost (single target)').setMinValue(0))
+        .addIntegerOption(o => o.setName('mp-cost-multi').setDescription('New MP cost (multi-target)').setMinValue(0))
         .addStringOption(o => o.setName('target').setDescription('New target'))
         .addStringOption(o => o.setName('description').setDescription('New description')))
       .addSubcommand(s => s.setName('remove').setDescription('Remove a spell')
@@ -294,7 +293,7 @@ const fabCommand = {
 
     // ── /fab status ─────────────────────────────────────────────────
     .addSubcommandGroup(g => g
-      .setName('status').setDescription('Manage status effects')
+      .setName('status').setDescription('Manage status effects — die reductions auto-apply')
       .addSubcommand(s => s.setName('add').setDescription('Apply a status effect')
         .addStringOption(o => o.setName('effect').setDescription('Status effect name').setRequired(true)
           .addChoices(...STATUS_NAMES.map(n => ({ name: n, value: n })))))
@@ -302,7 +301,7 @@ const fabCommand = {
         .addStringOption(o => o.setName('effect').setDescription('Status to remove').setRequired(true)
           .addChoices(...STATUS_NAMES.map(n => ({ name: n, value: n })))))
       .addSubcommand(s => s.setName('clear').setDescription('Remove ALL active status effects'))
-      .addSubcommand(s => s.setName('view').setDescription('View active status effects')
+      .addSubcommand(s => s.setName('view').setDescription('View active status effects and their penalties')
         .addUserOption(userOpt)),
     )
 
@@ -311,8 +310,8 @@ const fabCommand = {
       .setName('bond').setDescription('Manage bonds')
       .addSubcommand(s => s.setName('add').setDescription('Add a bond')
         .addStringOption(o => o.setName('name').setDescription("Bond target's name").setRequired(true))
-        .addStringOption(o => o.setName('feelings').setDescription(`Feelings, comma-separated: ${ALL_BOND_FEELINGS.join(', ')}`).setRequired(true)))
-      .addSubcommand(s => s.setName('edit').setDescription('Update a bond\'s feelings')
+        .addStringOption(o => o.setName('feelings').setDescription(`Feelings: ${ALL_BOND_FEELINGS.join(', ')}`).setRequired(true)))
+      .addSubcommand(s => s.setName('edit').setDescription("Update a bond's feelings")
         .addStringOption(o => o.setName('name').setDescription("Bond target's name").setRequired(true))
         .addStringOption(o => o.setName('feelings').setDescription('New feelings, comma-separated').setRequired(true)))
       .addSubcommand(s => s.setName('remove').setDescription('Remove a bond')
@@ -338,7 +337,6 @@ const fabCommand = {
     const sub   = interaction.options.getSubcommand();
 
     try {
-      // character
       if (group === 'character') {
         if (sub === 'create')          return charHandler.handleCreate(interaction);
         if (sub === 'view')            return charHandler.handleView(interaction);
@@ -348,7 +346,6 @@ const fabCommand = {
         if (sub === 'share')           return charHandler.handleShare(interaction);
       }
 
-      // hp / mp / ip / fp / zenit / exp / level
       if (group === 'hp')    return resourceHandler.handleHp(interaction);
       if (group === 'mp')    return resourceHandler.handleMp(interaction);
       if (group === 'ip')    return resourceHandler.handleIp(interaction);
@@ -357,32 +354,26 @@ const fabCommand = {
       if (group === 'exp')   return resourceHandler.handleExp(interaction);
       if (group === 'level') return resourceHandler.handleLevel(interaction);
 
-      // roll
       if (group === 'roll') {
         if (sub === 'dice') return rollHandler.handleRoll(interaction);
       }
 
-      // show
-      if (group === 'show') {
-        return rollHandler.handleShow(interaction);
-      }
+      if (group === 'show')  return rollHandler.handleShow(interaction);
 
-      // equipment
       if (group === 'equipment') {
-        if (sub === 'view')              return equipmentHandler.handleView(interaction);
-        if (sub === 'mainhand')          return equipmentHandler.handleWeapon(interaction, 'mainhand');
-        if (sub === 'offhand')           return equipmentHandler.handleWeapon(interaction, 'offhand');
-        if (sub === 'armor')             return equipmentHandler.handleArmor(interaction);
-        if (sub === 'shield')            return equipmentHandler.handleShield(interaction);
-        if (sub === 'accessory-add')     return equipmentHandler.handleAccessoryAdd(interaction);
-        if (sub === 'accessory-remove')  return equipmentHandler.handleAccessoryRemove(interaction);
-        if (sub === 'item-add')          return equipmentHandler.handleItemAdd(interaction);
-        if (sub === 'item-remove')       return equipmentHandler.handleItemRemove(interaction);
-        if (sub === 'clear')             return equipmentHandler.handleClear(interaction);
-        if (sub === 'stats')             return equipmentHandler.handleStats(interaction);
+        if (sub === 'view')             return equipmentHandler.handleView(interaction);
+        if (sub === 'mainhand')         return equipmentHandler.handleWeapon(interaction, 'mainhand');
+        if (sub === 'offhand')          return equipmentHandler.handleWeapon(interaction, 'offhand');
+        if (sub === 'armor')            return equipmentHandler.handleArmor(interaction);
+        if (sub === 'shield')           return equipmentHandler.handleShield(interaction);
+        if (sub === 'accessory-add')    return equipmentHandler.handleAccessoryAdd(interaction);
+        if (sub === 'accessory-remove') return equipmentHandler.handleAccessoryRemove(interaction);
+        if (sub === 'item-add')         return equipmentHandler.handleItemAdd(interaction);
+        if (sub === 'item-remove')      return equipmentHandler.handleItemRemove(interaction);
+        if (sub === 'clear')            return equipmentHandler.handleClear(interaction);
+        if (sub === 'stats')            return equipmentHandler.handleStats(interaction);
       }
 
-      // class / skill
       if (group === 'class') {
         if (sub === 'add')    return classHandler.handleClassAdd(interaction);
         if (sub === 'edit')   return classHandler.handleClassEdit(interaction);
@@ -395,7 +386,6 @@ const fabCommand = {
         if (sub === 'remove') return classHandler.handleSkillRemove(interaction);
       }
 
-      // spell / ability
       if (group === 'spell') {
         if (sub === 'add')    return spellHandler.handleSpellAdd(interaction);
         if (sub === 'edit')   return spellHandler.handleSpellEdit(interaction);
@@ -408,7 +398,6 @@ const fabCommand = {
         if (sub === 'remove') return spellHandler.handleAbilityRemove(interaction);
       }
 
-      // status
       if (group === 'status') {
         if (sub === 'add')    return statusHandler.handleStatusAdd(interaction);
         if (sub === 'remove') return statusHandler.handleStatusRemove(interaction);
@@ -416,7 +405,6 @@ const fabCommand = {
         if (sub === 'view')   return statusHandler.handleStatusView(interaction);
       }
 
-      // bond / identity
       if (group === 'bond') {
         if (sub === 'add')    return bondHandler.handleBondAdd(interaction);
         if (sub === 'edit')   return bondHandler.handleBondEdit(interaction);

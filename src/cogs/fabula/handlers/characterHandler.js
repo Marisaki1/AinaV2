@@ -14,8 +14,7 @@ const { DICE_VALUES }    = require('../utils/constants');
 const embed              = require('../../../utils/embed');
 
 // ── /fab character create ─────────────────────────────────────────────
-// Single modal, 5 fields max (Discord limit).
-// Everything else (pronouns, image, attributes) is editable afterwards.
+// Level is NOT in this modal — it is auto-calculated from class levels.
 
 async function handleCreate(interaction) {
   if (fabulaManager.exists(interaction.guild.id, interaction.user.id)) {
@@ -70,12 +69,12 @@ async function handleCreate(interaction) {
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('level')
-        .setLabel('Starting Level (default: 1)')
+        .setCustomId('pronouns')
+        .setLabel('Pronouns (optional)')
         .setStyle(TextInputStyle.Short)
         .setRequired(false)
-        .setPlaceholder('e.g. 5')
-        .setMaxLength(3),
+        .setPlaceholder('e.g. She/Her')
+        .setMaxLength(30),
     ),
   );
 
@@ -85,12 +84,11 @@ async function handleCreate(interaction) {
 // ── fab_create modal submit ───────────────────────────────────────────
 
 async function handleCreateSubmit(interaction) {
-  const name  = interaction.fields.getTextInputValue('name').trim();
-  const maxHp = parseInt(interaction.fields.getTextInputValue('maxHp'));
-  const maxMp = parseInt(interaction.fields.getTextInputValue('maxMp'));
-  const maxIp = parseInt(interaction.fields.getTextInputValue('maxIp'));
-  const rawLv = interaction.fields.getTextInputValue('level').trim();
-  const level = rawLv ? parseInt(rawLv) : 1;
+  const name     = interaction.fields.getTextInputValue('name').trim();
+  const maxHp    = parseInt(interaction.fields.getTextInputValue('maxHp'));
+  const maxMp    = parseInt(interaction.fields.getTextInputValue('maxMp'));
+  const maxIp    = parseInt(interaction.fields.getTextInputValue('maxIp'));
+  const pronouns = interaction.fields.getTextInputValue('pronouns').trim() || 'They/Them';
 
   if (!name) {
     return interaction.reply({
@@ -106,19 +104,14 @@ async function handleCreateSubmit(interaction) {
     });
   }
 
-  if (isNaN(level) || level < 1) {
-    return interaction.reply({
-      embeds: [embed.error('Invalid Level', 'Level must be a positive number (minimum 1).')],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-
+  // Level defaults to 1; will be auto-recalculated when classes are added.
   const char = fabulaManager.create(interaction.guild.id, interaction.user.id, {
     name,
+    pronouns,
+    level: 1,
     hp:    { current: maxHp, max: maxHp },
     mp:    { current: maxMp, max: maxMp },
     ip:    { current: maxIp, max: maxIp },
-    level: Math.min(level, 50),
     fabulaPoints: 3,
   });
 
@@ -129,10 +122,11 @@ async function handleCreateSubmit(interaction) {
       embed.success(
         `${char.name} has entered the world! ✨`,
         [
-          `Your character has been created with **HP ${maxHp} · MP ${maxMp} · IP ${maxIp}** at Level **${char.level}**.`,
-          ``,
-          `Use \`/fab character edit-identity\` to set pronouns, image, theme, and origin.`,
+          `Character created with **HP ${maxHp} · MP ${maxMp} · IP ${maxIp}**.`,
+          '',
+          `Use \`/fab character edit-identity\` to set your Identity, Theme, and image.`,
           `Use \`/fab character edit-attributes\` to assign MIG / DEX / INS / WLP dice.`,
+          `Use \`/fab class add\` to add classes — **character level is set automatically** from class levels.`,
           `Use the buttons below to adjust vitals on the fly.`,
         ].join('\n'),
       ),
@@ -166,6 +160,9 @@ async function handleView(interaction) {
 }
 
 // ── /fab character edit-identity ──────────────────────────────────────
+// Form fields relabelled:
+//   old "Theme / Background" → "Identity"
+//   old "Origin"             → "Theme"
 
 async function handleEditIdentity(interaction) {
   const char = fabulaManager.load(interaction.guild.id, interaction.user.id);
@@ -201,15 +198,15 @@ async function handleEditIdentity(interaction) {
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('theme').setLabel('Theme / Background')
+        .setCustomId('identity').setLabel('Identity')   // was "Theme / Background"
         .setStyle(TextInputStyle.Short).setRequired(false)
-        .setValue(char.theme || '').setMaxLength(100),
+        .setValue(char.identity || '').setMaxLength(100),
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
-        .setCustomId('origin').setLabel('Origin')
+        .setCustomId('theme').setLabel('Theme')          // was "Origin"
         .setStyle(TextInputStyle.Short).setRequired(false)
-        .setValue(char.origin || '').setMaxLength(100),
+        .setValue(char.theme || '').setMaxLength(100),
     ),
   );
 
@@ -220,11 +217,11 @@ async function handleEditIdentitySubmit(interaction) {
   const name     = interaction.fields.getTextInputValue('name').trim();
   const pronouns = interaction.fields.getTextInputValue('pronouns').trim() || 'They/Them';
   const imageUrl = interaction.fields.getTextInputValue('imageUrl').trim() || null;
+  const identity = interaction.fields.getTextInputValue('identity').trim();
   const theme    = interaction.fields.getTextInputValue('theme').trim();
-  const origin   = interaction.fields.getTextInputValue('origin').trim();
 
   const char = fabulaManager.update(interaction.guild.id, interaction.user.id, {
-    name, pronouns, imageUrl, theme, origin,
+    name, pronouns, imageUrl, identity, theme,
   });
 
   if (!char) {

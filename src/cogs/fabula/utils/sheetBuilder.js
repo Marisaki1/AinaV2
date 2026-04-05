@@ -7,21 +7,34 @@ const {
 
 const { renderBar, getHealthColor } = require('./barRenderer');
 const { STATUS_EFFECTS }            = require('./constants');
+const { getEffectiveStats }         = require('./effectiveStats');
 const config                        = require('../../../../config/config');
 
 // ── Shared helpers ────────────────────────────────────────────────────
 
 function blank() { return { name: '\u200b', value: '\u200b', inline: true }; }
 
+/** Format a weapon slot (supports new accuracyDie/accuracyBonus and legacy accuracy string). */
 function fmtWeapon(item) {
   if (!item) return '*—*';
   const parts = [];
-  if (item.category)   parts.push(item.category);
-  if (item.damageType) parts.push(item.damageType);
-  const acc    = item.accuracy ? `+${item.accuracy} Acc` : null;
-  const dmg    = item.damage   ? `${item.damage} dmg`    : null;
-  const detail = [acc, dmg].filter(Boolean).join(' • ');
-  return [`**${item.name}**`, detail, item.quality ? `*${item.quality}*` : ''].filter(Boolean).join('\n');
+
+  // Accuracy line (new format: accuracyDie + accuracyBonus; fallback to legacy accuracy string)
+  let accLine = '';
+  if (item.accuracyDie) {
+    const bonus = item.accuracyBonus ?? 0;
+    const sign  = bonus >= 0 ? `+${bonus}` : `${bonus}`;
+    accLine = bonus !== 0 ? `${item.accuracyDie} ${sign} Acc` : `${item.accuracyDie} Acc`;
+  } else if (item.accuracy) {
+    accLine = `${item.accuracy} Acc`;
+  }
+
+  const dmgLine  = item.damage     ? `${item.damage} dmg` : null;
+  const tagLine  = [item.category, item.damageType].filter(Boolean).join(' • ');
+  const detail   = [accLine, dmgLine].filter(Boolean).join(' • ');
+
+  return [`**${item.name}**`, tagLine, detail, item.quality ? `*${item.quality}*` : '']
+    .filter(Boolean).join('\n');
 }
 
 function fmtArmor(item) {
@@ -53,9 +66,21 @@ function fmtAccessory(item) {
 // ── Main Character Sheet ──────────────────────────────────────────────
 
 function buildMainSheet(char, ownerId) {
-  const hpBar = renderBar(char.hp.current, char.hp.max);
-  const mpBar = renderBar(char.mp.current, char.mp.max);
+  const eff  = getEffectiveStats(char);
+
+  // HP bar uses effective max so the bar reflects status penalties
+  const hpBar = renderBar(Math.min(char.hp.current, eff.effectiveHpMax), eff.effectiveHpMax);
+  const mpBar = renderBar(Math.min(char.mp.current, eff.effectiveMpMax), eff.effectiveMpMax);
   const ipBar = renderBar(char.ip.current, char.ip.max);
+
+  // Build attribute display with reduction indicator
+  function fmtAttr(key, emoji) {
+    const base = char.attributes[key] ?? 'd8';
+    const eff_ = eff.effective[key]   ?? base;
+    return eff_ !== base
+      ? `${emoji} **${key}** ~~${base}~~ → **${eff_}** 🔻`
+      : `${emoji} **${key}** ${base}`;
+  }
 
   const statusLine = char.statuses.length > 0
     ? char.statuses.map(s => {
@@ -68,18 +93,29 @@ function buildMainSheet(char, ownerId) {
     ? char.classes.map(c => `⚔️ **${c.name}** Lv${c.level}`).join('\n')
     : '*No classes — use `/fab class add`*';
 
-  const subtitleParts = [char.pronouns, char.theme, char.origin].filter(Boolean);
+  const subtitleParts = [char.pronouns, char.identity, char.theme].filter(Boolean);
+
+  // HP/MP lines — show effective max with penalty indicator if reduced
+  const hpPenalty  = char.hp.max  - eff.effectiveHpMax;
+  const mpPenalty  = char.mp.max  - eff.effectiveMpMax;
+  const defPenalty = char.def     - eff.effectiveDef;
+  const mdefPenalty= char.mdef    - eff.effectiveMdef;
+
+  const hpSuffix  = hpPenalty  > 0 ? ` *(−${hpPenalty})*`  : '';
+  const mpSuffix  = mpPenalty  > 0 ? ` *(−${mpPenalty})*`  : '';
+  const defSuffix = defPenalty > 0 ? ` *(−${defPenalty})* ` : '';
+  const mdefSuffix= mdefPenalty> 0 ? ` *(−${mdefPenalty})*`: '';
 
   const embed = new EmbedBuilder()
-    .setColor(getHealthColor(char.hp.current, char.hp.max))
+    .setColor(getHealthColor(char.hp.current, eff.effectiveHpMax))
     .setTitle(`${char.name}  •  Level ${char.level}`)
     .setDescription(subtitleParts.length ? `*${subtitleParts.join(' — ')}*` : null)
     .addFields(
       {
         name: '💛 Vitals',
         value: [
-          `❤️ **HP**  \`${hpBar}\`  **${char.hp.current} / ${char.hp.max}**`,
-          `💙 **MP**  \`${mpBar}\`  **${char.mp.current} / ${char.mp.max}**`,
+          `❤️ **HP**  \`${hpBar}\`  **${char.hp.current} / ${eff.effectiveHpMax}**${hpSuffix}`,
+          `💙 **MP**  \`${mpBar}\`  **${char.mp.current} / ${eff.effectiveMpMax}**${mpSuffix}`,
           `⚙️ **IP**   \`${ipBar}\`  **${char.ip.current} / ${char.ip.max}**`,
         ].join('\n'),
         inline: false,
@@ -87,15 +123,15 @@ function buildMainSheet(char, ownerId) {
       {
         name: '🎲 Attributes',
         value: [
-          `💪 **MIG** ${char.attributes.MIG}　🏃 **DEX** ${char.attributes.DEX}`,
-          `🧠 **INS** ${char.attributes.INS}　🌀 **WLP** ${char.attributes.WLP}`,
+          fmtAttr('MIG', '💪') + '　' + fmtAttr('DEX', '🏃'),
+          fmtAttr('INS', '🧠') + '　' + fmtAttr('WLP', '🌀'),
         ].join('\n'),
         inline: true,
       },
       {
         name: '🛡️ Defenses',
         value: [
-          `🛡️ **DEF** ${char.def}　🔮 **MDEF** ${char.mdef}`,
+          `🛡️ **DEF** ${eff.effectiveDef}${defSuffix}　🔮 **MDEF** ${eff.effectiveMdef}${mdefSuffix}`,
           `⚡ **Initiative** ${char.initiative}`,
         ].join('\n'),
         inline: true,
@@ -161,6 +197,8 @@ function buildEquipmentEmbed(char) {
         .join('\n')
     : '*No items*';
 
+  const eff = getEffectiveStats(char);
+
   return new EmbedBuilder()
     .setColor(config.embedColorBlue)
     .setTitle(`📋 Equipment — ${char.name}`)
@@ -173,11 +211,11 @@ function buildEquipmentEmbed(char) {
       blank(),
       ...acc,
       { name: '🎒 Items',      value: itemList,                             inline: false },
-      { name: '🛡️ Total DEF',  value: String(char.def),                    inline: true },
-      { name: '🔮 Total MDEF', value: String(char.mdef),                   inline: true },
-      { name: '⚡ Initiative',  value: char.initiative,                     inline: true },
+      { name: '🛡️ Total DEF',  value: `${char.def} (effective: **${eff.effectiveDef}**)`,    inline: true },
+      { name: '🔮 Total MDEF', value: `${char.mdef} (effective: **${eff.effectiveMdef}**)`,  inline: true },
+      { name: '⚡ Initiative',  value: char.initiative,                                        inline: true },
     )
-    .setFooter({ text: 'Use /fab equipment to manage weapons, armor, accessories, and items.' })
+    .setFooter({ text: 'DEF/MDEF auto-sync with armor & shield. Status effects may reduce values.' })
     .setTimestamp();
 }
 
@@ -197,7 +235,10 @@ function buildSkillsEmbed(char) {
   for (const cls of char.classes) {
     const skillText = cls.skills.length > 0
       ? cls.skills
-          .map(s => `▸ **${s.name}**${s.description ? `\n　*${s.description}*` : ''}`)
+          .map(s => {
+            const lvl = s.level ? ` *(Lv ${s.level})*` : '';
+            return `▸ **${s.name}**${lvl}${s.description ? `\n　*${s.description}*` : ''}`;
+          })
           .join('\n')
       : '*No skills — use `/fab skill add`*';
 
@@ -228,11 +269,14 @@ function buildSpellsEmbed(char) {
     embed.addFields({
       name:  '🔮 Spells',
       value: char.spells
-        .map(s => [
-          `**${s.name}** — 💙 ${s.mpCost} MP`,
-          `Target: *${s.target || '—'}*`,
-          s.description || '',
-        ].filter(Boolean).join('\n'))
+        .map(s => {
+          const multiLine = s.mpCostMulti != null ? ` | Multi: 💙 ${s.mpCostMulti} MP` : '';
+          return [
+            `**${s.name}** — 💙 ${s.mpCost} MP${multiLine}`,
+            `Target: *${s.target || '—'}*`,
+            s.description || '',
+          ].filter(Boolean).join('\n');
+        })
         .join('\n\n'),
       inline: false,
     });
@@ -269,9 +313,9 @@ function buildBondsEmbed(char) {
     : '*None set*';
 
   embed.addFields(
-    { name: '🤝 Bonds',    value: bondText,              inline: false },
-    { name: '🌟 Traits',   value: traitText,             inline: true  },
-    { name: '🎭 Quirk',    value: char.quirks || '*None set*', inline: true  },
+    { name: '🤝 Bonds',  value: bondText,               inline: false },
+    { name: '🌟 Traits', value: traitText,              inline: true  },
+    { name: '🎭 Quirk',  value: char.quirks || '*None set*', inline: true },
   );
 
   return embed;
@@ -281,6 +325,7 @@ function buildBondsEmbed(char) {
 
 function buildStatusEmbed(char) {
   const hasStatus = char.statuses.length > 0;
+  const eff = getEffectiveStats(char);
 
   const embed = new EmbedBuilder()
     .setColor(hasStatus ? config.embedColorRed : config.embedColorGreen)
@@ -299,7 +344,42 @@ function buildStatusEmbed(char) {
       : `• **${s}**`;
   }).join('\n\n');
 
-  return embed.setDescription(body);
+  embed.setDescription(body);
+
+  // Show effective attribute summary if any reductions exist
+  if (eff.hasReductions) {
+    const attrSummary = Object.entries(eff.effective)
+      .map(([k, v]) => {
+        const base = char.attributes[k];
+        return v !== base ? `**${k}** ~~${base}~~ → **${v}**` : null;
+      })
+      .filter(Boolean)
+      .join(' | ');
+
+    if (attrSummary) {
+      embed.addFields({
+        name:  '🎲 Effective Attributes',
+        value: attrSummary,
+        inline: false,
+      });
+    }
+
+    const penalties = [];
+    if (char.hp.max  > eff.effectiveHpMax)  penalties.push(`❤️ HP max: ${char.hp.max} → **${eff.effectiveHpMax}**`);
+    if (char.mp.max  > eff.effectiveMpMax)  penalties.push(`💙 MP max: ${char.mp.max} → **${eff.effectiveMpMax}**`);
+    if (char.def     > eff.effectiveDef)    penalties.push(`🛡️ DEF: ${char.def} → **${eff.effectiveDef}**`);
+    if (char.mdef    > eff.effectiveMdef)   penalties.push(`🔮 MDEF: ${char.mdef} → **${eff.effectiveMdef}**`);
+
+    if (penalties.length) {
+      embed.addFields({
+        name:  '📉 Stat Penalties',
+        value: penalties.join('\n'),
+        inline: false,
+      });
+    }
+  }
+
+  return embed;
 }
 
 // ── Back-to-Sheet Button ──────────────────────────────────────────────

@@ -1,7 +1,7 @@
 const { MessageFlags } = require('discord.js');
 
-const fabulaManager          = require('../utils/fabulaManager');
-const { buildSkillsEmbed, backButton } = require('../utils/sheetBuilder');
+const fabulaManager                      = require('../utils/fabulaManager');
+const { buildSkillsEmbed, backButton }   = require('../utils/sheetBuilder');
 const embed = require('../../../utils/embed');
 
 function requireChar(interaction) {
@@ -34,8 +34,14 @@ async function handleClassAdd(interaction) {
   const classes = [...char.classes, { name, level, skills: [] }];
   fabulaManager.update(interaction.guild.id, interaction.user.id, { classes });
 
+  // Auto-recalculate character level from sum of class levels
+  const updated = fabulaManager.recalcLevel(interaction.guild.id, interaction.user.id);
+
   await interaction.reply({
-    embeds: [embed.success('Class Added', `⚔️ **${name}** (Level ${level}) has been added to your character.`)],
+    embeds: [embed.success(
+      'Class Added',
+      `⚔️ **${name}** (Level ${level}) has been added.\n**Character level updated → ${updated.level}**`,
+    )],
     flags: MessageFlags.Ephemeral,
   });
 }
@@ -62,8 +68,14 @@ async function handleClassEdit(interaction) {
 
   fabulaManager.update(interaction.guild.id, interaction.user.id, { classes });
 
+  // Auto-recalculate character level
+  const updated = fabulaManager.recalcLevel(interaction.guild.id, interaction.user.id);
+
   await interaction.reply({
-    embeds: [embed.success('Class Updated', `**${name}** is now Level ${level}.`)],
+    embeds: [embed.success(
+      'Class Updated',
+      `**${name}** is now Level ${level}.\n**Character level updated → ${updated.level}**`,
+    )],
     flags: MessageFlags.Ephemeral,
   });
 }
@@ -87,8 +99,14 @@ async function handleClassRemove(interaction) {
 
   fabulaManager.update(interaction.guild.id, interaction.user.id, { classes });
 
+  // Auto-recalculate character level
+  const updated = fabulaManager.recalcLevel(interaction.guild.id, interaction.user.id);
+
   await interaction.reply({
-    embeds: [embed.success('Class Removed', `**${name}** and all its skills have been removed.`)],
+    embeds: [embed.success(
+      'Class Removed',
+      `**${name}** and all its skills have been removed.\n**Character level updated → ${updated.level}**`,
+    )],
     flags: MessageFlags.Ephemeral,
   });
 }
@@ -121,6 +139,7 @@ async function handleSkillAdd(interaction) {
 
   const className   = interaction.options.getString('class').trim();
   const skillName   = interaction.options.getString('name').trim();
+  const skillLevel  = interaction.options.getInteger('level') ?? null;
   const description = interaction.options.getString('description') ?? '';
 
   const classIdx = char.classes.findIndex(c => c.name.toLowerCase() === className.toLowerCase());
@@ -134,14 +153,51 @@ async function handleSkillAdd(interaction) {
 
   const classes = char.classes.map((c, i) => {
     if (i !== classIdx) return c;
-    const skills = [...c.skills, { name: skillName, description }];
+    const skill = { name: skillName, description };
+    if (skillLevel != null) skill.level = skillLevel;
+    const skills = [...c.skills, skill];
+    return { ...c, skills };
+  });
+
+  fabulaManager.update(interaction.guild.id, interaction.user.id, { classes });
+
+  const lvlDisplay = skillLevel != null ? ` (Lv ${skillLevel})` : '';
+  await interaction.reply({
+    embeds: [embed.success(
+      'Skill Added',
+      `▸ **${skillName}**${lvlDisplay} added to *${className}*${description ? `\n*${description}*` : ''}`,
+    )],
+    flags: MessageFlags.Ephemeral,
+  });
+}
+
+// ── /fab skill edit ───────────────────────────────────────────────────
+
+async function handleSkillEdit(interaction) {
+  const char = requireChar(interaction);
+  if (!char) return;
+
+  const className   = interaction.options.getString('class').trim();
+  const skillName   = interaction.options.getString('name').trim();
+  const skillLevel  = interaction.options.getInteger('level');
+  const description = interaction.options.getString('description');
+
+  const classes = char.classes.map(c => {
+    if (c.name.toLowerCase() !== className.toLowerCase()) return c;
+    const skills = c.skills.map(s => {
+      if (s.name.toLowerCase() !== skillName.toLowerCase()) return s;
+      const updated = { ...s };
+      if (description != null) updated.description = description;
+      if (skillLevel  != null) updated.level       = skillLevel;
+      return updated;
+    });
     return { ...c, skills };
   });
 
   fabulaManager.update(interaction.guild.id, interaction.user.id, { classes });
 
   await interaction.reply({
-    embeds: [embed.success('Skill Added', `▸ **${skillName}** added to *${className}*${description ? `\n*${description}*` : ''}`)],
+    embeds: [embed.success('Skill Updated', `**${skillName}** in *${className}* has been updated.`)],
     flags: MessageFlags.Ephemeral,
   });
 }
@@ -178,34 +234,7 @@ async function handleSkillRemove(interaction) {
   });
 }
 
-// ── /fab skill edit ───────────────────────────────────────────────────
-
-async function handleSkillEdit(interaction) {
-  const char = requireChar(interaction);
-  if (!char) return;
-
-  const className   = interaction.options.getString('class').trim();
-  const skillName   = interaction.options.getString('name').trim();
-  const description = interaction.options.getString('description');
-
-  const classes = char.classes.map(c => {
-    if (c.name.toLowerCase() !== className.toLowerCase()) return c;
-    const skills = c.skills.map(s => {
-      if (s.name.toLowerCase() !== skillName.toLowerCase()) return s;
-      return { ...s, description: description ?? s.description };
-    });
-    return { ...c, skills };
-  });
-
-  fabulaManager.update(interaction.guild.id, interaction.user.id, { classes });
-
-  await interaction.reply({
-    embeds: [embed.success('Skill Updated', `**${skillName}** in *${className}* has been updated.`)],
-    flags: MessageFlags.Ephemeral,
-  });
-}
-
 module.exports = {
   handleClassAdd, handleClassEdit, handleClassRemove, handleClassView,
-  handleSkillAdd, handleSkillRemove, handleSkillEdit,
+  handleSkillAdd, handleSkillEdit, handleSkillRemove,
 };

@@ -1,6 +1,6 @@
 const { MessageFlags } = require('discord.js');
 
-const fabulaManager             = require('../utils/fabulaManager');
+const fabulaManager               = require('../utils/fabulaManager');
 const { buildSpellsEmbed, backButton } = require('../utils/sheetBuilder');
 const embed = require('../../../utils/embed');
 
@@ -21,10 +21,11 @@ async function handleSpellAdd(interaction) {
   const char = requireChar(interaction);
   if (!char) return;
 
-  const name        = interaction.options.getString('name').trim();
-  const mpCost      = interaction.options.getInteger('mp-cost')     ?? 0;
-  const target      = interaction.options.getString('target')       ?? '';
-  const description = interaction.options.getString('description')  ?? '';
+  const name         = interaction.options.getString('name').trim();
+  const mpCost       = interaction.options.getInteger('mp-cost')       ?? 0;
+  const mpCostMulti  = interaction.options.getInteger('mp-cost-multi');  // null if not set
+  const target       = interaction.options.getString('target')          ?? '';
+  const description  = interaction.options.getString('description')     ?? '';
 
   if (char.spells.find(s => s.name.toLowerCase() === name.toLowerCase())) {
     return interaction.reply({
@@ -33,11 +34,18 @@ async function handleSpellAdd(interaction) {
     });
   }
 
-  const spells = [...char.spells, { name, mpCost, target, description }];
+  const spell = { name, mpCost, target, description };
+  if (mpCostMulti != null) spell.mpCostMulti = mpCostMulti;
+
+  const spells = [...char.spells, spell];
   fabulaManager.update(interaction.guild.id, interaction.user.id, { spells });
 
+  const multiLine = mpCostMulti != null ? ` | Multi: 💙 ${mpCostMulti} MP` : '';
   await interaction.reply({
-    embeds: [embed.success('Spell Added', `🔮 **${name}** — 💙 ${mpCost} MP\n*Target: ${target || '—'}*${description ? `\n${description}` : ''}`)],
+    embeds: [embed.success(
+      'Spell Added',
+      `🔮 **${name}** — 💙 ${mpCost} MP${multiLine}\n*Target: ${target || '—'}*${description ? `\n${description}` : ''}`,
+    )],
     flags: MessageFlags.Ephemeral,
   });
 }
@@ -48,19 +56,20 @@ async function handleSpellEdit(interaction) {
   const char = requireChar(interaction);
   if (!char) return;
 
-  const name        = interaction.options.getString('name').trim();
-  const mpCost      = interaction.options.getInteger('mp-cost');
-  const target      = interaction.options.getString('target');
-  const description = interaction.options.getString('description');
+  const name         = interaction.options.getString('name').trim();
+  const mpCost       = interaction.options.getInteger('mp-cost');
+  const mpCostMulti  = interaction.options.getInteger('mp-cost-multi');
+  const target       = interaction.options.getString('target');
+  const description  = interaction.options.getString('description');
 
   const spells = char.spells.map(s => {
     if (s.name.toLowerCase() !== name.toLowerCase()) return s;
-    return {
-      ...s,
-      mpCost:      mpCost      ?? s.mpCost,
-      target:      target      ?? s.target,
-      description: description ?? s.description,
-    };
+    const updated = { ...s };
+    if (mpCost      != null) updated.mpCost      = mpCost;
+    if (mpCostMulti != null) updated.mpCostMulti = mpCostMulti;
+    if (target      != null) updated.target      = target;
+    if (description != null) updated.description = description;
+    return updated;
   });
 
   if (!spells.some(s => s.name.toLowerCase() === name.toLowerCase())) {

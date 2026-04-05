@@ -23,7 +23,6 @@ function requireChar(interaction) {
   return char;
 }
 
-/** Apply a parsed value to a current pool value, clamped between 0 and max (if provided). */
 function applyValue(current, max, parsed) {
   if (parsed.mode === 'set') return Math.max(0, max != null ? Math.min(parsed.amount, max) : parsed.amount);
   if (parsed.mode === 'add') return max != null ? Math.min(current + parsed.amount, max) : current + parsed.amount;
@@ -42,7 +41,6 @@ async function handlePoolSlash(interaction, poolKey) {
 
   let current = char[poolKey].current;
   let max     = char[poolKey].max;
-  let label   = poolKey.toUpperCase();
 
   if (sub === 'set')    current = Math.max(0, Math.min(value, max));
   if (sub === 'add')    current = Math.min(current + value, max);
@@ -56,6 +54,7 @@ async function handlePoolSlash(interaction, poolKey) {
     [poolKey]: { current, max },
   });
 
+  const label = poolKey.toUpperCase();
   await interaction.reply({
     embeds: [embed.success(
       `${label} Updated`,
@@ -86,13 +85,12 @@ async function handleFlatSlash(interaction, field) {
   });
 }
 
-// ── HP ────────────────────────────────────────────────────────────────
-async function handleHp(interaction) { return handlePoolSlash(interaction, 'hp'); }
-async function handleMp(interaction) { return handlePoolSlash(interaction, 'mp'); }
-async function handleIp(interaction) { return handlePoolSlash(interaction, 'ip'); }
-async function handleFp(interaction) { return handleFlatSlash(interaction, 'fabulaPoints'); }
+async function handleHp(interaction)    { return handlePoolSlash(interaction, 'hp'); }
+async function handleMp(interaction)    { return handlePoolSlash(interaction, 'mp'); }
+async function handleIp(interaction)    { return handlePoolSlash(interaction, 'ip'); }
+async function handleFp(interaction)    { return handleFlatSlash(interaction, 'fabulaPoints'); }
 async function handleZenit(interaction) { return handleFlatSlash(interaction, 'zenit'); }
-async function handleExp(interaction) { return handleFlatSlash(interaction, 'exp'); }
+async function handleExp(interaction)   { return handleFlatSlash(interaction, 'exp'); }
 
 // ── Level ─────────────────────────────────────────────────────────────
 
@@ -104,15 +102,15 @@ async function handleLevel(interaction) {
   let level = char.level;
 
   if (sub === 'set') {
-    level = Math.max(1, Math.min(50, interaction.options.getInteger('value')));
+    level = Math.max(0, interaction.options.getInteger('value'));
   } else if (sub === 'up') {
-    level = Math.min(50, level + 1);
+    level = level + 1;
   }
 
   const updated = fabulaManager.update(interaction.guild.id, interaction.user.id, { level });
 
   await interaction.reply({
-    embeds: [embed.success('Level Updated', `**${char.name}** is now **Level ${updated.level}**! 🎉`)],
+    embeds: [embed.success('Level Updated', `**${char.name}** is now **Level ${updated.level}**! 🎉\n*Note: level auto-syncs from class levels when classes change.*`)],
     flags: MessageFlags.Ephemeral,
   });
 }
@@ -120,11 +118,11 @@ async function handleLevel(interaction) {
 // ── Quick-action modal (triggered by main-sheet buttons) ──────────────
 
 const QUICK_LABELS = {
-  hp:    { label: 'HP',            emoji: '❤️',  pool: true  },
-  mp:    { label: 'MP',            emoji: '💙',  pool: true  },
-  ip:    { label: 'IP',            emoji: '⚙️',   pool: true  },
-  fp:    { label: 'Fabula Points', emoji: '✨',  pool: false },
-  zenit: { label: 'Zenit',         emoji: '💰',  pool: false },
+  hp:    { label: 'HP',            emoji: '❤️',  pool: true,  hasMax: true  },
+  mp:    { label: 'MP',            emoji: '💙',  pool: true,  hasMax: true  },
+  ip:    { label: 'IP',            emoji: '⚙️',   pool: true,  hasMax: true  },
+  fp:    { label: 'Fabula Points', emoji: '✨',  pool: false, hasMax: false },
+  zenit: { label: 'Zenit',         emoji: '💰',  pool: false, hasMax: false },
 };
 
 async function handleQuickModal(interaction, resourceKey, targetUserId) {
@@ -142,11 +140,11 @@ async function handleQuickModal(interaction, resourceKey, targetUserId) {
     .setCustomId(`fab_qkm_${resourceKey}`)
     .setTitle(`Update ${meta.emoji} ${meta.label}`);
 
-  modal.addComponents(
+  const components = [
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
         .setCustomId('add')
-        .setLabel(`➕ Add to ${meta.label}`)
+        .setLabel(`➕ Add to ${meta.label} (fill ONE field only)`)
         .setStyle(TextInputStyle.Short)
         .setRequired(false)
         .setPlaceholder('e.g. 10')
@@ -170,8 +168,24 @@ async function handleQuickModal(interaction, resourceKey, targetUserId) {
         .setPlaceholder('e.g. 25')
         .setMaxLength(8),
     ),
-  );
+  ];
 
+  // Pool resources (hp, mp, ip) also allow setting the maximum
+  if (meta.hasMax) {
+    components.push(
+      new ActionRowBuilder().addComponents(
+        new TextInputBuilder()
+          .setCustomId('setMax')
+          .setLabel(`📈 Set MAX ${meta.label} to exact value`)
+          .setStyle(TextInputStyle.Short)
+          .setRequired(false)
+          .setPlaceholder('e.g. 50')
+          .setMaxLength(8),
+      ),
+    );
+  }
+
+  modal.addComponents(...components);
   await interaction.showModal(modal);
 }
 
@@ -182,47 +196,63 @@ async function handleQuickModalSubmit(interaction, resourceKey) {
   const addRaw      = interaction.fields.getTextInputValue('add').trim();
   const subtractRaw = interaction.fields.getTextInputValue('subtract').trim();
   const setRaw      = interaction.fields.getTextInputValue('set').trim();
-
-  let parsed = null;
-
-  // Priority: Set > Add > Subtract
-  if (setRaw) {
-    const n = parseInt(setRaw);
-    if (!isNaN(n)) parsed = { mode: 'set', amount: n };
-  } else if (addRaw) {
-    const n = parseInt(addRaw);
-    if (!isNaN(n)) parsed = { mode: 'add', amount: n };
-  } else if (subtractRaw) {
-    const n = parseInt(subtractRaw);
-    if (!isNaN(n)) parsed = { mode: 'sub', amount: n };
+  const meta        = QUICK_LABELS[resourceKey];
+  let   setMaxRaw   = '';
+  if (meta?.hasMax) {
+    try { setMaxRaw = interaction.fields.getTextInputValue('setMax').trim(); } catch { /* field absent */ }
   }
 
-  if (!parsed) {
+  // ── Validate: only ONE current-value field may be filled ─────────
+  const currentFilled = [addRaw, subtractRaw, setRaw].filter(s => s !== '').length;
+  if (currentFilled > 1) {
     return interaction.reply({
-      embeds: [embed.error('Invalid Input', 'Please fill in one of the three fields with a number.')],
+      embeds: [embed.error(
+        'Only One Field Allowed',
+        'Please fill in **only one** of: Add, Subtract, or Set.\nFill in Set MAX separately if needed.',
+      )],
       flags: MessageFlags.Ephemeral,
     });
   }
 
-  const meta = QUICK_LABELS[resourceKey];
+  // ── Parse current-value operation ─────────────────────────────────
+  let parsed = null;
+  if (setRaw)      { const n = parseInt(setRaw);      if (!isNaN(n)) parsed = { mode: 'set', amount: n }; }
+  else if (addRaw) { const n = parseInt(addRaw);      if (!isNaN(n)) parsed = { mode: 'add', amount: n }; }
+  else if (subtractRaw) { const n = parseInt(subtractRaw); if (!isNaN(n)) parsed = { mode: 'sub', amount: n }; }
+
+  // ── Parse max-value operation ──────────────────────────────────────
+  let newMax = null;
+  if (setMaxRaw) {
+    const n = parseInt(setMaxRaw);
+    if (!isNaN(n) && n >= 0) newMax = n;
+  }
+
+  if (!parsed && newMax === null) {
+    return interaction.reply({
+      embeds: [embed.error('Invalid Input', 'Please fill in at least one field with a valid number.')],
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
   let updates = {};
 
-  if (meta.pool) {
+  if (meta?.pool) {
     const pool    = char[resourceKey];
-    const current = applyValue(pool.current, pool.max, parsed);
-    updates       = { [resourceKey]: { ...pool, current } };
+    let current   = pool.current;
+    let max       = newMax !== null ? newMax : pool.max;
+    if (parsed)   current = applyValue(current, max, parsed);
+    current = Math.min(current, max); // clamp current to (possibly new) max
+    updates = { [resourceKey]: { current, max } };
   } else {
     const fieldMap  = { fp: 'fabulaPoints', zenit: 'zenit' };
     const fieldName = fieldMap[resourceKey] ?? resourceKey;
-    updates         = { [fieldName]: applyValue(char[fieldName] ?? 0, null, parsed) };
+    if (parsed) updates = { [fieldName]: applyValue(char[fieldName] ?? 0, null, parsed) };
   }
 
   const updated = fabulaManager.update(interaction.guild.id, interaction.user.id, updates);
   if (!updated) return;
 
-  // Refresh the main sheet embed
   const sheet = buildMainSheet(updated, interaction.user.id);
-
   await interaction.update(sheet);
 }
 

@@ -1,6 +1,6 @@
 const { MessageFlags } = require('discord.js');
 
-const fabulaManager          = require('../utils/fabulaManager');
+const fabulaManager                      = require('../utils/fabulaManager');
 const { buildEquipmentEmbed, backButton } = require('../utils/sheetBuilder');
 const { DAMAGE_TYPES, WEAPON_CATEGORIES } = require('../utils/constants');
 const embed = require('../../../utils/embed');
@@ -37,27 +37,34 @@ async function handleView(interaction) {
 }
 
 // ── /fab equipment mainhand / offhand ─────────────────────────────────
+// Accuracy is now two fields: a die (accuracyDie) and a flat bonus (accuracyBonus).
 
 async function handleWeapon(interaction, slot) {
   const char = requireChar(interaction);
   if (!char) return;
 
-  const name       = interaction.options.getString('name');
-  const accuracy   = interaction.options.getString('accuracy')   ?? '';
-  const damage     = interaction.options.getString('damage')     ?? '';
-  const damageType = interaction.options.getString('damage-type') ?? '';
-  const category   = interaction.options.getString('category')   ?? '';
-  const quality    = interaction.options.getString('quality')    ?? '';
+  const name         = interaction.options.getString('name');
+  const accuracyDie  = interaction.options.getString('accuracy-die')   ?? '';
+  const accuracyBonus= interaction.options.getInteger('accuracy-bonus') ?? 0;
+  const damage       = interaction.options.getString('damage')          ?? '';
+  const damageType   = interaction.options.getString('damage-type')     ?? '';
+  const category     = interaction.options.getString('category')        ?? '';
+  const quality      = interaction.options.getString('quality')         ?? '';
 
-  const weapon = { name, accuracy, damage, damageType, category, quality };
-  const char2  = fabulaManager.update(interaction.guild.id, interaction.user.id, {
+  const weapon = { name, accuracyDie, accuracyBonus, damage, damageType, category, quality };
+
+  fabulaManager.update(interaction.guild.id, interaction.user.id, {
     equipment: { ...char.equipment, [slot]: weapon },
   });
+
+  const accDisplay = accuracyDie
+    ? (accuracyBonus !== 0 ? `${accuracyDie} ${accuracyBonus >= 0 ? '+' : ''}${accuracyBonus}` : accuracyDie)
+    : '—';
 
   await interaction.reply({
     embeds: [embed.success(
       `${slot === 'mainhand' ? 'Main Hand' : 'Off Hand'} Updated`,
-      `**${name}** has been equipped.`,
+      `**${name}** equipped.\nAccuracy: ${accDisplay}${damage ? ` | Damage: ${damage}` : ''}`,
     )],
     flags: MessageFlags.Ephemeral,
   });
@@ -79,8 +86,11 @@ async function handleArmor(interaction) {
     equipment: { ...char.equipment, armor: { name, def, mdef, initiative, quality } },
   });
 
+  // Auto-sync total DEF/MDEF from all equipped armor + shield
+  fabulaManager.syncEquipmentStats(interaction.guild.id, interaction.user.id);
+
   await interaction.reply({
-    embeds: [embed.success('Armor Updated', `**${name}** — DEF +${def} | MDEF +${mdef} | Init ${initiative >= 0 ? '+' : ''}${initiative}`)],
+    embeds: [embed.success('Armor Updated', `**${name}** — DEF +${def} | MDEF +${mdef} | Init ${initiative >= 0 ? '+' : ''}${initiative}\n*DEF/MDEF totals auto-synced.*`)],
     flags: MessageFlags.Ephemeral,
   });
 }
@@ -100,8 +110,11 @@ async function handleShield(interaction) {
     equipment: { ...char.equipment, shield: { name, def, mdef, quality } },
   });
 
+  // Auto-sync total DEF/MDEF from all equipped armor + shield
+  fabulaManager.syncEquipmentStats(interaction.guild.id, interaction.user.id);
+
   await interaction.reply({
-    embeds: [embed.success('Shield Updated', `**${name}** — DEF +${def} | MDEF +${mdef}`)],
+    embeds: [embed.success('Shield Updated', `**${name}** — DEF +${def} | MDEF +${mdef}\n*DEF/MDEF totals auto-synced.*`)],
     flags: MessageFlags.Ephemeral,
   });
 }
@@ -112,7 +125,7 @@ async function handleAccessoryAdd(interaction) {
   const char = requireChar(interaction);
   if (!char) return;
 
-  const slot   = interaction.options.getInteger('slot') - 1; // 1-indexed → 0-indexed
+  const slot   = interaction.options.getInteger('slot') - 1;
   const name   = interaction.options.getString('name');
   const effect = interaction.options.getString('effect') ?? '';
 
@@ -151,17 +164,10 @@ async function handleAccessoryRemove(interaction) {
     });
   }
 
-  const accessories = [...(char.equipment.accessories ?? [])];
-  accessories[slot] = null;
+  const accessories = (char.equipment.accessories ?? []).filter((_, i) => i !== slot);
 
   fabulaManager.update(interaction.guild.id, interaction.user.id, {
-    equipment: { ...char.equipment, accessories: accessories.filter((_, i) => i !== slot || accessories[i] !== null) },
-  });
-
-  // Rebuild to correctly splice
-  const newAcc = char.equipment.accessories.filter((_, i) => i !== slot);
-  fabulaManager.update(interaction.guild.id, interaction.user.id, {
-    equipment: { ...char.equipment, accessories: newAcc },
+    equipment: { ...char.equipment, accessories },
   });
 
   await interaction.reply({
@@ -255,13 +261,18 @@ async function handleClear(interaction) {
     equipment: { ...char.equipment, [slot]: null },
   });
 
+  // Re-sync DEF/MDEF if armor or shield was cleared
+  if (slot === 'armor' || slot === 'shield') {
+    fabulaManager.syncEquipmentStats(interaction.guild.id, interaction.user.id);
+  }
+
   await interaction.reply({
-    embeds: [embed.success('Slot Cleared', `**${slot}** has been unequipped.`)],
+    embeds: [embed.success('Slot Cleared', `**${slot}** has been unequipped.${(slot === 'armor' || slot === 'shield') ? ' DEF/MDEF totals updated.' : ''}`)],
     flags: MessageFlags.Ephemeral,
   });
 }
 
-// ── /fab equipment stats ──────────────────────────────────────────────
+// ── /fab equipment stats (manual override) ────────────────────────────
 
 async function handleStats(interaction) {
   const char = requireChar(interaction);
@@ -280,8 +291,8 @@ async function handleStats(interaction) {
 
   await interaction.reply({
     embeds: [embed.success(
-      'Defense Stats Updated',
-      `🛡️ **DEF** ${updated.def}　🔮 **MDEF** ${updated.mdef}　⚡ **Initiative** ${updated.initiative}`,
+      'Defense Stats Updated (Manual)',
+      `🛡️ **DEF** ${updated.def}　🔮 **MDEF** ${updated.mdef}　⚡ **Initiative** ${updated.initiative}\n*Note: equipping armor/shield will auto-recalculate DEF/MDEF.*`,
     )],
     flags: MessageFlags.Ephemeral,
   });
