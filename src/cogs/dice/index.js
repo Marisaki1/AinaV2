@@ -176,24 +176,41 @@ function parseAndRoll(rawExpr, flags = {}) {
 // ── Roll display helpers ──────────────────────────────────────────────
 
 /**
- * Format the individual dice of one group into a string.
- * Kept dice: normal (bold if max, italic if natural 1).
- * Dropped dice: ~~strikethrough~~.
- * Hidden if count > DISPLAY_CUTOFF.
+ * Format one dice group into a bracketed list of individual die values.
+ *
+ * Output examples (2d20 rolled 15 and 7):
+ *   no keep  → [15 + 7]
+ *   4d6kh3 (dropped 2, kept 4+5+6) → [~~2~~, 4 + 5 + 6]
+ *
+ * - Kept dice are joined with ' + ' so the addition is explicit
+ * - Dropped dice appear ~~strikethrough~~ before the kept block, comma-separated
+ * - Max-value kept dice are **bold**; value-1 kept dice are *italic*
+ * - Suppressed entirely if dice count > DISPLAY_CUTOFF
  */
 function formatGroupRolls(group, sides) {
   if (group.dice.length > DISPLAY_CUTOFF) {
-    const kept = group.dice.filter(d => d.kept).length;
-    return `*(${group.dice.length} dice — showing sum of kept ${kept})*`;
+    const keptCount = group.dice.filter(d => d.kept).length;
+    return `*(${group.dice.length} dice rolled, summing ${keptCount} kept)*`;
   }
 
-  return group.dice.map(d => {
-    let s = String(d.value);
-    if (!d.kept)              return `~~${s}~~`;          // dropped
-    if (d.value === sides)    return `**${s}**`;          // max roll  → bold
-    if (d.value === 1)        return `*${s}*`;            // nat 1     → italic
-    return s;
-  }).join(', ');
+  const dropped = group.dice
+    .filter(d => !d.kept)
+    .map(d => `~~${d.value}~~`);
+
+  const kept = group.dice
+    .filter(d => d.kept)
+    .map(d => {
+      if (d.value === sides) return `**${d.value}**`; // max roll → bold
+      if (d.value === 1)     return `*${d.value}*`;   // nat 1   → italic
+      return String(d.value);
+    });
+
+  // Build: dropped items comma-separated, then kept items joined with ' + '
+  const parts = [];
+  if (dropped.length) parts.push(dropped.join(', '));
+  if (kept.length)    parts.push(kept.join(' + '));
+
+  return `[${parts.join(', ')}]`;
 }
 
 /**
@@ -206,7 +223,7 @@ function buildResultEmbed(rawExpr, terms, total, username, flags = {}) {
     .flatMap(t => t.group.dice.filter(d => d.kept).map(d => d.value));
 
   const hasNat20 = keptD20Values.includes(20);
-  const hasNat1  = !hasNat20 && keptD20Values.includes(1);
+  const hasNat1  = !hasNat20 && keptD20Values.length > 0 && keptD20Values.every(v => v === 1);
 
   const color = hasNat20
     ? config.embedColorGreen
@@ -216,28 +233,23 @@ function buildResultEmbed(rawExpr, terms, total, username, flags = {}) {
 
   // ── Breakdown lines ───────────────────────────────────────────────
   const breakdownLines = terms.map((t, i) => {
-    const isFirst = i === 0;
-
-    if (t.type === 'dice') {
-      const rolls    = formatGroupRolls(t.group, t.sides);
-      const hasDrops = t.group.dice.some(d => !d.kept);
-      const keepTag  = hasDrops
-        ? ` *(${t.notation.match(/k[hl]\d+/i)?.[0]})*`
-        : '';
-
-      const signLabel = isFirst
-        ? (t.sign < 0 ? '➖ ' : '')
-        : (t.sign > 0 ? '➕ ' : '➖ ');
-
-      return `${signLabel}🎲 \`${t.notation}\` → ${rolls}${keepTag} = **${t.group.total}**`;
-    }
-
-    // Flat modifier
+    const isFirst   = i === 0;
     const signLabel = isFirst
       ? (t.sign < 0 ? '➖ ' : '')
       : (t.sign > 0 ? '➕ ' : '➖ ');
 
-    return `${signLabel}📌 **${Math.abs(t.value)}** *(flat modifier)*`;
+    if (t.type === 'dice') {
+      const rollStr  = formatGroupRolls(t.group, t.sides);
+      const hasDrops = t.group.dice.some(d => !d.kept);
+      const keepNote = hasDrops
+        ? ` *(${t.notation.match(/k[hl]\d+/i)?.[0] ?? ''})*`
+        : '';
+      return `${signLabel}🎲 \`${t.notation}\` → ${rollStr}${keepNote} = **${t.group.total}**`;
+    }
+
+    // Flat modifier — show the actual signed value unambiguously
+    const signedVal = t.sign < 0 ? `-${t.value}` : `+${t.value}`;
+    return `${signLabel}📌 flat \`${signedVal}\``;
   });
 
   // ── Normalised expression display ─────────────────────────────────
@@ -272,8 +284,8 @@ function buildResultEmbed(rawExpr, terms, total, username, flags = {}) {
       },
     );
 
-  if (hasNat20)       e.setFooter({ text: '✨ Natural 20!  Critical Success!' });
-  else if (hasNat1)   e.setFooter({ text: '💀 Natural 1!   Critical Fail!' });
+  if (hasNat20)     e.setFooter({ text: '✨ Natural 20! Critical Success!' });
+  else if (hasNat1) e.setFooter({ text: '💀 Natural 1! Critical Fail!' });
 
   return e;
 }
@@ -368,7 +380,11 @@ async function handleMessage(message, _client) {
   const prefix = ROLL_PREFIXES.find(p => lower.startsWith(p));
   if (!prefix) return;
 
-  // Slice off the prefix, get the rest
+  // Guard: character after the prefix must be whitespace or end of string,
+  // so "!rolled" doesn't accidentally match "!roll".
+  const charAfter = content[prefix.length];
+  if (charAfter !== undefined && !/\s/.test(charAfter)) return;
+
   let rest = content.slice(prefix.length).trim();
 
   // ── Extract flags ─────────────────────────────────────────────────
