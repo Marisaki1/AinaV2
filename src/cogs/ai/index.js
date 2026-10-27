@@ -1,5 +1,12 @@
-const { SlashCommandBuilder } = require('discord.js');
-const { chat } = require('../../utils/groqClient');
+/**
+ * src/cogs/ai/index.js
+ *
+ * AI chat cog.
+ * Commands: /chat <message>, /endchat
+ */
+
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
+const { chat }          = require('../../utils/groqClient');
 const { getHistory, addMessage, clearHistory, hasHistory } = require('../../utils/memory');
 const userRegistry      = require('../../utils/userRegistry');
 const embed             = require('../../utils/embed');
@@ -20,16 +27,22 @@ const chatCommand = {
   async execute(interaction) {
     const message = interaction.options.getString('message');
 
-    // Pick a random thinking message
-    const msgs = config.personality.thinkingMessages;
-    const thinking = msgs[Math.floor(Math.random() * msgs.length)];
-    await interaction.reply({ content: thinking, ephemeral: false });
+    const userRecord = userRegistry.record(interaction.user, interaction.guild?.id, 'message');
+    const ownerFlag  = userRecord.isOwner;
+
+    const thinkingMsgs = config.personality.thinkingMessages;
+    const thinking     = thinkingMsgs[Math.floor(Math.random() * thinkingMsgs.length)];
+    await interaction.reply({ content: thinking });
 
     try {
       const history = getHistory(interaction.user.id);
       addMessage(interaction.user.id, 'user', message);
 
-      const response = await chat([...history, { role: 'user', content: message }]);
+      const response = await chat(
+        [...history, { role: 'user', content: message }],
+        { isOwner: ownerFlag },
+      );
+
       addMessage(interaction.user.id, 'assistant', response);
 
       const e = embed.aina(response);
@@ -62,8 +75,8 @@ const endchatCommand = {
 
     if (!hasHistory(interaction.user.id)) {
       await interaction.reply({
-        embeds: [embed.aina('We haven\'t talked yet! Start a conversation with `/chat` first~ 💜')],
-        ephemeral: true,
+        embeds: [embed.aina("We haven't talked yet! Start a conversation with `/chat` first~ 💜")],
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
