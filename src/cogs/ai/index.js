@@ -1,8 +1,11 @@
-const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { chat, getChatErrorMessage } = require('../../utils/groqClient');
+const { SlashCommandBuilder } = require('discord.js');
+const { chat } = require('../../utils/groqClient');
 const { getHistory, addMessage, clearHistory, hasHistory } = require('../../utils/memory');
-const embed = require('../../utils/embed');
-const config = require('../../../config/config');
+const userRegistry      = require('../../utils/userRegistry');
+const embed             = require('../../utils/embed');
+const config            = require('../../../config/config');
+
+// ── /chat ────────────────────────────────────────────────────────────
 
 const chatCommand = {
   data: new SlashCommandBuilder()
@@ -20,17 +23,18 @@ const chatCommand = {
     // Pick a random thinking message
     const msgs = config.personality.thinkingMessages;
     const thinking = msgs[Math.floor(Math.random() * msgs.length)];
-    await interaction.reply({ content: thinking });
+    await interaction.reply({ content: thinking, ephemeral: false });
 
     try {
       const history = getHistory(interaction.user.id);
-      const response = await chat([...history, { role: 'user', content: message }]);
       addMessage(interaction.user.id, 'user', message);
+
+      const response = await chat([...history, { role: 'user', content: message }]);
       addMessage(interaction.user.id, 'assistant', response);
 
       const e = embed.aina(response);
       e.setAuthor({
-        name: 'Aina',
+        name:    'Aina',
         iconURL: interaction.client.user.displayAvatarURL(),
       });
       e.setFooter({ text: 'Use /endchat to clear our chat memory~' });
@@ -46,27 +50,29 @@ const chatCommand = {
   },
 };
 
+// ── /endchat ─────────────────────────────────────────────────────────
+
 const endchatCommand = {
   data: new SlashCommandBuilder()
     .setName('endchat')
-    .setDescription('Clear Aina\'s memory of your conversation'),
+    .setDescription("Clear Aina's memory of your conversation"),
 
   async execute(interaction) {
+    userRegistry.record(interaction.user, interaction.guild?.id, 'command');
+
     if (!hasHistory(interaction.user.id)) {
       await interaction.reply({
         embeds: [embed.aina('We haven\'t talked yet! Start a conversation with `/chat` first~ 💜')],
-        flags: MessageFlags.Ephemeral,
+        ephemeral: true,
       });
       return;
     }
 
     clearHistory(interaction.user.id);
     await interaction.reply({
-      embeds: [embed.success('Memory Cleared', 'I\'ve forgotten our conversation~ Fresh start! 💜')],
+      embeds: [embed.success('Memory Cleared', "I've forgotten our conversation~ Fresh start! 💜")],
     });
   },
 };
 
-module.exports = {
-  commands: [chatCommand, endchatCommand],
-};
+module.exports = { commands: [chatCommand, endchatCommand] };
