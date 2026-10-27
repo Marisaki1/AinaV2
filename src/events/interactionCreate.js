@@ -1,3 +1,4 @@
+const { MessageFlags } = require('discord.js');
 const { logCommand, logError } = require('../handlers/historyHandler');
 const embed = require('../utils/embed');
 const { DUNGEON_BUTTONS } = require('../../config/constants');
@@ -18,7 +19,7 @@ module.exports = {
       } catch (err) {
         console.error(`[Command] Error in /${interaction.commandName}:`, err.message);
         logError(`command:${interaction.commandName}`, err);
-        const reply = { embeds: [embed.error('Something went wrong', err.message)], ephemeral: true };
+        const reply = { embeds: [embed.error('Something went wrong', err.message)], flags: MessageFlags.Ephemeral };
         if (interaction.replied || interaction.deferred) {
           await interaction.followUp(reply);
         } else {
@@ -39,13 +40,13 @@ module.exports = {
 
       const state = dungeonManager.get(guild.id);
       if (!state) {
-        await interaction.reply({ embeds: [embed.error('No Active Dungeon', 'There is no active dungeon in this server.')], ephemeral: true });
+        await interaction.reply({ embeds: [embed.error('No Active Dungeon', 'There is no active dungeon in this server.')], flags: MessageFlags.Ephemeral });
         return;
       }
 
       // Only players in the dungeon can press buttons
       if (!state.players.includes(user.id)) {
-        await interaction.reply({ embeds: [embed.error('Not Your Dungeon', 'You are not part of this dungeon!')], ephemeral: true });
+        await interaction.reply({ embeds: [embed.error('Not Your Dungeon', 'You are not part of this dungeon!')], flags: MessageFlags.Ephemeral });
         return;
       }
 

@@ -1,5 +1,5 @@
-const { SlashCommandBuilder } = require('discord.js');
-const { chat } = require('../../utils/groqClient');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
+const { chat, getChatErrorMessage } = require('../../utils/groqClient');
 const { getHistory, addMessage, clearHistory, hasHistory } = require('../../utils/memory');
 const embed = require('../../utils/embed');
 const config = require('../../../config/config');
@@ -20,13 +20,12 @@ const chatCommand = {
     // Pick a random thinking message
     const msgs = config.personality.thinkingMessages;
     const thinking = msgs[Math.floor(Math.random() * msgs.length)];
-    await interaction.reply({ content: thinking, ephemeral: false });
+    await interaction.reply({ content: thinking });
 
     try {
       const history = getHistory(interaction.user.id);
-      addMessage(interaction.user.id, 'user', message);
-
       const response = await chat([...history, { role: 'user', content: message }]);
+      addMessage(interaction.user.id, 'user', message);
       addMessage(interaction.user.id, 'assistant', response);
 
       const e = embed.aina(response);
@@ -41,7 +40,7 @@ const chatCommand = {
       console.error('[Chat] Error:', err.message);
       await interaction.editReply({
         content: null,
-        embeds: [embed.error('Oops!', 'My brain glitched... try again?')],
+        embeds: [embed.error('Chat unavailable', getChatErrorMessage(err))],
       });
     }
   },
@@ -56,7 +55,7 @@ const endchatCommand = {
     if (!hasHistory(interaction.user.id)) {
       await interaction.reply({
         embeds: [embed.aina('We haven\'t talked yet! Start a conversation with `/chat` first~ 💜')],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }

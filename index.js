@@ -1,26 +1,14 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, REST, Routes, Partials } = require('discord.js');
 const { loadCogs, getAllCommands } = require('./src/handlers/cogHandler');
 const { loadEvents } = require('./src/handlers/eventHandler');
 const { logSession, logError } = require('./src/handlers/historyHandler');
 const { startScheduler } = require('./src/utils/alarmScheduler');
 const config = require('./config/config');
 const fs = require('fs');
+const { createService } = require('./src/critter/server');
 
 // ── Validate environment ─────────────────────────────────────────────
-
-if (!process.env.DISCORD_TOKEN) {
-  console.error('❌ Missing DISCORD_TOKEN in .env');
-  process.exit(1);
-}
-if (!process.env.CLIENT_ID) {
-  console.error('❌ Missing CLIENT_ID in .env');
-  process.exit(1);
-}
-if (!process.env.GROQ_API_KEY) {
-  console.error('❌ Missing GROQ_API_KEY in .env');
-  process.exit(1);
-}
 
 // ── Ensure directories exist ─────────────────────────────────────────
 
@@ -34,6 +22,7 @@ for (const d of dirs) fs.mkdirSync(d, { recursive: true });
 // ── Create Discord client ────────────────────────────────────────────
 
 const client = new Client({
+  partials: [Partials.Message, Partials.Reaction, Partials.User],
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
@@ -53,6 +42,19 @@ async function main() {
   console.log('🌸 Starting Aina v2...\n');
 
   try {
+    client.critter = createService({ client });
+    await client.critter.start();
+    console.log(`📖 Critter Workshop: ${client.critter.url}`);
+  } catch (err) {
+    console.error('[Critter] Could not start local workspace:', err.message);
+    client.critter = null;
+  }
+
+  try {
+    for (const key of ['DISCORD_TOKEN', 'CLIENT_ID']) {
+      if (!process.env[key]) throw new Error(`Missing ${key} in .env`);
+    }
+    if (!process.env.GROQ_API_KEY) console.warn('⚠️ Missing GROQ_API_KEY: AI chat is unavailable.');
     // 1. Load all cogs (commands)
     await loadCogs(client);
     console.log('');
@@ -79,28 +81,32 @@ async function main() {
       console.log(`⚡ ${commands.length} slash commands registered globally (up to 1hr delay)`);
     }
 
-    // 4. Start alarm scheduler
-    startScheduler(client);
-
-    // 5. Connect to Discord
+    // 4. Connect to Discord, then start online services.
     await client.login(process.env.DISCORD_TOKEN);
+    startScheduler(client);
 
     logSession('startup', { commands: commands.length });
   } catch (err) {
     console.error('❌ Fatal startup error:', err);
     logError('startup', err);
-    process.exit(1);
+    client.destroy();
+    if (client.critter?.server.listening) {
+      console.log(`📖 The offline Critter editor is still available at ${client.critter.url}`);
+    } else process.exitCode = 1;
   }
 }
 
 // ── Graceful shutdown ────────────────────────────────────────────────
 
-process.on('SIGINT', () => {
+async function shutdown() {
   console.log('\n👋 Aina is shutting down...');
   logSession('shutdown', { reason: 'SIGINT' });
   client.destroy();
+  if (client.critter) await client.critter.close();
   process.exit(0);
-});
+}
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
 
 process.on('unhandledRejection', (err) => {
   console.error('⚠️ Unhandled rejection:', err);

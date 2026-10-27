@@ -1,0 +1,43 @@
+window.AbilityExtrasUI = (() => {
+  const input = (id, label, value, type = 'text') => '<label>' + label + '<input id="' + id + '" type="' + type + '" value="' + escape(value ?? '') + '"></label>';
+  function emptyEffect() { return { name: '', duration: '', durationUnit: 'rounds', condition: '', resistances: [], immunities: [], vulnerabilities: [], save_adv: [], save_dis: [], check_adv: [], check_dis: [], attackRoll: 'normal', concentration: false, end: false, ending: '', ongoingDamage: { enabled: false, dice: '', type: '', timing: 'start' }, repeatSave: { enabled: false, stat: 'con', dc: '', timing: 'end', removeOnSuccess: true }, removeButton: { enabled: false, label: 'End this effect', cost: '' } }; }
+  function hydrate(raw, base) {
+    if (!raw) { base.effects = [base.effect]; base.activeEffect = 0; return base; }
+    const d = { ...base, ...C.clone(raw) };
+    d.followup = { enabled: false, operation: 'adjust', adjustment: 0, dice: '1d8', rules: '', ...raw.followup };
+    d.usage = { enabled: false, name: '', maximumFrom: 'fixed', maximum: 1, minimum: 0, cost: 1, reset: 'manual', shortRestore: 0, shortRestoreMode: 'fixed', ...raw.usage };
+    d.scaling = { enabled: false, mode:'points', baseLevel:1, maximum: 10, count: 0, sides: 8, dc: 0, ...raw.scaling };
+    d.effects = (raw.effects || (raw.effect ? [raw.effect] : [])).map(e => ({ ...emptyEffect(), ...C.clone(e), durationUnit: 'rounds', ongoingDamage: { ...emptyEffect().ongoingDamage, ...e.ongoingDamage }, repeatSave: { ...emptyEffect().repeatSave, ...e.repeatSave }, removeButton: { ...emptyEffect().removeButton, ...e.removeButton } }));
+    d.enabled = d.effects.length > 0; if (!d.effects.length) d.effects = [emptyEffect()]; d.activeEffect = 0; d.effect = d.effects[0];
+    d.damages = (raw.damages || []).map(p => { const match = p.dice?.match(/^(\d+)d(\d+)([+-]\d+)?$/); return match ? { count: match[1], sides: match[2], bonus: match[3] || '0', type: p.type } : p; });
+    return d;
+  }
+  function effectTabs(d) {
+    return '<div class="effect-selector">' + AuthoringUI.select('build-effect-select', 'Separate named effect', d.effects.map((e, i) => [String(i), e.name || e.condition || 'Effect ' + (i + 1)]), String(d.activeEffect)) + '<button id="build-effect-add" class="small" ' + (d.effects.length >= 6 ? 'disabled' : '') + '>+ Effect</button><button id="build-effect-remove" class="small danger" ' + (d.effects.length < 2 ? 'disabled' : '') + '>Remove</button></div><p class="hint">Each effect has its own duration and buttons. Ending Prone can leave a separate Bleeding effect intact.</p>';
+  }
+  function ending(e) {
+    return '<fieldset class="compact-fieldset"><legend>Click to end this effect</legend><label class="check-row"><input type="checkbox" id="ending-button-enabled" ' + (e.removeButton.enabled ? 'checked' : '') + '>Add an ending button</label>' + (e.condition === 'prone' ? '<button id="ending-stand-up" class="small">Use “Stand up” button</button>' : '') + (e.removeButton.enabled ? '<div class="field-grid">' + input('ending-button-label', 'Button label', e.removeButton.label) + input('ending-button-cost', 'Required cost / rule reminder', e.removeButton.cost) + '</div>' : '') + '<p class="hint">Removes only this named effect. Movement, action and reaction costs are resolved manually; a button press does not spend them.</p></fieldset>';
+  }
+  function extras(d) {
+    const f = d.followup, u = d.usage, s = d.scaling;
+    return '<details class="ability-extras" ' + (f.enabled || u.enabled || s.enabled ? 'open' : '') + '><summary>Follow-ups, uses &amp; scaling</summary><label class="check-row"><input id="followup-enabled" type="checkbox" ' + (f.enabled ? 'checked' : '') + '>Configure a manual follow-up</label>' + (f.enabled ? '<div class="field-grid">' + AuthoringUI.select('followup-operation', 'Follow-up tool', [['adjust', 'Adjust a recorded total'], ['reverse', 'Reverse a recorded outcome'], ['save', 'Reroll a live save'], ['check', 'Reroll a live check'], ['attack', 'Reroll an attack die only'], ['dice', 'Roll additional dice'], ['initiative', 'Swap initiative values']], f.operation) + input('followup-adjustment', 'Signed total / reroll adjustment', f.adjustment, 'number') + input('followup-dice', 'Extra dice', f.dice) + input('followup-rules', 'Trigger and resolution instructions', f.rules) + '</div><p class="hint">Use after the triggering roll. Results and previous consequences are resolved explicitly; nothing intercepts messages or automatically undoes damage.</p>' : '') + '<label class="check-row"><input id="usage-enabled" type="checkbox" ' + (u.enabled ? 'checked' : '') + '>Track a use limit / shared resource locally</label>' + (u.enabled ? '<div class="field-grid">' + input('usage-name', 'Shared pool name', u.name) + AuthoringUI.select('usage-maximumFrom', 'Maximum from', [['fixed', 'Fixed maximum'], ['pb', 'Proficiency bonus'], ...C.abilities.map(a => [a, CombatTraits.label(a) + ' modifier'])], u.maximumFrom) + input('usage-maximum', 'Fixed maximum', u.maximum, 'number') + input('usage-minimum', 'Minimum for calculated maximum', u.minimum, 'number') + input('usage-cost', 'Cost per use', u.cost, 'number') + AuthoringUI.select('usage-reset', 'Reset reminder', [['manual', 'Manual'], ['turn', 'Start of next turn (manual reset)'], ['rest', 'Rest recovery (manual reset)']], u.reset) + AuthoringUI.select('usage-shortRestoreMode', 'Short-rest recovery', [['fixed', 'Fixed number'], ['half', 'Half maximum, rounded up']], u.shortRestoreMode) + input('usage-shortRestore', 'Fixed short-rest recovery', u.shortRestore, 'number') + '</div><p class="hint">Tracks each named encounter copy independently. Shared pool names share that copy’s count. This is local bookkeeping; no monster player-counter support or Avrae synchronization is assumed.</p>' : '') + (['attack', 'save', 'damage'].includes(d.kind) ? '<label class="check-row"><input id="scaling-enabled" type="checkbox" ' + (s.enabled ? 'checked' : '') + '>Scale by extra points / steps at command time</label>' + (s.enabled ? '<div class="field-grid">' + AuthoringUI.select('scaling-mode','Scale by',[['points','Extra points'],['levels','Spell levels']],s.mode||'points') + input('scaling-baseLevel','Base spell level (level mode)',s.baseLevel??1,'number') + input('scaling-maximum', 'Maximum extra steps', s.maximum, 'number') + input('scaling-count', 'Additional damage dice per step', s.count, 'number') + input('scaling-sides', 'Additional die size', s.sides, 'number') + input('scaling-dc', 'Save DC increase per step', s.dc, 'number') + '</div><p class="hint">Uses the Avrae -choice argument. Select extra steps in Combat. Spend the associated pool cost manually.</p>' : '') : '') + '</details>';
+  }
+  function collect(d) {
+    const e = d.effect;
+    if ($('#ending-button-enabled')) e.removeButton.enabled = $('#ending-button-enabled').checked;
+    for (const k of ['label', 'cost']) if ($('#ending-button-' + k)) e.removeButton[k] = $('#ending-button-' + k).value;
+    for (const [group, keys] of [['followup', ['operation', 'adjustment', 'dice', 'rules']], ['usage', ['name', 'maximumFrom', 'maximum', 'minimum', 'cost', 'reset', 'shortRestore', 'shortRestoreMode']], ['scaling', ['mode', 'baseLevel', 'maximum', 'count', 'sides', 'dc']]]) {
+      if ($('#' + group + '-enabled')) d[group].enabled = $('#' + group + '-enabled').checked;
+      for (const k of keys) if ($('#' + group + '-' + k)) d[group][k] = $('#' + group + '-' + k).value;
+    }
+    if ($('#build-damageTiming')) d.damageTiming = $('#build-damageTiming').value;
+  }
+  function bind(d, collectAll, draw) {
+    for (const id of ['ending-button-enabled', 'followup-enabled', 'usage-enabled', 'scaling-enabled', 'effect-condition', 'build-damageTiming']) if ($('#' + id)) $('#' + id).onchange = () => { collectAll(); draw(); };
+    if ($('#ending-stand-up')) $('#ending-stand-up').onclick = () => { collectAll(); d.effect.removeButton = { enabled: true, label: 'Stand up', cost: d.effect.removeButton.cost }; draw(); };
+    if ($('#build-effect-select')) $('#build-effect-select').onchange = e => { collectAll(); d.activeEffect = Number(e.target.value); d.effect = d.effects[d.activeEffect]; draw(); };
+    if ($('#build-effect-add')) $('#build-effect-add').onclick = () => { collectAll(); if (d.effects.length >= 6) return; d.effects.push(emptyEffect()); d.activeEffect = d.effects.length - 1; d.effect = d.effects[d.activeEffect]; draw(); };
+    if ($('#build-effect-remove')) $('#build-effect-remove').onclick = () => { collectAll(); d.effects.splice(d.activeEffect, 1); d.activeEffect = 0; d.effect = d.effects[0]; draw(); };
+  }
+  return { emptyEffect, hydrate, effectTabs, ending, extras, collect, bind };
+})();

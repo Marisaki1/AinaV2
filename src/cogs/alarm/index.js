@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const moment = require('moment-timezone');
 const fs = require('fs');
 const path = require('path');
@@ -195,7 +195,7 @@ async function handleRemove(interaction) {
   const removed = alarmManager.remove(interaction.guild.id, number - 1);
 
   if (!removed) {
-    return interaction.reply({ embeds: [embed.error('Invalid Number', `Alarm #${number} does not exist.`)], ephemeral: true });
+    return interaction.reply({ embeds: [embed.error('Invalid Number', `Alarm #${number} does not exist.`)], flags: MessageFlags.Ephemeral });
   }
 
   return interaction.reply({ embeds: [embed.success(`Alarm #${number} Removed`, 'The alarm has been deleted.')] });

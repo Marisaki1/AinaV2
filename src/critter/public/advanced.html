@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Aina’s local CritterDB editor and Avrae encounter command workspace.">
+  <title>Aina · Critter Workshop</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/search-select.css"><link rel="stylesheet" href="/workshop.css">
+  <script src="/search-select.js" defer></script>
+  <script src="/core.js" defer></script><script src="/creature-math.js" defer></script><script src="/creature-panels.js" defer></script><script src="/creature-fields.js" defer></script><script src="/critical-model.js" defer></script><script src="/critical-editor.js" defer></script><script src="/attack-modifiers.js" defer></script><script src="/party-roster.js" defer></script><script src="/combat-controls.js" defer></script><script src="/action-formulas.js" defer></script>
+  <script src="/tab-bridge.js" defer></script><script src="/remote-common.js" defer></script>
+  <script src="/remote-ui.js" defer></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a href="/">← Back to combat</a>
+    <a class="brand" href="/" aria-label="Critter Workshop home"><span class="brand-icon">✦</span><span>Aina <span class="brand-divider">/</span> <strong>Critter Workshop</strong></span></a>
+    <div class="connection"><span id="connection-dot" class="dot"></span><span id="connection-label">Connecting to workspace…</span><button id="refresh-status" class="quiet">Refresh</button></div>
+  </header>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="sidebar-heading">YOUR WORKSPACE <span>LOCAL</span></div>
+      <nav aria-label="Workspace pages">
+        <button class="nav active" data-page="library"><span>▧</span> Creature library <b id="library-count">0</b></button>
+        <button class="nav" data-page="encounter"><span>⚑</span> Encounter builder</button>
+        <button class="nav" data-page="commands"><span>⌘</span> Command desk</button>
+        <button class="nav" data-page="archive"><span>◷</span> History & favorites</button>
+        <button class="nav" data-page="settings"><span>⚙</span> Settings & backups</button>
+      </nav>
+      <div class="sidebar-rule"></div>
+      <div class="sidebar-heading">BESTIARIES & FILES</div>
+      <div id="documents" class="document-list"></div>
+      <button id="import-button" class="import-button">＋ Import CritterDB JSON</button>
+      <input id="import-files" type="file" accept=".json,application/json" multiple hidden>
+      <div class="sidebar-bottom"><span class="little-star">✧</span><strong>Your creatures. Your rules.</strong><p>Prepare here. Roll with Avrae.</p><p id="save-state">Changes save to this computer.</p></div>
+    </aside>
+    <main id="main" tabindex="-1"></main>
+  </div>
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="raw-dialog"><form method="dialog"><div class="section-title"><h2>Raw creature JSON</h2><button value="cancel" class="quiet">Close</button></div><p class="muted">All fields are retained. Invalid changes leave the saved creature intact.</p><textarea id="raw-json" class="code tall" spellcheck="false" aria-label="Raw creature JSON"></textarea><p id="raw-error" class="error"></p><button id="apply-raw" type="button" class="primary">Validate & save JSON</button></form></dialog>
+  <dialog id="fallback-dialog"><form method="dialog"><h2 id="fallback-title">Copy your command</h2><p>Select the text and press Ctrl+C (or long-press on mobile).</p><textarea id="fallback-copy" class="code" readonly aria-label="Command to copy"></textarea><button class="primary">Done</button></form></dialog>
+</body>
+</html>

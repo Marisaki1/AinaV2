@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const emojiManager = require('../../utils/emojiManager');
 const embed = require('../../utils/embed');
 const config = require('../../../config/config');
@@ -75,13 +75,13 @@ async function handleInfo(interaction) {
   // Parse the emoji ID from the input string (<:name:id> or <a:name:id>)
   const match = emojiInput.match(/<a?:(\w+):(\d+)>/);
   if (!match) {
-    return interaction.reply({ embeds: [embed.error('Invalid Emoji', 'Please provide a custom server emoji.')], ephemeral: true });
+    return interaction.reply({ embeds: [embed.error('Invalid Emoji', 'Please provide a custom server emoji.')], flags: MessageFlags.Ephemeral });
   }
 
   const [, name, id] = match;
   const emojiObj = interaction.guild.emojis.cache.get(id);
   if (!emojiObj) {
-    return interaction.reply({ embeds: [embed.error('Not Found', 'That emoji is not from this server.')], ephemeral: true });
+    return interaction.reply({ embeds: [embed.error('Not Found', 'That emoji is not from this server.')], flags: MessageFlags.Ephemeral });
   }
 
   const data = emojiManager.load(interaction.guild.id);
@@ -115,7 +115,7 @@ async function handleScan(interaction) {
   const channel = interaction.options.getChannel('channel');
 
   if (days > config.emoji.maxScanDays) {
-    return interaction.reply({ embeds: [embed.error('Too Many Days', `Maximum scan period is ${config.emoji.maxScanDays} days.`)], ephemeral: true });
+    return interaction.reply({ embeds: [embed.error('Too Many Days', `Maximum scan period is ${config.emoji.maxScanDays} days.`)], flags: MessageFlags.Ephemeral });
   }
 
   await interaction.reply({ embeds: [embed.info('🔍 Scanning...', `Scanning the last **${days}** days of messages. This may take a while!`)] });
@@ -262,7 +262,7 @@ const emojiCommand = {
     // Admin-only commands
     if (['scan', 'clear'].includes(sub)) {
       if (!interaction.memberPermissions.has(PermissionFlagsBits.Administrator)) {
-        return interaction.reply({ embeds: [embed.error('Permission Denied', 'Only admins can use this.')], ephemeral: true });
+        return interaction.reply({ embeds: [embed.error('Permission Denied', 'Only admins can use this.')], flags: MessageFlags.Ephemeral });
       }
     }
 

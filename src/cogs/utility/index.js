@@ -14,6 +14,7 @@ const helpCommand = {
         { name: 'Dungeon', value: 'dungeon' },
         { name: 'Emoji',   value: 'emoji'   },
         { name: 'AI Chat', value: 'ai'      },
+        { name: 'Critter Workshop', value: 'critter' },
       )
     ),
 
@@ -75,6 +76,11 @@ const helpCommand = {
             inline: false,
           },
           {
+            name: '📖 Critter Workshop',
+            value: '`/critter open` — Open the local creature editor and Avrae command desk\n`/critter edit url:` — Open a linked creature for authenticated CritterDB editing\n`/critter import` — Upload a creature or bestiary JSON (owner only)',
+            inline: false,
+          },
+          {
             name: '❓ Utility',
             value: '`/help` — This menu\n`/ping` — Check if I\'m awake',
             inline: false,
@@ -87,6 +93,10 @@ const helpCommand = {
 
     // Category-specific help
     const pages = {
+      critter: new EmbedBuilder()
+        .setColor(config.embedColor)
+        .setTitle('📖 Critter Workshop')
+        .setDescription('Use `/critter open` for the local browser interface, `/critter edit url:` for a linked creature, or `/critter import file:` to import JSON. Direct saves require a CritterDB account with collection edit permission and an explicit review/save in the GUI. Command previews are copied and sent by you; Aina removes them after your matching message, ✅ button, or ✅ reaction. Owner only.'),
       alarms: new EmbedBuilder()
         .setColor(config.embedColor)
         .setTitle('⏰ Alarm Help')

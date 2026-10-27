@@ -27,4 +27,17 @@ async function chat(messages, systemPrompt = config.personality.systemPrompt) {
   return response.choices[0]?.message?.content ?? 'Sorry, I couldn\'t think of anything to say...';
 }
 
-module.exports = { chat };
+function getChatErrorMessage(err) {
+  if (err.status === 404) {
+    return `The configured Groq model (${config.groq.model}) is unavailable. Set GROQ_MODEL in .env to an accessible chat model, then restart Aina.`;
+  }
+  if (err.status === 401 || err.status === 403) {
+    return 'Groq rejected access. Check GROQ_API_KEY and your project model permissions, then restart Aina.';
+  }
+  if (err.status === 429) {
+    return 'Groq has reached a rate or usage limit. Try again later or check your Groq account limits.';
+  }
+  return 'I could not get a response from Groq. Please try again shortly; check the bot console if this continues.';
+}
+
+module.exports = { chat, getChatErrorMessage };

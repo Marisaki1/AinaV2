@@ -1,0 +1,164 @@
+{
+  "__v": 0,
+  "_id": "6ade1f5c75da40a67aee0fad",
+  "bestiaryId": "6a9bd89315443bd5efcdd7d2",
+  "flavor": {
+    "description": "",
+    "environment": "",
+    "faction": "",
+    "imageUrl": "",
+    "nameIsProper": false
+  },
+  "name": "Reiko",
+  "sharing": {
+    "linkSharingEnabled": false
+  },
+  "stats": {
+    "abilityScores": {
+      "charisma": 24,
+      "constitution": 29,
+      "dexterity": 20,
+      "intelligence": 18,
+      "strength": 30,
+      "wisdom": 15
+    },
+    "actions": [
+      {
+        "description": "The dragon makes three Rend attacks. It can replace one attack with a use of (A) Paralyzing Breath or (B) Spellcasting to cast <i>Ice Knife</i> (level 2 version).",
+        "name": "Multiattack"
+      },
+      {
+        "description": "<p>Melee Attack Roll: +17, reach 15 ft. Hit: 19 (2d8 + 10) slashing damage.</p>\n\n<avrae hidden>\n_v: 2\nname: Rend\nautomation:\n  - type: target\n    target: each\n    effects:\n      - type: attack\n        attackBonus: \"17\"\n        hit:\n          - type: damage\n            damage: (2d8+10)[slashing]\n        miss: []\n</avrae>",
+        "name": "Rend"
+      },
+      {
+        "description": "<i>Constitution Saving Throw:</i> DC 23, each creature in a 90-foot Cone. <i>Failure:</i> 67 (15d8) Cold damage. <i>Success:</i> Half damage.\n\n<avrae hidden>\n_v: 2\nname: Cold Breath\nautomation:\n  - type: roll\n    dice: (15d8)[cold]\n    name: damage\n    displayName: Damage\n  - type: target\n    target: each\n    effects:\n      - type: save\n        stat: con\n        dc: \"23\"\n        fail:\n          - type: damage\n            damage: \"{damage}\"\n            fixedValue: true\n        success:\n          - type: damage\n            damage: ({damage})/2\n            fixedValue: true\n</avrae>",
+        "name": "Cold Breath (Recharge 5–6)"
+      },
+      {
+        "description": "<p>Constitution Saving Throw: DC 23, each creature in a 90-foot cone. Failure: The target has the Paralyzed condition until the end of its next turn. Success: No effect.</p>\n\n<avrae hidden>\n_v: 2\nname: Paralyzing Breath\nautomation:\n  - type: target\n    target: each\n    effects:\n      - type: save\n        stat: con\n        dc: \"23\"\n        fail:\n          - type: ieffect2\n            name: Paralyzed\n            effects: {}\n            duration: 1\n            end: true\n            tick_on_caster: false\n            stacking: false\n            conc: false\n            desc: Paralyzed until the end of your next turn.\n        success: []\n</avrae>",
+        "name": "Paralyzing Breath"
+      },
+      {
+        "description": "The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 23, +15 to hit with spell attacks):<br><br>At will: <i>Detect Magic</i>, <i>Hold Monster</i>, <i>Ice Knife</i> (level 2 version), <i>Shapechange</i> (Beast or Humanoid form only, no Temporary Hit Points gained from the spell, and no Concentration or Temporary Hit Points required to maintain the spell)<br>1/day each: <i>Control Weather</i>, <i>Ice Storm</i> (level 7 version), <i>Teleport</i>, <i>Zone of Truth</i>",
+        "name": "Spellcasting"
+      }
+    ],
+    "additionalAbilities": [
+      {
+        "description": "If the dragon fails a saving throw, it can choose to succeed instead.",
+        "name": "Legendary Resistance (4/Day, or 5/Day in Lair)"
+      },
+      {
+        "description": "23 (XP 50,000, or 62,000 in lair; PB +7)",
+        "name": "Challenge"
+      },
+      {
+        "description": "The region containing an adult or ancient silver dragon's lair is changed by its magic, creating the following effects:<br>- <b>Gentle Gusts.</b> Winds buoy creatures that fall within 1 mile of the lair. Such creatures descend at a rate of 60 feet per round and take no damage from falling.<br>- <b>Sun and Storms.</b> While in its lair, the dragon can cast <i>Control Weather</i>, requiring no Material components and using the same spellcasting ability as its Spellcasting action.<br><br>If the dragon dies or moves its lair elsewhere, these effects end immediately.",
+        "name": "Regional Effects"
+      },
+      {
+        "description": "<p>Reiko has four blessings: Rend, Resistance Aura, Charm and Alter Terrain. These blessings last until the start of Reiko's next turn. Her ability DC is 23.</p>",
+        "name": "Four Blessings"
+      },
+      {
+        "description": "<p>Until the start of Reiko's next turn, her Rend deals an additional 9 (2d8) cold damage.</p>\n\n<avrae hidden>\n_v: 2\nname: Rend Blessing\nautomation:\n  - type: target\n    target: self\n    effects:\n      - type: ieffect2\n        name: Rend Blessing ({caster.name})\n        duration: 1\n        end: false\n        tick_on_caster: true\n        stacking: false\n        conc: false\n        effects: {}\n        desc: Rend deals an additional 2d8 cold damage. Until the start of Reiko's next turn.\n        buttons:\n          - label: End effect\n            automation:\n              - type: remove_ieffect\n        attacks:\n          - attack:\n              _v: 2\n              name: Blessed Rend\n              automation:\n                - type: target\n                  target: each\n                  effects:\n                    - type: attack\n                      attackBonus: \"17\"\n                      hit:\n                        - type: damage\n                          damage: (2d8+10)[slashing]+(2d8)[cold]\n                      miss: []\n</avrae>",
+        "name": "Rend Blessing"
+      },
+      {
+        "description": "<p>Reiko emits a 30-foot aura that grants herself and other creatures in it resistance to all damage types. Creatures entering the active aura also receive this benefit. Until the start of Reiko's next turn.</p>\n\n<avrae hidden>\n_v: 2\nname: Resistance Aura\nautomation:\n  - type: target\n    target: self\n    effects:\n      - type: ieffect2\n        name: Resistance Blessing ({caster.name})\n        duration: 1\n        end: false\n        tick_on_caster: true\n        stacking: false\n        conc: false\n        effects:\n          resistances:\n            - acid\n            - bludgeoning\n            - cold\n            - fire\n            - force\n            - lightning\n            - necrotic\n            - piercing\n            - poison\n            - psychic\n            - radiant\n            - slashing\n            - thunder\n        desc: Resistance to all damage types. Until the start of Reiko's next turn. Emits a 30-foot aura.\n        buttons:\n          - label: End effect\n            automation:\n              - type: remove_ieffect\n        attacks:\n          - attack:\n              _v: 2\n              name: Aura Entry\n              automation:\n                - type: target\n                  target: each\n                  effects:\n                    - type: ieffect2\n                      name: Resistance Blessing ({caster.name})\n                      duration: 1\n                      end: false\n                      tick_on_caster: true\n                      stacking: false\n                      conc: false\n                      effects:\n                        resistances:\n                          - acid\n                          - bludgeoning\n                          - cold\n                          - fire\n                          - force\n                          - lightning\n                          - necrotic\n                          - piercing\n                          - poison\n                          - psychic\n                          - radiant\n                          - slashing\n                          - thunder\n                      desc: Resistance to all damage types. Until the start of Reiko's next turn.\n                      buttons:\n                        - label: End effect\n                          automation:\n                            - type: remove_ieffect\n  - type: target\n    target: each\n    effects:\n      - type: condition\n        condition: target.name != caster.name\n        onTrue:\n          - type: ieffect2\n            name: Resistance Blessing ({caster.name})\n            duration: 1\n            end: false\n            tick_on_caster: true\n            stacking: false\n            conc: false\n            effects:\n              resistances:\n                - acid\n                - bludgeoning\n                - cold\n                - fire\n                - force\n                - lightning\n                - necrotic\n                - piercing\n                - poison\n                - psychic\n                - radiant\n                - slashing\n                - thunder\n            desc: Resistance to all damage types. Until the start of Reiko's next turn.\n            buttons:\n              - label: End effect\n                automation:\n                  - type: remove_ieffect\n        onFalse: []\n        errorBehaviour: raise\n</avrae>",
+        "name": "Resistance Aura"
+      },
+      {
+        "description": "<p>Each creature within 30 feet of Reiko makes a DC 23 Wisdom saving throw. On a failure, it has the Charmed condition until the start of Reiko's next turn.</p>\n\n<avrae hidden>\n_v: 2\nname: Charm Blessing\nautomation:\n  - type: target\n    target: each\n    effects:\n      - type: save\n        stat: wis\n        dc: \"23\"\n        fail:\n          - type: ieffect2\n            name: Charmed\n            effects: {}\n            duration: 1\n            end: false\n            tick_on_caster: true\n            stacking: false\n            conc: false\n            desc: Charmed by {caster.name} until the start of their next turn.\n        success:\n          - type: text\n            text: Charm resisted.\n</avrae>",
+        "name": "Charm Blessing"
+      },
+      {
+        "description": "<p>Reiko alters the land until the start of her next turn. The DM handles the terrain.<br>Difficult Terrain: All ground movement costs an extra 5 feet of movement.<br>Body of Water: Before moving, make a DC 23 Athletics check, then move at half speed.<br>Gentle Meadow: At the start of a creature's turn in the meadow, it regains 20 HP.<br>Rocky Terrain: Rocky ground and pillars. The DM handles the layout and all terrain consequences.</p>\n\n<avrae hidden>\n- _v: 2\n  name: Alter Terrain - Difficult Terrain\n  automation:\n    - type: target\n      target: self\n      effects:\n        - type: ieffect2\n          name: Alter Terrain ({caster.name})\n          duration: 1\n          end: false\n          tick_on_caster: true\n          stacking: false\n          conc: false\n          effects: {}\n          desc: Difficult Terrain. All ground movement costs an extra 5 feet of movement. Until the start of Reiko's next turn.\n          buttons:\n            - label: End effect\n              automation:\n                - type: remove_ieffect\n- _v: 2\n  name: Alter Terrain - Body of Water\n  automation:\n    - type: target\n      target: self\n      effects:\n        - type: ieffect2\n          name: Alter Terrain ({caster.name})\n          duration: 1\n          end: false\n          tick_on_caster: true\n          stacking: false\n          conc: false\n          effects: {}\n          desc: Body of Water. Before moving, make a DC 23 Athletics check, then move at half speed. Until the start of Reiko's next turn.\n          buttons:\n            - label: End effect\n              automation:\n                - type: remove_ieffect\n- _v: 2\n  name: Alter Terrain - Gentle Meadow\n  automation:\n    - type: target\n      target: self\n      effects:\n        - type: ieffect2\n          name: Alter Terrain ({caster.name})\n          duration: 1\n          end: false\n          tick_on_caster: true\n          stacking: false\n          conc: false\n          effects: {}\n          desc: Gentle Meadow. At the start of a creature's turn in the meadow, it regains 20 HP. Until the start of Reiko's next turn.\n          buttons:\n            - label: End effect\n              automation:\n                - type: remove_ieffect\n          attacks:\n            - attack:\n                _v: 2\n                name: Meadow Healing\n                automation:\n                  - type: target\n                    target: each\n                    effects:\n                      - type: damage\n                        damage: \"-20\"\n                        fixedValue: true\n                        overheal: false\n- _v: 2\n  name: Alter Terrain - Rocky Terrain\n  automation:\n    - type: target\n      target: self\n      effects:\n        - type: ieffect2\n          name: Alter Terrain ({caster.name})\n          duration: 1\n          end: false\n          tick_on_caster: true\n          stacking: false\n          conc: false\n          effects: {}\n          desc: Rocky Terrain. Rocky ground and pillars. The DM handles the layout and all terrain consequences. Until the start of Reiko's next turn.\n          buttons:\n            - label: End effect\n              automation:\n                - type: remove_ieffect\n</avrae>",
+        "name": "Alter Terrain"
+      }
+    ],
+    "alignment": "Lawful Good",
+    "armorClass": 22,
+    "armorType": "",
+    "challengeRating": 23,
+    "conditionImmunities": [
+      "blinded",
+      "charmed",
+      "frightened",
+      "grappled",
+      "incapacitated",
+      "paralyzed",
+      "prone",
+      "restrained",
+      "stunned",
+      "unconscious"
+    ],
+    "damageImmunities": [
+      "Cold"
+    ],
+    "damageResistances": [],
+    "damageVulnerabilities": [],
+    "experiencePoints": 50000,
+    "hitDieSize": 20,
+    "languages": [
+      "Common",
+      "Draconic"
+    ],
+    "legendaryActions": [
+      {
+        "description": "The dragon uses Spellcasting to cast <i>Hold Monster</i>. The dragon can't take this action again until the start of its next turn.",
+        "name": "Chill"
+      },
+      {
+        "description": "<i>Dexterity Saving Throw:</i> DC 23, each creature in a 60-foot-long, 10-foot-wide Line. <i>Failure:</i> 14 (4d6) Cold damage, and the target is pushed up to 30 feet straight away from the dragon. <i>Success:</i> Half damage only. <i>Failure or Success:</i> The dragon can't take this action again until the start of its next turn.",
+        "name": "Cold Gale"
+      },
+      {
+        "description": "The dragon moves up to half its Speed, and it makes one Rend attack.",
+        "name": "Pounce"
+      }
+    ],
+    "legendaryActionsDescription": "<!-- AINA_SPELLCASTING:v1:%7B%22enabled%22%3Atrue%2C%22dc%22%3A23%2C%22attackBonus%22%3A15%2C%22applyAttack%22%3Afalse%2C%22resources%22%3A%5B%5D%7D -->\nLegendary Action Uses: 3 (4 in Lair). Immediately after another creature's turn, the dragon can expend a use to take one of the following actions. The dragon regains all expended uses at the start of each of its turns.",
+    "legendaryActionsPerRound": 3,
+    "numHitDie": 24,
+    "proficiencyBonus": 7,
+    "race": "Dragon (Metallic)",
+    "reactions": [],
+    "savingThrows": [
+      {
+        "ability": "dexterity",
+        "proficient": true,
+        "value": 12
+      },
+      {
+        "ability": "wisdom",
+        "proficient": true,
+        "value": 9
+      }
+    ],
+    "senses": [
+      "Blindsight 60 ft.",
+      "Darkvision 120 ft."
+    ],
+    "size": "Gargantuan",
+    "skills": [
+      {
+        "name": "History",
+        "proficient": true,
+        "value": 11
+      },
+      {
+        "name": "Perception",
+        "proficient": false,
+        "value": 16
+      },
+      {
+        "name": "Stealth",
+        "proficient": true,
+        "value": 12
+      }
+    ],
+    "speed": "40 ft., Fly 80 ft."
+  }
+}

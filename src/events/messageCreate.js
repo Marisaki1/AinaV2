@@ -1,4 +1,4 @@
-const { chat } = require('../utils/groqClient');
+const { chat, getChatErrorMessage } = require('../utils/groqClient');
 const { getHistory, addMessage } = require('../utils/memory');
 const emojiManager = require('../utils/emojiManager');
 const embed = require('../utils/embed');
@@ -49,13 +49,12 @@ module.exports = {
 
     try {
       const history = getHistory(message.author.id);
-      addMessage(message.author.id, 'user', userMessage);
-
       const response = await chat([
         ...history,
         { role: 'user', content: userMessage },
       ]);
 
+      addMessage(message.author.id, 'user', userMessage);
       addMessage(message.author.id, 'assistant', response);
 
       const e = embed.aina(response);
@@ -69,7 +68,7 @@ module.exports = {
     } catch (err) {
       console.error('[AI] Error:', err.message);
       await message.reply({
-        embeds: [embed.error('Oops!', 'Something went wrong with my brain... try again?')],
+        embeds: [embed.error('Chat unavailable', getChatErrorMessage(err))],
       });
     }
   },

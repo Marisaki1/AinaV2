@@ -1,0 +1,116 @@
+{
+  "name": "Tomkin",
+  "flavor": {
+    "description": "Equipment: Plate armor, greatsword, glaive, longbow, handaxes.",
+    "imageUrl": "",
+    "nameIsProper": true,
+    "faction": "",
+    "environment": ""
+  },
+  "stats": {
+    "size": "Medium",
+    "race": "Humanoid (Any Race)",
+    "alignment": "Any Alignment",
+    "armorClass": 19,
+    "armorType": "Plate, Defense",
+    "speed": "30 ft.",
+    "numHitDie": 15,
+    "hitDieSize": 10,
+    "proficiencyBonus": 5,
+    "abilityScores": {
+      "strength": 20,
+      "dexterity": 16,
+      "constitution": 18,
+      "intelligence": 10,
+      "wisdom": 12,
+      "charisma": 12
+    },
+    "skills": [
+      {
+        "name": "Athletics",
+        "proficient": true,
+        "value": 10
+      },
+      {
+        "name": "Perception",
+        "proficient": true,
+        "value": 6
+      },
+      {
+        "name": "Intimidation",
+        "proficient": true,
+        "value": 6
+      }
+    ],
+    "savingThrows": [
+      {
+        "ability": "strength",
+        "proficient": true,
+        "value": 10
+      },
+      {
+        "ability": "constitution",
+        "proficient": true,
+        "value": 9
+      }
+    ],
+    "damageVulnerabilities": [],
+    "damageResistances": [],
+    "damageImmunities": [],
+    "conditionImmunities": [],
+    "senses": [],
+    "languages": [
+      "Common"
+    ],
+    "challengeRating": 9,
+    "experiencePoints": 5000,
+    "additionalAbilities": [
+      {
+        "name": "Superior Critical",
+        "description": "Tomkin's weapon attacks score a critical hit on a natural 18–20."
+      },
+      {
+        "name": "Remarkable Athlete",
+        "description": "Tomkin has advantage on Initiative and Strength (Athletics) checks. After a critical hit, he can move up to half his Speed without provoking Opportunity Attacks."
+      },
+      {
+        "name": "Action Surge (1/Short Rest)",
+        "description": "On his turn, Tomkin can take one additional action, except the Magic action."
+      },
+      {
+        "name": "Indomitable (2/Long Rest)",
+        "description": "After failing a saving throw, Tomkin can reroll it with a +15 bonus and must use the new result."
+      },
+      {
+        "name": "Second Wind (4 Uses)",
+        "description": "Bonus Action. Tomkin regains 1d10 + 15 HP. He regains one use after a Short Rest and all uses after a Long Rest.\n\n<avrae hidden>\n_v: 2\nname: Second Wind\nactivation_type: 3\nautomation:\n  - type: target\n    target: self\n    effects:\n      - type: damage\n        damage: -(1d10+15)\n        fixedValue: true\n</avrae>"
+      }
+    ],
+    "actions": [
+      {
+        "name": "Multiattack",
+        "description": "Tomkin makes three attacks, choosing from his weapons."
+      },
+      {
+        "name": "Greatsword",
+        "description": "Melee Weapon Attack: +10 to hit, reach 5 ft., one target. Hit: 12 (2d6 + 5) slashing damage. Critical hit on a natural 18–20.\n\n<avrae hidden>\n_v: 2\nname: Greatsword\nactivation_type: 1\ncriton: 18\nautomation:\n  - type: target\n    target: each\n    effects:\n      - type: attack\n        attackBonus: \"10\"\n        hit:\n          - type: damage\n            damage: (2d6+5)[slashing]\n        miss: []\n</avrae>"
+      },
+      {
+        "name": "Glaive",
+        "description": "Melee Weapon Attack: +10 to hit, reach 10 ft., one target. Hit: 10 (1d10 + 5) slashing damage. Critical hit on a natural 18–20.\n\n<avrae hidden>\n_v: 2\nname: Glaive\nactivation_type: 1\ncriton: 18\nautomation:\n  - type: target\n    target: each\n    effects:\n      - type: attack\n        attackBonus: \"10\"\n        hit:\n          - type: damage\n            damage: (1d10+5)[slashing]\n        miss: []\n</avrae>"
+      },
+      {
+        "name": "Longbow",
+        "description": "Ranged Weapon Attack: +10 to hit, range 150/600 ft., one target. Hit: 7 (1d8 + 3) piercing damage. Critical hit on a natural 18–20.\n\n<avrae hidden>\n_v: 2\nname: Longbow\nactivation_type: 1\ncriton: 18\nautomation:\n  - type: target\n    target: each\n    effects:\n      - type: attack\n        attackBonus: \"10\"\n        hit:\n          - type: damage\n            damage: (1d8+3)[piercing]\n        miss: []\n</avrae>"
+      },
+      {
+        "name": "Handaxe",
+        "description": "Melee or Ranged Weapon Attack: +10 to hit, reach 5 ft. or range 20/60 ft., one target. Hit: 8 (1d6 + 5) slashing damage. Critical hit on a natural 18–20.\n\n<avrae hidden>\n_v: 2\nname: Handaxe\nactivation_type: 1\ncriton: 18\nautomation:\n  - type: target\n    target: each\n    effects:\n      - type: attack\n        attackBonus: \"10\"\n        hit:\n          - type: damage\n            damage: (1d6+5)[slashing]\n        miss: []\n</avrae>"
+      }
+    ],
+    "reactions": [],
+    "legendaryActions": [],
+    "legendaryActionsPerRound": 0,
+    "legendaryActionsDescription": "<!-- AINA_SPELLCASTING:v1:%7B%22enabled%22%3Afalse%2C%22dc%22%3A16%2C%22attackBonus%22%3A0%2C%22applyAttack%22%3Afalse%2C%22resources%22%3A%5B%7B%22name%22%3A%22Second%20Wind%22%2C%22shortMode%22%3A%22fixed%22%2C%22maximum%22%3A4%2C%22shortRestore%22%3A1%2C%22longReset%22%3Atrue%7D%2C%7B%22name%22%3A%22Action%20Surge%22%2C%22shortMode%22%3A%22fixed%22%2C%22maximum%22%3A1%2C%22shortRestore%22%3A1%2C%22longReset%22%3Atrue%7D%2C%7B%22name%22%3A%22Indomitable%22%2C%22shortMode%22%3A%22fixed%22%2C%22maximum%22%3A2%2C%22shortRestore%22%3A0%2C%22longReset%22%3Atrue%7D%5D%7D -->\n"
+  }
+}

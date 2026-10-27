@@ -5,16 +5,35 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "critter": "node src/critter/server.js",
+    "test": "node --test test/*.test.js",
+    "test:critter:browser": "node scripts/check-critter-browser.js",
+    "test:critter:desk": "node scripts/check-critter-desk.js",
+    "test:critter:remote": "node scripts/check-critter-remote.js",
+    "dev": "nodemon index.js",
+    "test:critter:traits": "node scripts/check-critter-traits.js",
+    "test:critter:authoring": "node scripts/check-critter-authoring.js",
+    "test:critter:direct": "node scripts/check-critter-direct.js",
+    "test:critter:manual": "node scripts/check-critter-selects.js",
+    "configure:sender": "node scripts/configure-discord-sender.js",
+    "test:critter:bot-panel": "node scripts/check-critter-bot-panel.js",
+    "test:critter:workshop": "node scripts/check-critter-workshop.js",
+    "test:critter:ability-tools": "node scripts/check-critter-ability-tools.js",
+    "test:critter:critical-party": "node scripts/check-critter-critical-party.js",
+    "test:critter:spellcasting": "node scripts/check-critter-spellcasting.js",
+    "test:avrae:expressions": "node scripts/check-avrae-compat.js"
   },
   "dependencies": {
     "discord.js": "^14.16.3",
-    "groq-sdk": "^0.9.1",
     "dotenv": "^16.4.5",
+    "groq-sdk": "^0.9.1",
+    "moment-timezone": "^0.5.45",
     "node-cron": "^3.0.3",
-    "moment-timezone": "^0.5.45"
+    "playwright": "^1.64.1",
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "nodemon": "^3.1.0"
   }
 }

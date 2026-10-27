@@ -1,0 +1,45 @@
+<drac2>
+# Read-only combat export. No combat setters, rolls, counters, or metadata writes.
+if str(ctx.author.id) != "__OWNER_ID__":
+    err("Only Aina's configured owner can export this mirror.")
+if not ctx.guild:
+    err("Run this in the encounter's server channel.")
+args = &ARGS&
+if len(args) != 1 or len(args[0]) != 32:
+    err("Use the exact refresh command shown by Aina.")
+nonce = args[0]
+c = combat()
+units = []
+groups = []
+def field(value, hidden=False):
+    return {"status": "hidden" if hidden else "unavailable" if value is None else "known", "value": None if hidden else value}
+if c:
+    groups = [{"id": g.id, "name": g.name, "initiative": g.init, "members": [m.id for m in g.combatants]} for g in c.groups]
+    for u in c.combatants:
+        hidden = u.is_hidden
+        gid = None
+        for g in groups:
+            if u.id in g["members"]:
+                gid = g["id"]
+        # Never export effect descriptions, passive dictionaries, buttons, or attack code.
+        # Public Avrae status shows effect names/duration/concentration, even for -h effects.
+        effects = [{"name": e.name, "duration": e.duration, "remaining": e.remaining, "concentration": e.conc, "ticksOnEnd": e.ticks_on_end} for e in u.effects]
+        units.append({"id": u.id, "name": u.name, "controllerId": str(u.controller), "initiative": u.init, "groupId": gid, "hidden": hidden,
+            "sourceName": field(None if hidden else u.monster_name, hidden),
+            "hp": field(None if hidden else u.hp, hidden), "maxHp": field(None if hidden else u.max_hp, hidden), "tempHp": field(None if hidden else u.temp_hp, hidden), "ac": field(None if hidden else u.ac, hidden),
+            "resistances": field(None if hidden else [str(r) for r in u.resistances.resist], hidden), "immunities": field(None if hidden else [str(r) for r in u.resistances.immune], hidden), "vulnerabilities": field(None if hidden else [str(r) for r in u.resistances.vuln], hidden),
+            "effects": field(effects), "actions": field(None if hidden else [a.name for a in u.attacks], hidden), "spells": field(None if hidden else [s.name for s in u.spellbook.spells], hidden)})
+snapshot = {"format": "aina-avrae-snapshot", "version": 1, "guildId": str(ctx.guild.id), "channelId": str(ctx.channel.id), "exporterId": str(ctx.author.id), "requestId": str(ctx.message_id), "exportedAt": int(time()*1000), "nonce": nonce, "active": c is not None, "name": c.name if c else None, "round": c.round_num if c else None, "turn": c.turn_num if c else None, "currentId": c.current.id if c and c.current else None, "groups": groups, "combatants": units}
+payload = dump_json(snapshot).replace("@", "\\u0040")
+# Encode quote/backslash characters so Avrae's command parser cannot alter them.
+payload = payload.replace("%", "%25").replace("\\", "%5C").replace('"', "%22").replace("'", "%27")
+parts = [payload[i:i+1500] for i in range(0, len(payload), 1500)]
+if len(parts) > 20:
+    err("Export exceeds the safe 30,000-character bridge limit. No partial snapshot was sent. Use a smaller test encounter or a manually reviewed snapshot file.")
+sig = signature()
+lines = []
+for i, chunk in enumerate(parts):
+    part = {"format": "aina-avrae-part", "version": 1, "nonce": nonce, "requestId": str(ctx.message_id), "part": i, "total": len(parts), "signature": sig, "encoding": "percent-json-v1", "chunk": chunk}
+    lines.append(ctx.prefix + 'embed -title "AINA-SNAPSHOT/1" -desc ' + "'" + dump_json(part) + "'")
+return "multiline\n" + "\n".join(lines)
+</drac2>

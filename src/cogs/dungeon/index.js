@@ -1,6 +1,6 @@
 const {
   SlashCommandBuilder, EmbedBuilder,
-  ActionRowBuilder, ButtonBuilder, ButtonStyle,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags,
 } = require('discord.js');
 const dungeonManager = require('../../utils/dungeonManager');
 const embed = require('../../utils/embed');
@@ -55,7 +55,7 @@ async function handleCreate(interaction) {
   if (dungeonManager.get(interaction.guild.id)) {
     return interaction.reply({
       embeds: [embed.error('Dungeon Already Active', 'There\'s already an active dungeon! Use `/dungeon end` first.')],
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
@@ -87,11 +87,11 @@ async function handleCreate(interaction) {
 async function handleJoin(interaction) {
   const state = dungeonManager.get(interaction.guild.id);
   if (!state) {
-    return interaction.reply({ embeds: [embed.error('No Dungeon', 'No active dungeon to join. Use `/dungeon create`.')], ephemeral: true });
+    return interaction.reply({ embeds: [embed.error('No Dungeon', 'No active dungeon to join. Use `/dungeon create`.')], flags: MessageFlags.Ephemeral });
   }
 
   if (state.players.includes(interaction.user.id)) {
-    return interaction.reply({ embeds: [embed.info('Already In', 'You\'re already in this dungeon!')], ephemeral: true });
+    return interaction.reply({ embeds: [embed.info('Already In', 'You\'re already in this dungeon!')], flags: MessageFlags.Ephemeral });
   }
 
   dungeonManager.addPlayer(interaction.guild.id, interaction.user.id);
@@ -106,7 +106,7 @@ async function handleJoin(interaction) {
 async function handleLeave(interaction) {
   const state = dungeonManager.get(interaction.guild.id);
   if (!state || !state.players.includes(interaction.user.id)) {
-    return interaction.reply({ embeds: [embed.error('Not In Dungeon', 'You\'re not in an active dungeon.')], ephemeral: true });
+    return interaction.reply({ embeds: [embed.error('Not In Dungeon', 'You\'re not in an active dungeon.')], flags: MessageFlags.Ephemeral });
   }
 
   dungeonManager.removePlayer(interaction.guild.id, interaction.user.id);
@@ -125,7 +125,7 @@ async function handleLeave(interaction) {
 async function handleStatus(interaction) {
   const state = dungeonManager.get(interaction.guild.id);
   if (!state) {
-    return interaction.reply({ embeds: [embed.error('No Dungeon', 'No active dungeon in this server.')], ephemeral: true });
+    return interaction.reply({ embeds: [embed.error('No Dungeon', 'No active dungeon in this server.')], flags: MessageFlags.Ephemeral });
   }
 
   const render = dungeonManager.renderCurrent(interaction.guild.id);
@@ -138,10 +138,10 @@ async function handleStatus(interaction) {
 async function handleSave(interaction) {
   const state = dungeonManager.get(interaction.guild.id);
   if (!state) {
-    return interaction.reply({ embeds: [embed.error('No Dungeon', 'No active dungeon to save.')], ephemeral: true });
+    return interaction.reply({ embeds: [embed.error('No Dungeon', 'No active dungeon to save.')], flags: MessageFlags.Ephemeral });
   }
   if (state.leaderId !== interaction.user.id) {
-    return interaction.reply({ embeds: [embed.error('Not Leader', 'Only the dungeon leader can save.')], ephemeral: true });
+    return interaction.reply({ embeds: [embed.error('Not Leader', 'Only the dungeon leader can save.')], flags: MessageFlags.Ephemeral });
   }
 
   const id = dungeonManager.saveState(interaction.guild.id);
@@ -177,14 +177,14 @@ async function handleList(interaction) {
 
 async function handleLoad(interaction) {
   if (dungeonManager.get(interaction.guild.id)) {
-    return interaction.reply({ embeds: [embed.error('Dungeon Already Active', 'End the current dungeon first with `/dungeon end`.')], ephemeral: true });
+    return interaction.reply({ embeds: [embed.error('Dungeon Already Active', 'End the current dungeon first with `/dungeon end`.')], flags: MessageFlags.Ephemeral });
   }
 
   const dungeonId = interaction.options.getString('id');
   const state     = dungeonManager.loadState(dungeonId, interaction.guild.id);
 
   if (!state) {
-    return interaction.reply({ embeds: [embed.error('Not Found', `No saved dungeon with ID \`${dungeonId}\`.`)], ephemeral: true });
+    return interaction.reply({ embeds: [embed.error('Not Found', `No saved dungeon with ID \`${dungeonId}\`.`)], flags: MessageFlags.Ephemeral });
   }
 
   await interaction.deferReply();
@@ -200,14 +200,14 @@ async function handleLoad(interaction) {
 async function handleEnd(interaction) {
   const state = dungeonManager.get(interaction.guild.id);
   if (!state) {
-    return interaction.reply({ embeds: [embed.error('No Dungeon', 'No active dungeon.')], ephemeral: true });
+    return interaction.reply({ embeds: [embed.error('No Dungeon', 'No active dungeon.')], flags: MessageFlags.Ephemeral });
   }
 
   const isLeader = state.leaderId === interaction.user.id;
   const isAdmin  = interaction.memberPermissions.has('Administrator');
 
   if (!isLeader && !isAdmin) {
-    return interaction.reply({ embeds: [embed.error('Not Authorised', 'Only the dungeon leader or an admin can end the dungeon.')], ephemeral: true });
+    return interaction.reply({ embeds: [embed.error('Not Authorised', 'Only the dungeon leader or an admin can end the dungeon.')], flags: MessageFlags.Ephemeral });
   }
 
   dungeonManager.remove(interaction.guild.id);

@@ -1,0 +1,112 @@
+{
+  "name": "Glen",
+  "flavor": {
+    "description": "Equipment: Plate armor, shield, longsword, holy symbol.",
+    "imageUrl": "",
+    "nameIsProper": true,
+    "faction": "",
+    "environment": ""
+  },
+  "stats": {
+    "size": "Medium",
+    "race": "Humanoid (Any Race)",
+    "alignment": "Any Alignment",
+    "armorClass": 20,
+    "armorType": "Plate, shield",
+    "speed": "30 ft.",
+    "numHitDie": 15,
+    "hitDieSize": 10,
+    "proficiencyBonus": 5,
+    "abilityScores": {
+      "strength": 20,
+      "dexterity": 10,
+      "constitution": 18,
+      "intelligence": 10,
+      "wisdom": 12,
+      "charisma": 18
+    },
+    "skills": [
+      {
+        "name": "Athletics",
+        "proficient": true,
+        "value": 10
+      },
+      {
+        "name": "Insight",
+        "proficient": true,
+        "value": 6
+      },
+      {
+        "name": "Persuasion",
+        "proficient": true,
+        "value": 9
+      }
+    ],
+    "savingThrows": [
+      {
+        "ability": "wisdom",
+        "proficient": true,
+        "value": 6
+      },
+      {
+        "ability": "charisma",
+        "proficient": true,
+        "value": 9
+      }
+    ],
+    "damageVulnerabilities": [],
+    "damageResistances": [],
+    "damageImmunities": [],
+    "conditionImmunities": [],
+    "senses": [],
+    "languages": [
+      "Common"
+    ],
+    "challengeRating": 10,
+    "experiencePoints": 5900,
+    "additionalAbilities": [
+      {
+        "name": "Aura of Protection",
+        "description": "While Glen is not Incapacitated, he and allies within 10 ft. add +4 to saving throws. Benefits from multiple Auras of Protection do not stack."
+      },
+      {
+        "name": "Auras of Devotion and Courage",
+        "description": "While within Glen's Aura of Protection, Glen and his allies are immune to Charmed and Frightened."
+      },
+      {
+        "name": "Spellcasting",
+        "description": "Charisma spellcasting: save DC 17, +9 to hit. Spell slots: four 1st-level, three 2nd-level, three 3rd-level, two 4th-level. Selected spells: Cure Wounds and Divine Smite. Expended slots return after a Long Rest."
+      },
+      {
+        "name": "Sacred Weapon",
+        "description": "As part of the Attack action, Glen can spend one Channel Divinity use to imbue his longsword for 10 minutes, adding +4 to its attack rolls. Each hit can deal its normal damage type or radiant damage. The weapon emits Bright Light for 20 ft. and Dim Light for 20 ft. farther. Glen has three Channel Divinity uses, regaining one after a Short Rest and all after a Long Rest.\n\n<avrae hidden>\n_v: 2\nname: Sacred Weapon\nactivation_type: 2\nautomation:\n  - type: target\n    target: self\n    effects:\n      - type: ieffect2\n        name: Sacred Weapon\n        duration: 100\n        end: false\n        tick_on_caster: false\n        stacking: false\n        conc: false\n        effects:\n          to_hit_bonus: \"4\"\n        desc: Longsword attacks +4 to hit; each hit may use its normal damage type or radiant.\n        buttons:\n          - label: End Sacred Weapon\n            automation:\n              - type: remove_ieffect\n</avrae>"
+      },
+      {
+        "name": "Lay on Hands",
+        "description": "Bonus Action, touch. Glen restores up to 75 HP from a pool, choosing how much to spend on one creature. The pool refills after a Long Rest.\n\n<avrae hidden>\n_v: 2\nname: Lay on Hands\nactivation_type: 3\nautomation:\n  - type: condition\n    condition: len(targets) == 1\n    onTrue:\n      - type: condition\n        condition: choice == '' or choice == \"1\" or choice == \"2\" or choice == \"3\" or choice == \"4\" or choice == \"5\" or choice == \"6\" or choice == \"7\" or choice == \"8\" or choice == \"9\"\n        onTrue:\n          - type: variable\n            name: amount\n            value: choice or 1\n          - type: target\n            target: each\n            effects:\n              - type: damage\n                damage: -({amount})\n                fixedValue: true\n        onFalse:\n          - type: condition\n            condition: choice == \"10\" or choice == \"11\" or choice == \"12\" or choice == \"13\" or choice == \"14\" or choice == \"15\" or choice == \"16\" or choice == \"17\" or choice == \"18\" or choice == \"19\"\n            onTrue:\n              - type: variable\n                name: amount\n                value: choice or 1\n              - type: target\n                target: each\n                effects:\n                  - type: damage\n                    damage: -({amount})\n                    fixedValue: true\n            onFalse:\n              - type: condition\n                condition: choice == \"20\" or choice == \"21\" or choice == \"22\" or choice == \"23\" or choice == \"24\" or choice == \"25\" or choice == \"26\" or choice == \"27\" or choice == \"28\" or choice == \"29\"\n                onTrue:\n                  - type: variable\n                    name: amount\n                    value: choice or 1\n                  - type: target\n                    target: each\n                    effects:\n                      - type: damage\n                        damage: -({amount})\n                        fixedValue: true\n                onFalse:\n                  - type: condition\n                    condition: choice == \"30\" or choice == \"31\" or choice == \"32\" or choice == \"33\" or choice == \"34\" or choice == \"35\" or choice == \"36\" or choice == \"37\" or choice == \"38\" or choice == \"39\"\n                    onTrue:\n                      - type: variable\n                        name: amount\n                        value: choice or 1\n                      - type: target\n                        target: each\n                        effects:\n                          - type: damage\n                            damage: -({amount})\n                            fixedValue: true\n                    onFalse:\n                      - type: condition\n                        condition: choice == \"40\" or choice == \"41\" or choice == \"42\" or choice == \"43\" or choice == \"44\" or choice == \"45\" or choice == \"46\" or choice == \"47\" or choice == \"48\" or choice == \"49\"\n                        onTrue:\n                          - type: variable\n                            name: amount\n                            value: choice or 1\n                          - type: target\n                            target: each\n                            effects:\n                              - type: damage\n                                damage: -({amount})\n                                fixedValue: true\n                        onFalse:\n                          - type: condition\n                            condition: choice == \"50\" or choice == \"51\" or choice == \"52\" or choice == \"53\" or choice == \"54\" or choice == \"55\" or choice == \"56\" or choice == \"57\" or choice == \"58\" or choice == \"59\"\n                            onTrue:\n                              - type: variable\n                                name: amount\n                                value: choice or 1\n                              - type: target\n                                target: each\n                                effects:\n                                  - type: damage\n                                    damage: -({amount})\n                                    fixedValue: true\n                            onFalse:\n                              - type: condition\n                                condition: choice == \"60\" or choice == \"61\" or choice == \"62\" or choice == \"63\" or choice == \"64\" or choice == \"65\" or choice == \"66\" or choice == \"67\" or choice == \"68\" or choice == \"69\"\n                                onTrue:\n                                  - type: variable\n                                    name: amount\n                                    value: choice or 1\n                                  - type: target\n                                    target: each\n                                    effects:\n                                      - type: damage\n                                        damage: -({amount})\n                                        fixedValue: true\n                                onFalse:\n                                  - type: condition\n                                    condition: choice == \"70\" or choice == \"71\" or choice == \"72\" or choice == \"73\" or choice == \"74\" or choice == \"75\"\n                                    onTrue:\n                                      - type: variable\n                                        name: amount\n                                        value: choice or 1\n                                      - type: target\n                                        target: each\n                                        effects:\n                                          - type: damage\n                                            damage: -({amount})\n                                            fixedValue: true\n                                    onFalse:\n                                      - type: text\n                                        text: Select one creature and a whole number from 1 to 75.\n                                    errorBehaviour: raise\n                                errorBehaviour: raise\n                            errorBehaviour: raise\n                        errorBehaviour: raise\n                    errorBehaviour: raise\n                errorBehaviour: raise\n            errorBehaviour: raise\n        errorBehaviour: raise\n    onFalse:\n      - type: text\n        text: Select one creature and a whole number from 1 to 75.\n    errorBehaviour: raise\n</avrae>"
+      }
+    ],
+    "actions": [
+      {
+        "name": "Multiattack",
+        "description": "Glen makes two Longsword attacks."
+      },
+      {
+        "name": "Longsword",
+        "description": "Melee Weapon Attack: +10 to hit, reach 5 ft., one target. Hit: 11 (1d8 + 7) slashing damage plus 4 (1d8) radiant damage (Radiant Strikes).\n\n<avrae hidden>\n_v: 2\nname: Longsword\nactivation_type: 1\nautomation:\n  - type: target\n    target: each\n    effects:\n      - type: attack\n        attackBonus: \"10\"\n        hit:\n          - type: damage\n            damage: (1d8+7)[slashing]+(1d8)[radiant]\n        miss: []\n</avrae>"
+      },
+      {
+        "name": "Divine Smite",
+        "description": "Bonus Action immediately after a melee weapon or Unarmed Strike hits. The target takes an extra 2d8 radiant damage with a 1st-level slot, +1d8 per slot level above 1st (maximum 4th). Add 1d8 against a Fiend or Undead. Glen can cast it at 1st level once per Long Rest without a slot.\n\n<avrae hidden>\n_v: 2\nname: Divine Smite\nactivation_type: 3\nautomation:\n  - type: condition\n    condition: len(targets) == 1\n    onTrue:\n      - type: condition\n        condition: choice == '' or choice == \"1\" or choice == \"2\" or choice == \"3\" or choice == \"4\"\n        onTrue:\n          - type: condition\n            condition: choice == \"4\"\n            onTrue:\n              - type: spell\n                id: 2618833\n                level: 4\n                dc: \"17\"\n                attackBonus: \"9\"\n                castingMod: \"4\"\n            onFalse:\n              - type: condition\n                condition: choice == \"3\"\n                onTrue:\n                  - type: spell\n                    id: 2618833\n                    level: 3\n                    dc: \"17\"\n                    attackBonus: \"9\"\n                    castingMod: \"4\"\n                onFalse:\n                  - type: condition\n                    condition: choice == \"2\"\n                    onTrue:\n                      - type: spell\n                        id: 2618833\n                        level: 2\n                        dc: \"17\"\n                        attackBonus: \"9\"\n                        castingMod: \"4\"\n                    onFalse:\n                      - type: spell\n                        id: 2618833\n                        level: 1\n                        dc: \"17\"\n                        attackBonus: \"9\"\n                        castingMod: \"4\"\n                    errorBehaviour: raise\n                errorBehaviour: raise\n            errorBehaviour: raise\n        onFalse:\n          - type: text\n            text: Select one creature and a spell level from 1 to 4.\n        errorBehaviour: raise\n    onFalse:\n      - type: text\n        text: Select one creature and a spell level from 1 to 4.\n    errorBehaviour: raise\n</avrae>"
+      },
+      {
+        "name": "Cure Wounds",
+        "description": "Action, touch. One creature regains 2d8 + 4 HP with a 1st-level slot, plus 2d8 per slot level above 1st (maximum 4th).\n\n<avrae hidden>\n_v: 2\nname: Cure Wounds\nactivation_type: 1\nautomation:\n  - type: condition\n    condition: len(targets) == 1\n    onTrue:\n      - type: condition\n        condition: choice == '' or choice == \"1\" or choice == \"2\" or choice == \"3\" or choice == \"4\"\n        onTrue:\n          - type: condition\n            condition: choice == \"4\"\n            onTrue:\n              - type: spell\n                id: 2619079\n                level: 4\n                dc: \"17\"\n                attackBonus: \"9\"\n                castingMod: \"4\"\n            onFalse:\n              - type: condition\n                condition: choice == \"3\"\n                onTrue:\n                  - type: spell\n                    id: 2619079\n                    level: 3\n                    dc: \"17\"\n                    attackBonus: \"9\"\n                    castingMod: \"4\"\n                onFalse:\n                  - type: condition\n                    condition: choice == \"2\"\n                    onTrue:\n                      - type: spell\n                        id: 2619079\n                        level: 2\n                        dc: \"17\"\n                        attackBonus: \"9\"\n                        castingMod: \"4\"\n                    onFalse:\n                      - type: spell\n                        id: 2619079\n                        level: 1\n                        dc: \"17\"\n                        attackBonus: \"9\"\n                        castingMod: \"4\"\n                    errorBehaviour: raise\n                errorBehaviour: raise\n            errorBehaviour: raise\n        onFalse:\n          - type: text\n            text: Select one creature and a spell level from 1 to 4.\n        errorBehaviour: raise\n    onFalse:\n      - type: text\n        text: Select one creature and a spell level from 1 to 4.\n    errorBehaviour: raise\n</avrae>"
+      }
+    ],
+    "reactions": [],
+    "legendaryActions": [],
+    "legendaryActionsPerRound": 0,
+    "legendaryActionsDescription": "<!-- AINA_SPELLCASTING:v1:%7B%22enabled%22%3Atrue%2C%22dc%22%3A17%2C%22attackBonus%22%3A9%2C%22applyAttack%22%3Atrue%2C%22resources%22%3A%5B%7B%22name%22%3A%22Channel%20Divinity%22%2C%22shortMode%22%3A%22fixed%22%2C%22maximum%22%3A3%2C%22shortRestore%22%3A1%2C%22longReset%22%3Atrue%7D%2C%7B%22name%22%3A%22Lay%20on%20Hands%20HP%22%2C%22shortMode%22%3A%22fixed%22%2C%22maximum%22%3A75%2C%22shortRestore%22%3A0%2C%22longReset%22%3Atrue%7D%2C%7B%22name%22%3A%22Free%20Divine%20Smite%22%2C%22shortMode%22%3A%22fixed%22%2C%22maximum%22%3A1%2C%22shortRestore%22%3A0%2C%22longReset%22%3Atrue%7D%2C%7B%22name%22%3A%22Spell%20slots%20(1st)%22%2C%22shortMode%22%3A%22fixed%22%2C%22maximum%22%3A4%2C%22shortRestore%22%3A0%2C%22longReset%22%3Atrue%7D%2C%7B%22name%22%3A%22Spell%20slots%20(2nd)%22%2C%22shortMode%22%3A%22fixed%22%2C%22maximum%22%3A3%2C%22shortRestore%22%3A0%2C%22longReset%22%3Atrue%7D%2C%7B%22name%22%3A%22Spell%20slots%20(3rd)%22%2C%22shortMode%22%3A%22fixed%22%2C%22maximum%22%3A3%2C%22shortRestore%22%3A0%2C%22longReset%22%3Atrue%7D%2C%7B%22name%22%3A%22Spell%20slots%20(4th)%22%2C%22shortMode%22%3A%22fixed%22%2C%22maximum%22%3A2%2C%22shortRestore%22%3A0%2C%22longReset%22%3Atrue%7D%5D%7D -->\n"
+  }
+}

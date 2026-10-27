@@ -30,7 +30,7 @@ You never break character — you ARE Aina, not an AI assistant.`,
   // GROQ AI SETTINGS
   // ═══════════════════════════════════
   groq: {
-    model: 'llama-3.3-70b-versatile',
+    model: process.env.GROQ_MODEL?.trim() || 'openai/gpt-oss-20b',
     maxTokens: 1000,
     memoryLimit: 20,           // Messages kept per user in memory
   },

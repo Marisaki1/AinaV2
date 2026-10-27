@@ -1,0 +1,123 @@
+{
+  "flavor": {
+    "faction": "Team Upside Down",
+    "environment": "",
+    "description": "Amanojaku Who Flips the World Upside Down",
+    "nameIsProper": false,
+    "imageUrl": "https://i.imgur.com/CQe8Bua.png"
+  },
+  "stats": {
+    "size": "Medium",
+    "race": "Humanoid",
+    "alignment": "Chaotic Evil",
+    "armorType": "Mage Armor",
+    "armorClass": 14,
+    "numHitDie": 10,
+    "speed": "30 ft.",
+    "abilityScores": {
+      "strength": 8,
+      "dexterity": 12,
+      "constitution": 16,
+      "intelligence": 20,
+      "wisdom": 10,
+      "charisma": 14
+    },
+    "proficiencyBonus": 3,
+    "damageVulnerabilities": [],
+    "damageResistances": [],
+    "damageImmunities": [],
+    "conditionImmunities": [],
+    "senses": [
+      "darkvision 60 ft."
+    ],
+    "languages": [
+      "Common"
+    ],
+    "challengeRating": 8,
+    "experiencePoints": 3900,
+    "legendaryActionsPerRound": 0,
+    "legendaryActionsDescription": "Spellcasting points and Inventory. Seija has a total of 12 spell points that can be consumed. Long rest restores all spell points, a short rest restores 3 spell points.\nShe has a DC of 16 and a +8 to spell hits",
+    "savingThrows": [
+      {
+        "ability": "dexterity",
+        "proficient": true,
+        "value": 4
+      },
+      {
+        "ability": "charisma",
+        "proficient": true,
+        "value": 5
+      }
+    ],
+    "skills": [
+      {
+        "name": "Stealth",
+        "proficient": true,
+        "value": 4
+      },
+      {
+        "name": "Deception",
+        "proficient": true,
+        "value": 5
+      },
+      {
+        "name": "Sleight of Hand",
+        "proficient": true,
+        "value": 4
+      },
+      {
+        "name": "Insight",
+        "proficient": true,
+        "value": 3
+      }
+    ],
+    "additionalAbilities": [
+      {
+        "name": "Amanojaku Nature",
+        "description": "Seija is contrary by nature. Once per turn, whenever a creature would gain advantage on an attack roll against her, that creature has disadvantage instead. The effect is immediately triggered when conditions are met. She cannot use this ability again until the start of her next turn.\n\n<p><b>Avrae:</b> Run this helper after resolving the eligible trigger manually. The used marker expires at the start of her next turn; it does not enforce or intercept attack rolls.</p>\n<avrae hidden>{\"_v\":2,\"name\":\"Amanojaku Nature\",\"automation\":[{\"type\":\"text\",\"text\":\"Manual trigger only: change the eligible incoming attack from advantage to disadvantage. If already rolled, reroll ONLY its attack die with the correct total bonus; do not execute its damage twice. Track eligibility and any result corrections yourself.\"},{\"type\":\"target\",\"target\":\"self\",\"effects\":[{\"type\":\"ieffect2\",\"name\":\"Amanojaku Nature used\",\"desc\":\"Reminder: unavailable until the start of Seija's next turn. This does not intercept or modify incoming attacks.\",\"stacking\":false,\"duration\":1}]}]}</avrae>"
+      },
+      {
+        "name": "Turnabout \"Reverse Hierarchy\"",
+        "description": "After the initiative order is decided, Seija can designated two creatures she can see within 120ft, and have their initiatives swapped. Creatures with higher CR than her are unaffected by this ability\n\nShe can use this ability equal to her Proficiency Bonus.\n\n<p><b>Avrae:</b> Manual swap and eligibility checks. This helper only displays instructions; it neither rolls initiative again nor changes it.</p>\n<avrae hidden>{\"_v\":2,\"name\":\"Reverse Hierarchy\",\"automation\":[{\"type\":\"text\",\"text\":\"Manual initiative swap. Choose exactly two visible creatures within 120 ft whose CR does not exceed Seija's CR 8. Verify their LIVE initiatives. In Aina use Follow-up / uses > Swap initiative; otherwise apply the two verified initiative adjustments manually. No swap is performed by this helper. Track 3 uses; the source does not specify their recharge.\"}]}</avrae>"
+      },
+      {
+        "name": "Reverse Sign \"Danmaku Through the Looking-Glass\"",
+        "description": "On her turn, Seija can lower the spell save DC of a creature she see within 60 ft by 4. The effect lasts for 5 minutes or until used.\n\nShe can use this ability equal to her Proficiency Bonus.\n\n<p><b>Avrae:</b> Select the affected combatant. This is a timed reminder: add <code>-dc -4</code> to its affected spell command, then click Spell used. Non-spell DCs are unchanged; uses and eligibility are manual.</p>\n<avrae hidden>{\"_v\":2,\"name\":\"Looking-Glass\",\"automation\":[{\"type\":\"target\",\"target\":\"each\",\"effects\":[{\"type\":\"ieffect2\",\"name\":\"Looking-Glass - {{caster.name}}\",\"desc\":\"Spell save DC is reduced by 4 for 5 minutes or until used. SPELLS ONLY. Add -dc -4 to the affected spell command; this marker has no universal dc_bonus. After the affected spell, click Spell used. Track Seija's 3 uses manually.\",\"stacking\":false,\"duration\":50,\"buttons\":[{\"label\":\"Spell used\",\"automation\":[{\"type\":\"text\",\"text\":\"Confirm that the affected spell used its DC reduced by 4. Other ability DCs were not reduced.\"},{\"type\":\"remove_ieffect\"}]}]}]}]}</avrae>"
+      }
+    ],
+    "actions": [
+      {
+        "name": "Forceful Burst",
+        "description": "<i>Ranged Weapon Attack:</i> +8 to hit, range 120/120 ft., one target. <i>Hit:</i> 11 (2d8) force damage. If you roll an 8 on a d8 for this spell, you can roll another d8, and add it to the damage. When you cast this spell, the maximum number of these d8s you can add to the spell’s damage equals your spellcasting ability modifier.\n\n<p><b>Avrae:</b> Base attack and 2d8 damage are automated. Extra dice use the separate Extra d8 utility and manual cap/damage tracking. The original printed average of 11 is retained; automation follows the stated 2d8, whose average is 9.</p>\n<avrae hidden>[{\"_v\":2,\"name\":\"Forceful Burst\",\"automation\":[{\"type\":\"target\",\"target\":\"each\",\"effects\":[{\"type\":\"attack\",\"attackBonus\":\"8\",\"hit\":[{\"type\":\"damage\",\"damage\":\"2d8[force]\"},{\"type\":\"text\",\"text\":\"For each eligible damage d8 showing 8, you may roll one additional d8. Resolve these explicitly, at most 5 additional dice in total for this casting. Additional dice showing 8 can trigger another die within that cap. The Extra d8 utility only rolls; apply its force damage manually, accounting for the target's defenses. Do not rerun the base attack.\"}],\"miss\":[]}]}]},{\"_v\":2,\"name\":\"Forceful Burst Extra d8\",\"automation\":[{\"type\":\"roll\",\"dice\":\"1d8\",\"name\":\"extraForceDie\",\"displayName\":\"Extra force d8\",\"fixedValue\":true},{\"type\":\"text\",\"text\":\"Utility for the ORIGINAL Forceful Burst only. Use only after an eligible 8 and below the 5-extra-dice cap. Result: {extraForceDie}. Apply that much force damage manually; this utility does not alter HP, repeat the attack, or grant another action.\"}]}]</avrae>"
+      }
+    ],
+    "reactions": [
+      {
+        "name": "Reverse Sign \"Evil in the Mirror\"",
+        "description": "When you or a creature you can see within 30 feet of you succeeds an ability check or a saving throw, you can take a Reaction to reduce a bonus to the roll, potentially causing it to fail. The bonus equals your Intelligence modifier (minimum of +1).\n\nYou can take this Reaction a number of times equal to your Intelligence modifier (minimum of once). You regain all expended uses when you finish a Long Rest or half when you finish a Short Rest (rounded up).\n\n<p><b>Avrae:</b> Explicit after-roll correction. This helper does not change another roll, subtract HP, spend a reaction, or manage uses automatically.</p>\n<avrae hidden>{\"_v\":2,\"name\":\"Evil in the Mirror\",\"automation\":[{\"type\":\"text\",\"text\":\"Manual reaction after an eligible successful ability check or saving throw within 30 ft. Subtract 5 from its EXISTING total and compare against the original DC; do not reroll by default. Aina's Adjust a recorded total tool can assist. Correct already-applied consequences manually. Uses: 5; long rest restores all; resolve the original short-rest half-recovery rule, rounded up, manually. No universal save/check penalty is applied.\"}]}</avrae>"
+      }
+    ],
+    "legendaryActions": [
+      {
+        "name": "Reverse Sign \"This Side Down\" (1 points)",
+        "description": "(Action) Seija inverts gravity in a 20-foot cube she can see within 60 ft. Creatures in the area must make a DC 16 Strength saving throw or be flung 30 feet upward. Gravity snaps back at the end of Seija's turn, flung creatures fall and takes  4d8 bludgeoning damage and land prone. On a successful save, they take only half the damage and is not prone, on a fail their movement is also reduced to 0 on their next turn. \nThe height they are flung upward increases by 15 ft (2d8) and the DC increases by 1 for each additional spell point consumed.\n\n<p><b>Avrae:</b> Use <code>-choice N</code> for extra points. The save is automated, damage is deferred to resolution buttons, and failed targets gain separate Prone/Stand up and movement reminders when they land. Buttons do not trigger automatically. No legendary-action cost is invented.</p>\n<avrae hidden>{\"_v\":2,\"name\":\"This Side Down\",\"automation\":[{\"type\":\"condition\",\"condition\":\"choice == '' or choice in [\\\"0\\\",\\\"1\\\",\\\"2\\\",\\\"3\\\",\\\"4\\\",\\\"5\\\",\\\"6\\\",\\\"7\\\",\\\"8\\\",\\\"9\\\",\\\"10\\\",\\\"11\\\"]\",\"onTrue\":[{\"type\":\"target\",\"target\":\"each\",\"effects\":[{\"type\":\"save\",\"stat\":\"str\",\"dc\":\"16+int(choice or 0)\",\"fail\":[{\"type\":\"ieffect2\",\"name\":\"Pending fall - {{caster.name}}\",\"desc\":\"Failed save. Flung {{30+15*int(choice or 0)}} ft. Resolve fall at the END OF SEIJA'S TURN using the button. Nothing advances or applies the fall automatically. Prone and next-turn movement reminders are added on resolution.\",\"stacking\":false,\"buttons\":[{\"label\":\"Resolve fall\",\"automation\":[{\"type\":\"target\",\"target\":\"self\",\"effects\":[{\"type\":\"roll\",\"dice\":\"{{4+2*int(choice or 0)}}d8[bludgeoning]\",\"name\":\"fallDamage\",\"displayName\":\"This Side Down impact\",\"fixedValue\":true},{\"type\":\"damage\",\"damage\":\"{fallDamage}\",\"fixedValue\":true},{\"type\":\"ieffect2\",\"name\":\"Prone - This Side Down\",\"desc\":\"Prone. Outgoing attacks have disadvantage. Resolve incoming attack advantage/disadvantage by distance manually, and honor condition immunities. Stand up only when legal; spend half your speed in movement. A next-turn movement restriction may prevent standing.\",\"stacking\":false,\"effects\":{\"attack_advantage\":-1},\"buttons\":[{\"label\":\"Stand up\",\"automation\":[{\"type\":\"text\",\"text\":\"Only stand if legal. Resolve the half-speed movement cost manually; do not use this to bypass movement 0.\"},{\"type\":\"remove_ieffect\"}]}]},{\"type\":\"ieffect2\",\"name\":\"Movement 0 next turn - This Side Down\",\"desc\":\"Movement is 0 on your NEXT turn only. Timing/movement are manual. Remove this reminder at the end of that turn. It is independent of Prone.\",\"stacking\":false,\"buttons\":[{\"label\":\"End restricted turn\",\"automation\":[{\"type\":\"text\",\"text\":\"Remove only after the affected creature's next turn has ended, or an explicit rules correction.\"},{\"type\":\"remove_ieffect\"}]}]}]},{\"type\":\"remove_ieffect\"}]},{\"label\":\"Cancel pending damage\",\"automation\":[{\"type\":\"text\",\"text\":\"Cancel only for a valid rules correction or if this pending damage has already been resolved manually.\"},{\"type\":\"remove_ieffect\"}]}]}],\"success\":[{\"type\":\"ieffect2\",\"name\":\"Pending half damage - {{caster.name}}\",\"desc\":\"Successful save: half damage, no Prone or movement restriction. Resolve the half damage at the timing adjudicated from the original ability. This button rolls/apply damage once and removes this pending effect.\",\"stacking\":false,\"buttons\":[{\"label\":\"Resolve half damage\",\"automation\":[{\"type\":\"target\",\"target\":\"self\",\"effects\":[{\"type\":\"roll\",\"dice\":\"{{4+2*int(choice or 0)}}d8[bludgeoning]\",\"name\":\"fallDamage\",\"displayName\":\"This Side Down impact\",\"fixedValue\":true},{\"type\":\"damage\",\"damage\":\"({fallDamage})/2\",\"fixedValue\":true}]},{\"type\":\"remove_ieffect\"}]},{\"label\":\"Cancel pending damage\",\"automation\":[{\"type\":\"text\",\"text\":\"Cancel only for a valid rules correction or if this pending damage has already been resolved manually.\"},{\"type\":\"remove_ieffect\"}]}]}]}]},{\"type\":\"text\",\"text\":\"Action; cost 1 + extra spell points. -choice N specifies EXTRA points, default 0. Spend points manually; verify cube/range, movement, condition immunities and fall timing. Deferred damage must be resolved with its button or manually, not both.\"}],\"onFalse\":[{\"type\":\"text\",\"text\":\"Invalid scaling. Use -choice 0 through 11 for EXTRA spell points. Check the remaining 12-point pool manually.\"}],\"errorBehaviour\":\"raise\"}]}</avrae>"
+      },
+      {
+        "name": "Reverse Sign \"Overturning All Under Heaven\" (1 point)",
+        "description": "(Bonus Action) Seija conjures a 30ft radius cylinder at a point she can see within 120ft. All creatures inside that sphere have their fate reversed. The first time they roll for a D20 Test, the outcome becomes reversed, turning a fail into a success and vice versa. Creatures affected by this cannot forcefully fail a save.\n\n<p><b>Avrae:</b> Apply the next-d20 reminder to selected targets. Resolve the reversed outcome yourself, then click D20 resolved.</p>\n<avrae hidden>{\"_v\":2,\"name\":\"Overturning All Under Heaven\",\"automation\":[{\"type\":\"target\",\"target\":\"each\",\"effects\":[{\"type\":\"ieffect2\",\"name\":\"Reversed Fate - {{caster.name}}\",\"desc\":\"The FIRST subsequent d20 Test has its success/failure reversed. The creature cannot voluntarily fail a save while affected. Resolve that outcome and already-applied consequences manually, then click D20 resolved. This reminder does not intercept rolls or change their numerical totals.\",\"stacking\":false,\"buttons\":[{\"label\":\"D20 resolved\",\"automation\":[{\"type\":\"text\",\"text\":\"Confirm that the first eligible d20 Test was resolved with success/failure reversed and any consequences corrected. Do not choose to fail a save to exploit this effect.\"},{\"type\":\"remove_ieffect\"}]}]}]},{\"type\":\"text\",\"text\":\"Bonus action; cost 1 spell point, spent manually. Select only creatures actually in the original area. No automatic outcome interception or resource spending.\"}]}</avrae>"
+      },
+      {
+        "name": "Deceit Sign \"Reverse Needle Attack\" (2 points)",
+        "description": "(Action) (Concentration) You conjure a hail of needle in a 10-foot Cube within 60ft. Each creature in that area takes 4d8 Piercing damage. Each creature hit must then make a DC 15 constitution saving throw or become inflicted with bleeding. At the start its turn, they take 2d8 necrotic damage, at the end of the its turn the target repeats the save, ending the effect on a success.\n\nOn your later turns, you can take a Magic action to conjure a hail of needle again.\n\nThe damage increases by 2d8 per stage for each additional spell point consumed.\n\n<p><b>Avrae:</b> Initial cast: <code>-choice N</code> gives extra points. Piercing damage happens before the save. Bleeding has start-damage/end-save buttons linked to Seija's concentration. For later Magic actions, use the concentration-granted <code>Repeat Reverse Needle</code> action; do not rerun the initial cast. Resource costs and concentration saves/removal remain manual.</p>\n<avrae hidden>{\"_v\":2,\"name\":\"Reverse Needle Attack\",\"automation\":[{\"type\":\"condition\",\"condition\":\"choice == '' or choice in [\\\"0\\\",\\\"1\\\",\\\"2\\\",\\\"3\\\",\\\"4\\\",\\\"5\\\",\\\"6\\\",\\\"7\\\",\\\"8\\\",\\\"9\\\",\\\"10\\\"]\",\"onTrue\":[{\"type\":\"target\",\"target\":\"self\",\"effects\":[{\"type\":\"ieffect2\",\"name\":\"Reverse Needle concentration\",\"desc\":\"Concentrating on Reverse Needle. Use the granted Repeat Reverse Needle attack for later Magic actions; do not recast the initial action to repeat the hail. Ending this concentration removes linked Bleeding effects.\",\"stacking\":false,\"conc\":true,\"save_as\":\"needleConcentration\",\"attacks\":[{\"attack\":{\"_v\":2,\"name\":\"Repeat Reverse Needle\",\"automation\":[{\"type\":\"condition\",\"condition\":\"choice == '' or choice in [\\\"0\\\",\\\"1\\\",\\\"2\\\",\\\"3\\\",\\\"4\\\",\\\"5\\\",\\\"6\\\",\\\"7\\\",\\\"8\\\",\\\"9\\\",\\\"10\\\"]\",\"onTrue\":[{\"type\":\"roll\",\"dice\":\"{{4+2*int(choice or 0)}}d8[piercing]\",\"name\":\"needleDamage\",\"displayName\":\"Reverse Needle piercing damage\"},{\"type\":\"target\",\"target\":\"each\",\"effects\":[{\"type\":\"damage\",\"damage\":\"{needleDamage}\",\"fixedValue\":true},{\"type\":\"save\",\"stat\":\"con\",\"dc\":\"15\",\"fail\":[{\"type\":\"ieffect2\",\"name\":\"Bleeding - Reverse Needle - {{caster.name}}\",\"desc\":\"At START of your turn: click Bleeding damage for 2d8 necrotic. At END: click End-turn CON save, DC 15; success removes only this Bleeding. Click Stop bleeding for another valid ending. Linked to Seija's concentration; clicks are manual.\",\"stacking\":false,\"parent\":\"ieffect\",\"buttons\":[{\"label\":\"Start-turn bleeding\",\"automation\":[{\"type\":\"target\",\"target\":\"self\",\"effects\":[{\"type\":\"damage\",\"damage\":\"2d8[necrotic]\",\"fixedValue\":true}]}]},{\"label\":\"End-turn CON save\",\"automation\":[{\"type\":\"target\",\"target\":\"self\",\"effects\":[{\"type\":\"save\",\"stat\":\"con\",\"dc\":\"15\",\"success\":[{\"type\":\"remove_ieffect\"}],\"fail\":[{\"type\":\"text\",\"text\":\"Bleeding continues. Do not apply another tick of damage now.\"}]}]}]},{\"label\":\"Stop bleeding\",\"automation\":[{\"type\":\"text\",\"text\":\"Use for a valid rules correction or ending condition. This removes only this target's Bleeding, not Seija's concentration.\"},{\"type\":\"remove_ieffect\"}]}]}],\"success\":[]}]},{\"type\":\"text\",\"text\":\"The ORIGINAL ability permits this later Magic action only while its concentration continues. Reuse the original scaling choice; do not increase it or invent an additional cost without a ruling. No new concentration anchor is created. Uses/spell points remain manual.\"}],\"onFalse\":[{\"type\":\"text\",\"text\":\"Invalid scaling. Use -choice 0 through 10 for EXTRA spell points. Check the remaining 12-point pool manually.\"}],\"errorBehaviour\":\"raise\"}]}}],\"buttons\":[{\"label\":\"End concentration\",\"automation\":[{\"type\":\"remove_ieffect\"}]}]}]},{\"type\":\"roll\",\"dice\":\"{{4+2*int(choice or 0)}}d8[piercing]\",\"name\":\"needleDamage\",\"displayName\":\"Reverse Needle piercing damage\"},{\"type\":\"target\",\"target\":\"each\",\"effects\":[{\"type\":\"damage\",\"damage\":\"{needleDamage}\",\"fixedValue\":true},{\"type\":\"save\",\"stat\":\"con\",\"dc\":\"15\",\"fail\":[{\"type\":\"ieffect2\",\"name\":\"Bleeding - Reverse Needle - {{caster.name}}\",\"desc\":\"At START of your turn: click Bleeding damage for 2d8 necrotic. At END: click End-turn CON save, DC 15; success removes only this Bleeding. Click Stop bleeding for another valid ending. Linked to Seija's concentration; clicks are manual.\",\"stacking\":false,\"parent\":\"needleConcentration\",\"buttons\":[{\"label\":\"Start-turn bleeding\",\"automation\":[{\"type\":\"target\",\"target\":\"self\",\"effects\":[{\"type\":\"damage\",\"damage\":\"2d8[necrotic]\",\"fixedValue\":true}]}]},{\"label\":\"End-turn CON save\",\"automation\":[{\"type\":\"target\",\"target\":\"self\",\"effects\":[{\"type\":\"save\",\"stat\":\"con\",\"dc\":\"15\",\"success\":[{\"type\":\"remove_ieffect\"}],\"fail\":[{\"type\":\"text\",\"text\":\"Bleeding continues. Do not apply another tick of damage now.\"}]}]}]},{\"label\":\"Stop bleeding\",\"automation\":[{\"type\":\"text\",\"text\":\"Use for a valid rules correction or ending condition. This removes only this target's Bleeding, not Seija's concentration.\"},{\"type\":\"remove_ieffect\"}]}]}],\"success\":[]}]},{\"type\":\"text\",\"text\":\"Initial action; concentration; cost 2 + extra spell points, spent manually. -choice N specifies extra points, default 0. Damage occurs BEFORE the CON save. Recasting this INITIAL action replaces the concentration and removes its old linked Bleeding; use the granted repeat action instead. Verify the area and range manually.\"}],\"onFalse\":[{\"type\":\"text\",\"text\":\"Invalid scaling. Use -choice 0 through 10 for EXTRA spell points. Check the remaining 12-point pool manually.\"}],\"errorBehaviour\":\"raise\"}]}</avrae>"
+      }
+    ],
+    "hitDieSize": 6
+  },
+  "sharing": {
+    "linkSharingEnabled": true
+  },
+  "_id": "6aa91af515443bd5efce5345",
+  "name": "Seija Kijin",
+  "bestiaryId": "6a9bd89315443bd5efcdd7d2",
+  "__v": 0
+}

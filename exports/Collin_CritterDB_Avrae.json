@@ -1,0 +1,107 @@
+{
+  "name": "Collin",
+  "flavor": {
+    "description": "Equipment: Studded leather armor, arcane focus.",
+    "imageUrl": "",
+    "nameIsProper": true,
+    "faction": "",
+    "environment": ""
+  },
+  "stats": {
+    "size": "Medium",
+    "race": "Humanoid (Any Race)",
+    "alignment": "Any Alignment",
+    "armorClass": 15,
+    "armorType": "Studded leather",
+    "speed": "30 ft.",
+    "numHitDie": 15,
+    "hitDieSize": 8,
+    "proficiencyBonus": 5,
+    "abilityScores": {
+      "strength": 10,
+      "dexterity": 16,
+      "constitution": 16,
+      "intelligence": 12,
+      "wisdom": 14,
+      "charisma": 20
+    },
+    "skills": [
+      {
+        "name": "Arcana",
+        "proficient": true,
+        "value": 6
+      },
+      {
+        "name": "Religion",
+        "proficient": true,
+        "value": 6
+      },
+      {
+        "name": "Insight",
+        "proficient": true,
+        "value": 7
+      }
+    ],
+    "savingThrows": [
+      {
+        "ability": "wisdom",
+        "proficient": true,
+        "value": 7
+      },
+      {
+        "ability": "charisma",
+        "proficient": true,
+        "value": 10
+      }
+    ],
+    "damageVulnerabilities": [],
+    "damageResistances": [
+      "Radiant"
+    ],
+    "damageImmunities": [],
+    "conditionImmunities": [],
+    "senses": [],
+    "languages": [
+      "Common"
+    ],
+    "challengeRating": 8,
+    "experiencePoints": 3900,
+    "additionalAbilities": [
+      {
+        "name": "Pact Magic",
+        "description": "Charisma spellcasting: save DC 18, +10 to hit. Collin has three 5th-level Pact Magic slots, regained after a Short or Long Rest. His selected spells are Guiding Bolt, Cure Wounds, and Counterspell."
+      },
+      {
+        "name": "Radiant Soul",
+        "description": "Collin has resistance to radiant damage. Once on each of his turns, when a spell deals fire or radiant damage, he can add +5 to one damage roll against one target."
+      },
+      {
+        "name": "Healing Light",
+        "description": "Bonus Action. Collin heals himself or one creature he can see within 60 ft., spending 1–5 dice from his pool of 16d6. The target regains HP equal to the roll. The pool refills after a Long Rest.\n\n<avrae hidden>\n_v: 2\nname: Healing Light\nactivation_type: 3\nautomation:\n  - type: condition\n    condition: len(targets) == 1\n    onTrue:\n      - type: condition\n        condition: choice == '' or choice == \"1\" or choice == \"2\" or choice == \"3\" or choice == \"4\" or choice == \"5\"\n        onTrue:\n          - type: variable\n            name: amount\n            value: choice or 1\n          - type: target\n            target: each\n            effects:\n              - type: damage\n                damage: -({amount}d6)\n                fixedValue: true\n        onFalse:\n          - type: text\n            text: Select one creature and a whole number from 1 to 5.\n        errorBehaviour: raise\n    onFalse:\n      - type: text\n        text: Select one creature and a whole number from 1 to 5.\n    errorBehaviour: raise\n</avrae>"
+      }
+    ],
+    "actions": [
+      {
+        "name": "Eldritch Blast",
+        "description": "Ranged Spell Attack: +10 to hit, range 120 ft., one target per beam. Hit: 10 (1d10 + 5) force damage. Collin produces three beams with one Magic action; each beam is a separate attack roll.\n\n<avrae hidden>\n_v: 2\nname: Eldritch Blast\nactivation_type: 1\nautomation:\n  - type: target\n    target: each\n    effects:\n      - type: attack\n        attackBonus: \"10\"\n        hit:\n          - type: damage\n            damage: (1d10+5)[force]\n        miss: []\n</avrae>"
+      },
+      {
+        "name": "Guiding Bolt",
+        "description": "Action. 5th-level spell, range 120 ft. Ranged spell attack +10; on a hit, 28 (8d6) radiant damage. The next attack against the target before the end of Collin's next turn has advantage.\n\n<avrae hidden>\n_v: 2\nname: Guiding Bolt\nactivation_type: 1\nautomation:\n  - type: spell\n    id: 2619136\n    level: 5\n    dc: \"18\"\n    attackBonus: \"10\"\n    castingMod: \"5\"\n</avrae>"
+      },
+      {
+        "name": "Cure Wounds",
+        "description": "Action. 5th-level spell, touch. One creature regains 10d8 + 5 HP.\n\n<avrae hidden>\n_v: 2\nname: Cure Wounds\nactivation_type: 1\nautomation:\n  - type: spell\n    id: 2619079\n    level: 5\n    dc: \"18\"\n    attackBonus: \"10\"\n    castingMod: \"5\"\n</avrae>"
+      }
+    ],
+    "reactions": [
+      {
+        "name": "Counterspell",
+        "description": "Reaction when a creature Collin sees within 60 ft. casts a spell with Verbal, Somatic, or Material components. The caster makes a DC 18 Constitution save. On failure, the spell fails and the action is wasted; an expended spell slot is not spent. Uses a 5th-level Pact Magic slot.\n\n<avrae hidden>\n_v: 2\nname: Counterspell\nactivation_type: 4\nautomation:\n  - type: spell\n    id: 2619072\n    level: 5\n    dc: \"18\"\n    attackBonus: \"10\"\n    castingMod: \"5\"\n</avrae>"
+      }
+    ],
+    "legendaryActions": [],
+    "legendaryActionsPerRound": 0,
+    "legendaryActionsDescription": "<!-- AINA_SPELLCASTING:v1:%7B%22enabled%22%3Atrue%2C%22dc%22%3A18%2C%22attackBonus%22%3A10%2C%22applyAttack%22%3Atrue%2C%22resources%22%3A%5B%7B%22name%22%3A%22Pact%20Magic%20slots%20(5th)%22%2C%22shortMode%22%3A%22fixed%22%2C%22maximum%22%3A3%2C%22shortRestore%22%3A3%2C%22longReset%22%3Atrue%7D%2C%7B%22name%22%3A%22Healing%20Light%20dice%22%2C%22shortMode%22%3A%22fixed%22%2C%22maximum%22%3A16%2C%22shortRestore%22%3A0%2C%22longReset%22%3Atrue%7D%5D%7D -->\n"
+  }
+}
