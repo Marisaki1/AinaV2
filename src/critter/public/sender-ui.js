@@ -1,9 +1,18 @@
 window.SenderUI = (() => {
-  let status = null, timer, busy = false, draft = '', filter = '', lastRecent = '';
+  let status = null, timer, busy = false, draft = '', messageDraft = '', filter = '', lastRecent = '';
+  let ttsEnabled = false, voiceId = '', voiceInfo = null, voiceFor = '', voiceLoading = false, voiceRequest = 0;
+  let speechProvider = 'groq', speechVoice = 'autumn', messageVersion = 0, voiceProvider = '';
   const pending = new Map();
   const active = () => typeof ui !== 'undefined' && ui?.tab === 'sender';
   const call = (route, method = 'GET', data) => api('sender/' + route, method, data);
   const destinationName = () => channels.find(c => c.id === ui.channelId)?.name || 'Choose a channel above';
+  const selectedSpeech = () => voiceInfo?.providers?.find(provider => provider.provider === speechProvider);
+  const speechReady = () => Boolean(selectedSpeech()?.configured && selectedSpeech()?.discovered && selectedSpeech()?.voices.some(voice => voice.id === speechVoice));
+  function clearMessage() {
+    messageDraft = ''; messageVersion++;
+    if ($('#sender-message')) { $('#sender-message').value = ''; $('#sender-message').focus(); }
+    paintState();
+  }
   async function operation(task) {
     if (busy) return;
     busy = true;
@@ -13,30 +22,91 @@ window.SenderUI = (() => {
   function observePending() {
     for (const [key, local] of pending) {
       const item = status?.recent.find(r => r.requestId === local.requestId);
+      if (item?.delivery === 'sent' && local.kind === 'message' && !local.handled) {
+        local.handled = true;
+        if (local.version === messageVersion && messageDraft === local.text) clearMessage();
+      }
       if (item && !['queued', 'sending'].includes(item.delivery) && Date.now() - local.at > 1000) pending.delete(key);
     }
   }
   async function refresh() {
     status = await call('status'); observePending();
+    if (ttsEnabled && active()) await refreshVoice();
     if (active()) { paintRecent(); paintState(); }
     return status;
   }
   function paintState() {
     if ($('#sender-state')) { $('#sender-state').textContent = status?.ready ? 'Aina online' : 'Aina offline'; $('#sender-state').dataset.ready = String(Boolean(status?.ready)); }
     if ($('#sender-custom-send')) $('#sender-custom-send').disabled = !status?.ready || !channels.some(c => c.id === ui.channelId) || busy;
+    if ($('#sender-message-send')) $('#sender-message-send').disabled = !messageDraft.trim() || !status?.ready || !channels.some(c => c.id === ui.channelId) || busy || (ttsEnabled && (voiceLoading || voiceFor !== ui.channelId || !speechReady() || !voiceInfo?.channels?.some(c => c.id === voiceId)));
+    if ($('#sender-message-clear')) $('#sender-message-clear').disabled = !messageDraft;
     document.querySelectorAll('[data-sender-button]').forEach(b => { b.disabled = !status?.ready || !channels.some(c => c.id === ui.channelId) || busy; });
     if ($('#sender-destination')) $('#sender-destination').textContent = destinationName();
     if ($('#sender-cancel')) $('#sender-cancel').hidden = !status?.queued;
+    if (ttsEnabled && (voiceFor !== ui.channelId || voiceProvider !== speechProvider) && !voiceLoading) void refreshVoice();
   }
-  async function send(text) {
+  function paintVoice() {
+    if (!$('#sender-voice-panel')) return;
+    $('#sender-voice-panel').hidden = !ttsEnabled;
+    $('#sender-tts').checked = ttsEnabled;
+    const options = '<option value="">Choose a voice channel</option>' + (voiceInfo?.channels || []).map(channel => '<option value="' + escape(channel.id) + '">' + escape(channel.name) + '</option>').join('');
+    if ($('#sender-voice-channel').innerHTML !== options) $('#sender-voice-channel').innerHTML = options;
+    $('#sender-voice-channel').value = voiceId;
+    $('#sender-voice-channel').disabled = voiceLoading || busy;
+    const providers = voiceInfo?.providers || [];
+    const providerOptions = providers.map(provider => '<option value="' + escape(provider.provider) + '">' + escape(provider.name) + '</option>').join('');
+    if ($('#sender-speech-provider').innerHTML !== providerOptions) $('#sender-speech-provider').innerHTML = providerOptions;
+    $('#sender-speech-provider').value = speechProvider;
+    $('#sender-speech-provider').disabled = voiceLoading || busy || !providers.length;
+    const speech = selectedSpeech();
+    const voiceOptions = (speech?.voices || []).map(voice => '<option value="' + escape(voice.id) + '">' + escape(voice.name) + '</option>').join('');
+    if ($('#sender-speech-voice').innerHTML !== voiceOptions) $('#sender-speech-voice').innerHTML = voiceOptions;
+    $('#sender-speech-voice').value = speechVoice;
+    $('#sender-speech-voice').disabled = voiceLoading || busy || !speech;
+    $('#sender-speech-details').textContent = speech ? speech.cost + (speech.discovered ? ' ' + speech.voices.length + ' voices available.' : '') : '';
+    $('#sender-speech-help').hidden = !speech?.help;
+    if (speech?.help) $('#sender-speech-help').href = speech.help;
+    $('#sender-voice-reload').disabled = voiceLoading || busy || !status?.ready;
+    const current = voiceInfo?.current;
+    $('#sender-voice-status').textContent = voiceLoading ? 'Loading voice channels…' : voiceInfo?.discoveryError || speech?.error || (voiceInfo ? speechProvider + ' · ' + speechVoice + ' · ' + (current ? current.status + (current.speaking ? ' · speaking' : '') + ' · ' + current.queued + ' waiting' : 'Not connected. Send message will join the selected channel.') : 'Select a text channel above first.');
+    $('#sender-voice-join').disabled = busy || voiceLoading || !voiceId;
+    $('#sender-voice-stop').disabled = busy || !current;
+    $('#sender-voice-leave').disabled = busy || !current;
+  }
+  async function refreshVoice(force = false) {
+    const channelId = ui.channelId, provider = speechProvider;
+    if (!ttsEnabled || !channelId || !status?.ready || voiceLoading) return;
+    const request = ++voiceRequest;
+    if (voiceFor !== channelId) { voiceId = ''; voiceInfo = null; }
+    voiceFor = channelId; voiceProvider = provider; voiceLoading = true; paintVoice();
+    try {
+      const result = await call('voice?channelId=' + encodeURIComponent(channelId) + '&provider=' + encodeURIComponent(provider) + (force ? '&refresh=1' : ''));
+      if (request !== voiceRequest || ui.channelId !== channelId || provider !== speechProvider) return;
+      voiceInfo = result;
+      const speech = selectedSpeech();
+      if (speech && !speech.voices.some(voice => voice.id === speechVoice)) speechVoice = speech.defaultVoice;
+      if (!result.channels.some(c => c.id === voiceId)) voiceId = [result.memberChannelId, result.current?.channelId].find(id => result.channels.some(c => c.id === id)) || '';
+    } catch (error) { if (ui.channelId === channelId && provider === speechProvider) voiceInfo = { discoveryError: error.message, channels: [], configured: false }; }
+    finally { voiceLoading = false; paintVoice(); paintState(); }
+  }
+  async function controlVoice(action) {
+    await operation(async () => {
+      voiceInfo = await call('voice', 'POST', { channelId: ui.channelId, voiceChannelId: voiceId, action, ttsProvider: speechProvider });
+      paintVoice();
+    });
+  }
+  async function send(text, kind = 'command') {
     if (!connected || !channels.some(c => c.id === ui.channelId)) { Feedback.show('Choose a destination', connected ? 'Select a channel or thread in the bar above.' : 'Start Aina first. You can still copy commands.', 'error'); return; }
-    const channelId = ui.channelId, key = channelId + '\n' + text;
+    const withSpeech = kind === 'message' && ttsEnabled;
+    if (kind === 'message' && !text.trim()) return;
+    if (withSpeech && (voiceFor !== ui.channelId || !speechReady() || !voiceInfo?.channels?.some(c => c.id === voiceId))) { Feedback.show('TTS not ready', voiceInfo?.discoveryError || selectedSpeech()?.error || 'Choose a voice and voice channel for this server first.', 'error'); return; }
+    const channelId = ui.channelId, key = kind + '\n' + channelId + '\n' + text + '\n' + (withSpeech ? [voiceId, speechProvider, speechVoice].join(':') : '');
     observePending();
     if (pending.has(key)) { Feedback.show('Already submitted', 'Check Recent posts. No duplicate was submitted.'); return; }
-    const requestId = crypto.randomUUID(); pending.set(key, { requestId, at: Date.now() });
+    const requestId = crypto.randomUUID(); pending.set(key, { requestId, at: Date.now(), kind, text, version: messageVersion });
     try {
-      await call('send', 'POST', { requestId, channelId, text });
-      Feedback.show('Submitted to Aina', 'Check Recent posts for Discord delivery. Copy the posted command to run it in Avrae.');
+      await call(kind === 'message' ? 'message' : 'send', 'POST', { requestId, channelId, text, ...(withSpeech ? { tts: true, voiceChannelId: voiceId, ttsProvider: speechProvider, ttsVoice: speechVoice } : {}) });
+      Feedback.show('Submitted to Aina', withSpeech ? 'Check Recent posts for message delivery and speech completion.' : kind === 'message' ? 'Check Recent posts for Discord delivery.' : 'Check Recent posts for Discord delivery. Copy the posted command to run it in Avrae.');
       await refresh();
     } catch (e) {
       if (e.status) pending.delete(key);
@@ -50,7 +120,7 @@ window.SenderUI = (() => {
   function paintRecent() {
     if (!$('#sender-recent')) return;
     const names = { queued: 'Queued', sending: 'Posting…', sent: 'Posted as Aina', uncertain: 'Check Discord · delivery uncertain', failed: 'Failed', cancelled: 'Cancelled' };
-    const html = (status?.recent || []).slice(0, 10).map(item => '<details class="sender-record"><summary><span class="sender-delivery" data-state="' + escape(item.delivery) + '">' + escape((names[item.delivery] || item.delivery)+(item.previewResolution==='confirmed-by-owner'?' ? Used (owner confirmed)':item.previewResolution==='cancelled'?' ? Preview cancelled':'')) + '</span><time>' + escape(new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) + '</time><code>' + escape(item.text) + '</code></summary><pre>' + escape(item.text) + '</pre>' + (item.error ? '<p class="error">' + escape(item.error) + '</p>' : '') + (item.warning ? '<p class="hint">' + escape(item.warning) + '</p>' : '') + (item.messageId && item.guildId && !item.previewResolution ? '<a href="https://discord.com/channels/' + escape(item.guildId) + '/' + escape(item.channelId) + '/' + escape(item.messageId) + '" target="_blank" rel="noopener noreferrer">Open in Discord ↗</a>' : '') + '</details>').join('') || '<div class="sender-empty"><strong>No posts yet</strong><p>Commands you post as Aina will appear here.</p></div>';
+    const html = (status?.recent || []).slice(0, 10).map(item => '<details class="sender-record"><summary><span class="sender-delivery" data-state="' + escape(item.delivery) + '">' + escape((names[item.delivery] || item.delivery)+(item.previewResolution==='confirmed-by-owner'?' ? Used (owner confirmed)':item.previewResolution==='cancelled'?' ? Preview cancelled':'')) + '</span><time>' + escape(new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) + '</time><code>' + escape(item.text) + '</code></summary><pre>' + escape(item.text) + '</pre>' + (item.speech ? '<p class="hint">TTS: ' + escape(item.speech.state) + (item.ttsVoice ? ' / ' + escape(item.ttsProvider) + ' / ' + escape(item.ttsVoice) : '') + (item.speech.error ? ' ? ' + escape(item.speech.error) : '') + '</p>' : '') + (item.error ? '<p class="error">' + escape(item.error) + '</p>' : '') + (item.warning ? '<p class="hint">' + escape(item.warning) + '</p>' : '') + (item.messageId && item.guildId && !item.previewResolution ? '<a href="https://discord.com/channels/' + escape(item.guildId) + '/' + escape(item.channelId) + '/' + escape(item.messageId) + '" target="_blank" rel="noopener noreferrer">Open in Discord ↗</a>' : '') + '</details>').join('') || '<div class="sender-empty"><strong>No posts yet</strong><p>Commands you post as Aina will appear here.</p></div>';
     if (html === lastRecent && $('#sender-recent').innerHTML === html) return;
     // Keep expanded records open while polling.
     const open = [...document.querySelectorAll('#sender-recent details[open]')].map(n => n.querySelector('code')?.textContent);
@@ -86,9 +156,25 @@ window.SenderUI = (() => {
   async function render() {
     if (!active()) return;
     if ($('#sender-custom')) draft = $('#sender-custom').value;
+    if ($('#sender-message')) messageDraft = $('#sender-message').value;
     if (!status) await refresh();
     $('#selection-panel').innerHTML = '';
     $('#content-panel').innerHTML = '<div class="sender-page-heading"><div><div class="eyebrow">DISCORD COMMANDS</div><h1>Post as Aina</h1><p id="sender-destination" class="muted"></p></div><span id="sender-state" class="sender-state" role="status"></span></div><form id="sender-compose-form" class="sender-compose-card"><label for="sender-custom">Custom command</label><div class="sender-compose"><input id="sender-custom" maxlength="1700" autocomplete="off" placeholder="' + escape(status.prefix) + 'bestiary update"><button id="sender-custom-send" class="primary">Post as Aina</button></div><p class="hint">Posts a copyable command. Paste it yourself in Discord to run it with Avrae.</p></form><div class="section-heading sender-saved-heading"><h2>Saved commands <span class="count">' + status.config.buttons.length + '</span></h2><button id="sender-add" class="small">+ Add shortcut</button></div><input id="sender-search" type="search" placeholder="Filter saved commands" aria-label="Filter saved commands"><div id="sender-buttons"></div>';
+    $('#content-panel').innerHTML += '<form id="sender-message-form" class="sender-compose-card sender-message-card"><div class="sender-message-heading"><label for="sender-message">Plain message</label><label class="sender-tts-toggle"><input id="sender-tts" type="checkbox"> Enable TTS</label></div><textarea id="sender-message" rows="3" maxlength="2000" placeholder="Type your message" spellcheck="false"></textarea><div id="sender-voice-panel" hidden><div class="sender-speech-options"><label for="sender-speech-provider">Speech provider<select id="sender-speech-provider"></select></label><label for="sender-speech-voice">Voice<select id="sender-speech-voice"></select></label></div><label for="sender-voice-channel">Voice channel (same server)</label><select id="sender-voice-channel"></select><p id="sender-speech-details" class="hint"></p><a id="sender-speech-help" class="hint" target="_blank" rel="noopener noreferrer">Provider setup documentation</a><div class="sender-voice-actions"><button type="button" id="sender-voice-reload">Reload voices</button><button type="button" id="sender-voice-join">Join voice</button><button type="button" id="sender-voice-stop">Stop speech</button><button type="button" id="sender-voice-leave">Leave voice</button></div><p id="sender-voice-status" class="hint" role="status"></p><p class="hint">Send message joins the selected voice channel automatically. Join it yourself first, or use Move Members permission. Quote markers (&gt;) are skipped in speech; posted text stays unchanged.</p></div><div class="sender-message-footer"><span class="hint">Sends exact text; clears after Discord confirms delivery.</span><div class="sender-message-actions"><button type="button" id="sender-message-clear">Clear</button><button id="sender-message-send" class="primary">Send message</button></div></div></form>';
+    $('#sender-tts').checked = ttsEnabled;
+    $('#sender-tts').onchange = async e => { ttsEnabled = e.target.checked; paintVoice(); paintState(); if (ttsEnabled) await refreshVoice(); };
+    $('#sender-voice-channel').onchange = e => { voiceId = e.target.value; paintState(); };
+    $('#sender-voice-reload').onclick = () => { void refreshVoice(true); };
+    $('#sender-speech-provider').onchange = e => { speechProvider = e.target.value; speechVoice = selectedSpeech()?.defaultVoice || ''; paintVoice(); paintState(); };
+    $('#sender-speech-voice').onchange = e => { speechVoice = e.target.value; paintVoice(); paintState(); };
+    $('#sender-voice-join').onclick = () => controlVoice('join');
+    $('#sender-voice-stop').onclick = () => controlVoice('stop');
+    $('#sender-voice-leave').onclick = () => controlVoice('leave');
+    paintVoice();
+    $('#sender-message').value = messageDraft;
+    $('#sender-message').oninput = e => { messageDraft = e.target.value; messageVersion++; paintState(); };
+    $('#sender-message-clear').onclick = clearMessage;
+    $('#sender-message-form').onsubmit = e => { e.preventDefault(); void send($('#sender-message').value, 'message'); };
     $('#sender-custom').value = draft;
     $('#sender-compose-form').onsubmit = e => { e.preventDefault(); void send($('#sender-custom').value.trim()); };
     $('#sender-search').value = filter;

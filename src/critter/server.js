@@ -59,9 +59,12 @@ function createService({ client = null, directory, ownerId, port = Number(proces
         // Same trusted-local-machine boundary as /api/post. User-account login is retired.
         if (['connect', 'repair', 'unlock', 'lock', 'disconnect', 'session'].includes(route)) return json(response, 410, { error: 'User-account sending was removed. Aina uses its existing bot connection.' });
         if (route === 'status' && request.method === 'GET') return json(response, 200, sender.view());
+        if (route === 'voice' && request.method === 'GET') return json(response, 200, await bridge.voiceState(url.searchParams.get('channelId'), url.searchParams.get('provider') || 'groq', { refresh: url.searchParams.get('refresh') === '1' }));
         const data = await body(request);
+        if (route === 'voice' && request.method === 'POST') return json(response, 200, await bridge.controlVoice(data.channelId, data.action, data.voiceChannelId, data.ttsProvider || 'groq'));
         if (route === 'cancel' && request.method === 'POST') return json(response, 200, sender.cancel());
         if (route === 'send' && request.method === 'POST') return json(response, 202, { command: sender.submit(data) });
+        if (route === 'message' && request.method === 'POST') return json(response, 202, { message: sender.submit({ ...data, kind: 'message' }) });
         if (route === 'config' && request.method === 'POST') return json(response, 200, { config: sender.configure(data), revision: store.revision });
         return json(response, 404, { error: 'Unknown sender endpoint.' });
       }

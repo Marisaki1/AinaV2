@@ -1,26 +1,16 @@
 const { MessageFlags } = require('discord.js');
 
 const fabulaManager             = require('../utils/fabulaManager');
-const { buildBondsEmbed, backButton } = require('../utils/sheetBuilder');
+const { buildSectionPage } = require('../utils/sheetBuilder');
 const { ALL_BOND_FEELINGS }     = require('../utils/constants');
 const embed = require('../../../utils/embed');
 
-function requireChar(interaction) {
-  const char = fabulaManager.load(interaction.guild.id, interaction.user.id);
-  if (!char) {
-    interaction.reply({
-      embeds: [embed.error('No Character', "You don't have a character yet.")],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-  return char;
-}
+const { requireCharacter: requireChar } = require('../utils/validation');
 
 function parseFeelings(raw) {
-  return raw
-    .split(',')
-    .map(f => f.trim())
-    .filter(f => ALL_BOND_FEELINGS.includes(f));
+  const values = raw.split(',').map(f => ALL_BOND_FEELINGS.find(valid => valid.toLowerCase() === f.trim().toLowerCase()));
+  // Reject the entire entry instead of silently discarding misspelled feelings.
+  return values.every(Boolean) ? [...new Set(values)] : [];
 }
 
 // ── /fab bond add ─────────────────────────────────────────────────────
@@ -135,8 +125,7 @@ async function handleBondView(interaction) {
   }
 
   await interaction.reply({
-    embeds:     [buildBondsEmbed(char)],
-    components: [backButton(targetUser.id)],
+    ...buildSectionPage(char, 'bonds', targetUser.id),
     flags:      MessageFlags.Ephemeral,
   });
 }

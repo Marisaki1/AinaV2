@@ -1,32 +1,19 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
+const { guardedListener } = require('./cogHandler');
 
-const eventsDir = path.join(__dirname, '..', 'events');
-
-/**
- * Scan src/events/*.js, require each, attach as Discord.js event listeners.
- * Each event file must export: { name, once?, execute }
- */
-async function loadEvents(client) {
-  const files = fs.readdirSync(eventsDir).filter(f => f.endsWith('.js'));
-
-  for (const file of files) {
-    try {
-      const event = require(path.join(eventsDir, file));
-
-      if (!event.name || !event.execute) continue;
-
-      if (event.once) {
-        client.once(event.name, (...args) => event.execute(...args, client));
-      } else {
-        client.on(event.name, (...args) => event.execute(...args, client));
-      }
-
-      console.log(`📡 Loaded event: ${event.name}`);
-    } catch (err) {
-      console.error(`❌ Failed to load event ${file}:`, err.message);
-    }
+const listeners = new WeakMap();
+async function loadEvents(client, { directory = path.join(__dirname, '..', 'events') } = {}) {
+  const events = fs.readdirSync(directory).filter(file => file.endsWith('.js')).sort().map(file => {
+    const event = require(path.join(directory, file));
+    if (!event.name || typeof event.execute !== 'function') throw new Error(`Invalid event module: ${file}`);
+    return { ...event, handler: guardedListener(`event:${event.name}`, (...args) => event.execute(...args, client)) };
+  });
+  for (const event of listeners.get(client) || []) client.removeListener(event.name, event.handler);
+  for (const event of events) {
+    client[event.once ? 'once' : 'on'](event.name, event.handler);
+    console.log(`Loaded event: ${event.name}`);
   }
+  listeners.set(client, events);
 }
-
 module.exports = { loadEvents };

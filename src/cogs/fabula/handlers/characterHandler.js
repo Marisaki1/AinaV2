@@ -12,6 +12,7 @@ const fabulaManager      = require('../utils/fabulaManager');
 const { buildMainSheet } = require('../utils/sheetBuilder');
 const { DICE_VALUES }    = require('../utils/constants');
 const embed              = require('../../../utils/embed');
+const { parseInteger, isImageUrl } = require('../utils/validation');
 
 // ── /fab character create ─────────────────────────────────────────────
 // Single modal, 5 fields max (Discord limit).
@@ -86,11 +87,11 @@ async function handleCreate(interaction) {
 
 async function handleCreateSubmit(interaction) {
   const name  = interaction.fields.getTextInputValue('name').trim();
-  const maxHp = parseInt(interaction.fields.getTextInputValue('maxHp'));
-  const maxMp = parseInt(interaction.fields.getTextInputValue('maxMp'));
-  const maxIp = parseInt(interaction.fields.getTextInputValue('maxIp'));
+  const maxHp = parseInteger(interaction.fields.getTextInputValue('maxHp'), 1, 99999);
+  const maxMp = parseInteger(interaction.fields.getTextInputValue('maxMp'), 0, 99999);
+  const maxIp = parseInteger(interaction.fields.getTextInputValue('maxIp'), 0, 999);
   const rawLv = interaction.fields.getTextInputValue('level').trim();
-  const level = rawLv ? parseInt(rawLv) : 1;
+  const level = rawLv ? parseInteger(rawLv, 1, 50) : 1;
 
   if (!name) {
     return interaction.reply({
@@ -99,16 +100,16 @@ async function handleCreateSubmit(interaction) {
     });
   }
 
-  if ([maxHp, maxMp, maxIp].some(n => isNaN(n) || n < 0)) {
+  if ([maxHp, maxMp, maxIp].some(n => n === null)) {
     return interaction.reply({
-      embeds: [embed.error('Invalid Values', 'HP, MP, and IP must be positive numbers.')],
+      embeds: [embed.error('Invalid Values', 'Enter whole numbers: HP 1–99999, MP 0–99999, and IP 0–999.')],
       flags: MessageFlags.Ephemeral,
     });
   }
 
-  if (isNaN(level) || level < 1) {
+  if (level === null) {
     return interaction.reply({
-      embeds: [embed.error('Invalid Level', 'Level must be a positive number (minimum 1).')],
+      embeds: [embed.error('Invalid Level', 'Level must be a whole number from 1 to 50.')],
       flags: MessageFlags.Ephemeral,
     });
   }
@@ -118,7 +119,7 @@ async function handleCreateSubmit(interaction) {
     hp:    { current: maxHp, max: maxHp },
     mp:    { current: maxMp, max: maxMp },
     ip:    { current: maxIp, max: maxIp },
-    level: Math.min(level, 50),
+    level,
     fabulaPoints: 3,
   });
 
@@ -162,7 +163,7 @@ async function handleView(interaction) {
     });
   }
 
-  await interaction.reply(buildMainSheet(char, targetUser.id));
+  await interaction.reply({ ...buildMainSheet(char, targetUser.id), flags: MessageFlags.Ephemeral });
 }
 
 // ── /fab character edit-identity ──────────────────────────────────────
@@ -197,7 +198,7 @@ async function handleEditIdentity(interaction) {
       new TextInputBuilder()
         .setCustomId('imageUrl').setLabel('Image URL')
         .setStyle(TextInputStyle.Short).setRequired(false)
-        .setValue(char.imageUrl || '').setPlaceholder('https://...'),
+        .setValue(char.imageUrl || '').setPlaceholder('https://...').setMaxLength(2048),
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder()
@@ -222,6 +223,13 @@ async function handleEditIdentitySubmit(interaction) {
   const imageUrl = interaction.fields.getTextInputValue('imageUrl').trim() || null;
   const theme    = interaction.fields.getTextInputValue('theme').trim();
   const origin   = interaction.fields.getTextInputValue('origin').trim();
+
+  if (!name || name.length > 50 || !isImageUrl(imageUrl)) {
+    return interaction.reply({
+      embeds: [embed.error('Invalid Identity', 'Use a name of 1–50 characters and a valid http:// or https:// image URL (or leave the image blank).')],
+      flags: MessageFlags.Ephemeral,
+    });
+  }
 
   const char = fabulaManager.update(interaction.guild.id, interaction.user.id, {
     name, pronouns, imageUrl, theme, origin,
@@ -328,7 +336,7 @@ async function handleDelete(interaction) {
 
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
-      .setCustomId(`fab_del_confirm_${interaction.user.id}`)
+      .setCustomId(`fab_del_confirm_${interaction.user.id}_${fabulaManager.characterToken(char)}`)
       .setLabel('⚠️ Delete forever')
       .setStyle(ButtonStyle.Danger),
     new ButtonBuilder()

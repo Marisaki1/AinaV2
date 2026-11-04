@@ -5,3 +5,6 @@ node_modules/
 data/
 history/
 assets/images/alarms/
+assets/audio/
+.npm-cache/
+.tts/

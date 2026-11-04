@@ -1,170 +1,90 @@
-/**
- * src/cogs/tts/index.js
- *
- * Text-to-Speech cog.
- * Commands:
- *   /ttv join [channel] — Aina joins a voice channel
- *   /ttv leave          — Aina disconnects from the voice channel
- *   /ttv say <text>     — Aina speaks the given text aloud
- */
+const { SlashCommandBuilder, ChannelType, MessageFlags, PermissionFlagsBits, escapeMarkdown } = require('discord.js');
+const tts = require('../../utils/ttsManager');
+const embed = require('../../utils/embed');
+const config = require('../../../config/config');
 
-const { SlashCommandBuilder, ChannelType, MessageFlags } = require('discord.js');
-const ttsManager   = require('../../utils/ttsManager');
-const embed        = require('../../utils/embed');
-const userRegistry = require('../../utils/userRegistry');
+const fail = (interaction, message) => interaction.reply({ embeds: [embed.error('Voice Unavailable', message)], flags: MessageFlags.Ephemeral });
+const canManage = interaction => interaction.memberPermissions?.has(PermissionFlagsBits.MoveMembers) ?? false;
+const memberChannelId = interaction => interaction.member?.voice?.channelId ?? interaction.member?.voice?.channel?.id;
 
-// ── /ttv join ────────────────────────────────────────────────────────
-
-async function handleJoin(interaction) {
-  userRegistry.record(interaction.user, interaction.guild.id, 'command');
-
-  const targetChannel = interaction.options.getChannel('channel');
-  let voiceChannel = targetChannel ?? interaction.member.voice?.channel ?? null;
-
-  if (!voiceChannel) {
-    return interaction.reply({
-      embeds: [embed.error(
-        'No Voice Channel',
-        'Please join a voice channel first, or pass one using the `channel` option.',
-      )],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-
-  if (voiceChannel.type !== ChannelType.GuildVoice) {
-    return interaction.reply({
-      embeds: [embed.error('Invalid Channel', 'That is not a voice channel.')],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-
-  const permissions = voiceChannel.permissionsFor(interaction.guild.members.me);
-  if (!permissions?.has('Connect') || !permissions?.has('Speak')) {
-    return interaction.reply({
-      embeds: [embed.error(
-        'Missing Permissions',
-        `I don't have permission to join or speak in **${voiceChannel.name}**.`,
-      )],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-
+async function join(interaction) {
+  const channel = interaction.options.getChannel('channel') ?? interaction.member?.voice?.channel;
+  if (!channel) return fail(interaction, 'Join a voice channel first, or select one with the channel option.');
+  if (channel.type !== ChannelType.GuildVoice || channel.guild.id !== interaction.guild.id) return fail(interaction, 'Select a normal voice channel in this server.');
+  if (memberChannelId(interaction) !== channel.id && !canManage(interaction)) return fail(interaction, 'Join the destination voice channel first. Members with Move Members may control voice remotely.');
+  const existing = tts.getConnection(interaction.guild.id);
+  if (existing && existing.joinConfig.channelId !== channel.id && !canManage(interaction)) return fail(interaction, 'Aina is already in another voice channel. Ask someone with Move Members to move her.');
+  if (!channel.permissionsFor(interaction.member)?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect])) return fail(interaction, 'You need View Channel and Connect permission in that channel.');
+  if (!channel.permissionsFor(interaction.guild.members.me)?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak])) return fail(interaction, 'Aina needs View Channel, Connect, and Speak permissions in that channel.');
   await interaction.deferReply();
-
   try {
-    await ttsManager.join(voiceChannel);
-    return interaction.editReply({
-      embeds: [embed.success(
-        'Joined Voice Channel',
-        `I've joined **${voiceChannel.name}**~ 🎙️\nUse \`/ttv say\` to make me speak!`,
-      )],
-    });
-  } catch (err) {
-    console.error('[TTV] Join error:', err.message);
-    return interaction.editReply({
-      embeds: [embed.error('Connection Failed', `Could not join **${voiceChannel.name}**: ${err.message}`)],
-    });
+    await tts.join(channel);
+    return interaction.editReply({ embeds: [embed.success('Connected', `Joined **${escapeMarkdown(channel.name)}**. Use /ttv say to speak, /ttv stop to clear speech, or /ttv leave to disconnect.`)], allowedMentions: { parse: [] } });
+  } catch (error) {
+    console.error('[TTV] Join failed:', error.message);
+    return interaction.editReply({ embeds: [embed.error('Connection Failed', 'Voice could not connect. Check Aina’s Connect/Speak permissions, install the declared voice dependencies with npm install, and check the bot console for details.')] });
   }
 }
 
-// ── /ttv leave ───────────────────────────────────────────────────────
-
-async function handleLeave(interaction) {
-  userRegistry.record(interaction.user, interaction.guild.id, 'command');
-
-  const disconnected = ttsManager.leave(interaction.guild.id);
-
-  if (!disconnected) {
-    return interaction.reply({
-      embeds: [embed.error('Not Connected', "I'm not in a voice channel right now.")],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-
-  return interaction.reply({
-    embeds: [embed.success('Disconnected', "I've left the voice channel. See you later~ 👋")],
-  });
-}
-
-// ── /ttv say ─────────────────────────────────────────────────────────
-
-async function handleSay(interaction) {
-  userRegistry.record(interaction.user, interaction.guild.id, 'command');
-
-  if (!ttsManager.isConnected(interaction.guild.id)) {
-    return interaction.reply({
-      embeds: [embed.error('Not Connected', 'Use `/ttv join` to put me in a voice channel first.')],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-
-  const text = interaction.options.getString('text');
-
-  if (text.length > 500) {
-    return interaction.reply({
-      embeds: [embed.error('Text Too Long', 'Please keep TTV messages under 500 characters.')],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-
+async function say(interaction) {
+  const text = interaction.options.getString('text')?.trim();
+  try { tts.validateSpeech(text, interaction.guild.id); } catch (error) { return fail(interaction, error.message); }
+  const status = tts.getStatus(interaction.guild.id);
+  if (status.queued + Number(status.speaking) >= (config.tts.maxQueueSize ?? 5)) return fail(interaction, 'The speech queue is full. Wait for a message to finish.');
   await interaction.deferReply();
-
+  await interaction.editReply({ embeds: [embed.info('Speech Queued', `Position ${status.queued + Number(status.speaking) + 1}. Speech plays in order; /ttv stop cancels the queue.`)] });
   try {
-    await ttsManager.speak(interaction.guild.id, text);
-    return interaction.editReply({
-      embeds: [embed.success('Speaking~', `🔊 **"${text}"**`)],
-    });
-  } catch (err) {
-    // Log full error details so we can see what's really failing
-    console.error('[TTV] handleSay caught error:');
-    console.error('  type   :', typeof err);
-    console.error('  value  :', err);
-    console.error('  message:', err?.message);
-    console.error('  stack  :', err?.stack);
-
-    const userMsg = err?.message ?? `Unknown error (type: ${typeof err}, value: ${JSON.stringify(err)})`;
-    return interaction.editReply({
-      embeds: [embed.error('TTV Failed', userMsg)],
-    });
+    await tts.speak(interaction.guild.id, text);
+    return interaction.editReply({ embeds: [embed.success('Speech Finished', escapeMarkdown(text))], allowedMentions: { parse: [] } });
+  } catch (error) {
+    console.error('[TTV] Speech failed:', error.message);
+    const message = error.message === 'Speech cancelled.' ? 'Speech was cancelled or Aina left the voice channel.' : /^Groq /.test(error.message) ? error.message : 'Speech could not finish. Check the connection, FFmpeg, and the speech service; details are in the bot console.';
+    return interaction.editReply({ embeds: [embed.error('Speech Stopped', message)] });
   }
 }
 
-// ── Command Definition ────────────────────────────────────────────────
-
-const ttvCommand = {
-  data: new SlashCommandBuilder()
-    .setName('ttv')
-    .setDescription("Control Aina's text-to-voice in voice channels")
-    .addSubcommand(sub => sub
-      .setName('join')
-      .setDescription('Aina joins a voice channel')
-      .addChannelOption(o => o
-        .setName('channel')
-        .setDescription('Voice channel to join (defaults to your current channel)')
-        .addChannelTypes(ChannelType.GuildVoice)
-      )
-    )
-    .addSubcommand(sub => sub
-      .setName('leave')
-      .setDescription('Aina disconnects from the voice channel')
-    )
-    .addSubcommand(sub => sub
-      .setName('say')
-      .setDescription('Aina speaks text aloud in the voice channel')
-      .addStringOption(o => o
-        .setName('text')
-        .setDescription('What should Aina say? (max 500 characters)')
-        .setRequired(true)
-        .setMaxLength(500)
-      )
-    ),
-
+const command = {
+  data: new SlashCommandBuilder().setName('ttv').setDescription('Speak text in a voice channel').setDMPermission(false)
+    .addSubcommand(sub => sub.setName('join').setDescription('Join your voice channel')
+      .addChannelOption(option => option.setName('channel').setDescription('Destination (defaults to your current channel)').addChannelTypes(ChannelType.GuildVoice)))
+    .addSubcommand(sub => sub.setName('leave').setDescription('Disconnect and cancel queued speech'))
+    .addSubcommand(sub => sub.setName('say').setDescription('Queue text to speak aloud')
+      .addStringOption(option => option.setName('text').setDescription('Text to speak (1–2000 characters; quote markers are skipped)').setRequired(true).setMinLength(1).setMaxLength(2000)))
+    .addSubcommand(sub => sub.setName('stop').setDescription('Stop current speech and clear the queue'))
+    .addSubcommand(sub => sub.setName('status').setDescription('Show the current voice channel and speech queue')),
   async execute(interaction) {
+    if (!interaction.guild) return fail(interaction, 'Use voice commands in a server.');
     const sub = interaction.options.getSubcommand();
-    if (sub === 'join')  return handleJoin(interaction);
-    if (sub === 'leave') return handleLeave(interaction);
-    if (sub === 'say')   return handleSay(interaction);
+    if (sub === 'join') return join(interaction);
+    const status = tts.getStatus(interaction.guild.id);
+    if (sub === 'status') {
+      const info = tts.configuration();
+      const connection = status ? `Channel: <#${status.channelId}>\nConnection: ${status.status}\nCurrent speech: ${status.speaking ? 'yes' : 'no'}\nWaiting: ${status.queued}` : 'Aina is not connected to voice.';
+      return interaction.reply({ embeds: [embed.info('Voice Status', `${connection}\nProvider: ${info.provider}\nVoice: ${info.voice}\n${info.error || 'Speech configuration is ready (provider access is checked when speaking).'}`)], flags: MessageFlags.Ephemeral });
+    }
+    if (!status) return fail(interaction, 'Aina is not connected. Use /ttv join first.');
+    if (memberChannelId(interaction) !== status.channelId && !canManage(interaction)) return fail(interaction, 'Join Aina’s voice channel to control speech. Members with Move Members may control voice remotely.');
+    if (sub === 'say') return say(interaction);
+    if (sub === 'stop') {
+      tts.stop(interaction.guild.id);
+      return interaction.reply({ embeds: [embed.success('Speech Stopped', 'Current and queued speech have been cancelled.')] });
+    }
+    if (sub === 'leave') {
+      tts.leave(interaction.guild.id);
+      return interaction.reply({ embeds: [embed.success('Disconnected', 'Left the voice channel and cleared queued speech.')] });
+    }
   },
 };
 
-module.exports = { commands: [ttvCommand] };
+module.exports = {
+  commands: [command],
+  events: {
+    voiceStateUpdate(_oldState, newState) {
+      if (config.tts.autoLeaveEmpty === false) return;
+      const status = tts.getStatus(newState.guild.id);
+      if (!status) return;
+      const channel = newState.guild.channels.cache.get(status.channelId);
+      if (channel?.members && !channel.members.some(member => !member.user.bot)) tts.leave(newState.guild.id);
+    },
+  },
+};

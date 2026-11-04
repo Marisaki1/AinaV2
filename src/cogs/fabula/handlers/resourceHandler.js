@@ -9,19 +9,11 @@ const {
 const fabulaManager      = require('../utils/fabulaManager');
 const { buildMainSheet } = require('../utils/sheetBuilder');
 const embed              = require('../../../utils/embed');
+const { parseInteger } = require('../utils/validation');
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
-function requireChar(interaction) {
-  const char = fabulaManager.load(interaction.guild.id, interaction.user.id);
-  if (!char) {
-    interaction.reply({
-      embeds: [embed.error('No Character', "You don't have a character yet. Use `/fab character create` first.")],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-  return char;
-}
+const { requireCharacter: requireChar } = require('../utils/validation');
 
 /**
  * Parse a value string that may be absolute ("32"), additive ("+10"), or subtractive ("-5").
@@ -29,27 +21,16 @@ function requireChar(interaction) {
  */
 function parseValueInput(raw) {
   const str = String(raw).trim();
-  if (str.startsWith('+')) {
-    const n = parseInt(str.slice(1));
-    if (isNaN(n)) return null;
-    return { mode: 'add', amount: n };
-  }
-  if (str.startsWith('-')) {
-    const n = parseInt(str.slice(1));
-    if (isNaN(n)) return null;
-    return { mode: 'sub', amount: n };
-  }
-  const n = parseInt(str);
-  if (isNaN(n)) return null;
-  return { mode: 'set', amount: n };
+  if (!/^[+-]?\d+$/.test(str)) return null;
+  const amount = parseInteger(str.replace(/^[+-]/, ''));
+  if (amount === null) return null;
+  return { mode: str[0] === '+' ? 'add' : str[0] === '-' ? 'sub' : 'set', amount };
 }
 
 /** Apply a parsed value to a current pool value, clamped between 0 and max (if provided). */
 function applyValue(current, max, parsed) {
-  if (parsed.mode === 'set') return Math.max(0, max != null ? Math.min(parsed.amount, max) : parsed.amount);
-  if (parsed.mode === 'add') return max != null ? Math.min(current + parsed.amount, max) : current + parsed.amount;
-  if (parsed.mode === 'sub') return Math.max(0, current - parsed.amount);
-  return current;
+  const next = parsed.mode === 'set' ? parsed.amount : parsed.mode === 'add' ? current + parsed.amount : current - parsed.amount;
+  return Math.max(0, Math.min(next, max ?? Number.MAX_SAFE_INTEGER));
 }
 
 // ── Generic slash handlers ────────────────────────────────────────────
@@ -95,7 +76,7 @@ async function handleFlatSlash(interaction, field) {
 
   let cur  = char[field] ?? 0;
   if (sub === 'set')    cur = Math.max(0, value);
-  if (sub === 'add')    cur = cur + value;
+  if (sub === 'add')    cur = Math.min(Number.MAX_SAFE_INTEGER, cur + value);
   if (sub === 'remove') cur = Math.max(0, cur - value);
 
   const updated = fabulaManager.update(interaction.guild.id, interaction.user.id, { [field]: cur });
@@ -157,7 +138,7 @@ async function handleQuickModal(interaction, resourceKey, targetUserId) {
   }
 
   const meta = QUICK_LABELS[resourceKey];
-  if (!meta) return;
+  if (!meta) return interaction.reply({ content: 'This resource control is no longer valid. Open `/fab character view` again.', flags: MessageFlags.Ephemeral });
 
   const modal = new ModalBuilder()
     .setCustomId(`fab_qkm_${resourceKey}`)
@@ -179,6 +160,9 @@ async function handleQuickModal(interaction, resourceKey, targetUserId) {
 }
 
 async function handleQuickModalSubmit(interaction, resourceKey) {
+  if (!QUICK_LABELS[resourceKey]) {
+    return interaction.reply({ content: 'This resource control is no longer valid. Open `/fab character view` again.', flags: MessageFlags.Ephemeral });
+  }
   const char = requireChar(interaction);
   if (!char) return;
 
@@ -211,10 +195,12 @@ async function handleQuickModalSubmit(interaction, resourceKey) {
   // Refresh the main sheet embed
   const sheet = buildMainSheet(updated, interaction.user.id);
 
-  await interaction.update(sheet);
+  if (interaction.isFromMessage?.()) await interaction.update(sheet);
+  else await interaction.reply({ ...sheet, flags: MessageFlags.Ephemeral });
 }
 
 module.exports = {
+  parseValueInput, applyValue,
   handleHp, handleMp, handleIp,
   handleFp, handleZenit, handleExp, handleLevel,
   handleQuickModal, handleQuickModalSubmit,

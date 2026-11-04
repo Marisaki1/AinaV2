@@ -1,19 +1,10 @@
 const { MessageFlags } = require('discord.js');
 
 const fabulaManager             = require('../utils/fabulaManager');
-const { buildSpellsEmbed, backButton } = require('../utils/sheetBuilder');
+const { buildSectionPage } = require('../utils/sheetBuilder');
 const embed = require('../../../utils/embed');
 
-function requireChar(interaction) {
-  const char = fabulaManager.load(interaction.guild.id, interaction.user.id);
-  if (!char) {
-    interaction.reply({
-      embeds: [embed.error('No Character', "You don't have a character yet.")],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-  return char;
-}
+const { requireCharacter: requireChar } = require('../utils/validation');
 
 // ── /fab spell add ────────────────────────────────────────────────────
 
@@ -52,6 +43,10 @@ async function handleSpellEdit(interaction) {
   const mpCost      = interaction.options.getInteger('mp-cost');
   const target      = interaction.options.getString('target');
   const description = interaction.options.getString('description');
+
+  if (mpCost === null && target === null && description === null) {
+    return interaction.reply({ content: 'Choose at least one field to edit: mp-cost, target, or description.', flags: MessageFlags.Ephemeral });
+  }
 
   const spells = char.spells.map(s => {
     if (s.name.toLowerCase() !== name.toLowerCase()) return s;
@@ -117,8 +112,7 @@ async function handleSpellList(interaction) {
   }
 
   await interaction.reply({
-    embeds:     [buildSpellsEmbed(char)],
-    components: [backButton(targetUser.id)],
+    ...buildSectionPage(char, 'spells', targetUser.id),
     flags:      MessageFlags.Ephemeral,
   });
 }
@@ -156,6 +150,10 @@ async function handleAbilityEdit(interaction) {
 
   const name        = interaction.options.getString('name').trim();
   const description = interaction.options.getString('description');
+
+  if (!char.abilities.some(a => a.name.toLowerCase() === name.toLowerCase())) {
+    return interaction.reply({ embeds: [embed.error('Ability Not Found', `No ability named "${name}" exists.`)], flags: MessageFlags.Ephemeral });
+  }
 
   const abilities = char.abilities.map(a => {
     if (a.name.toLowerCase() !== name.toLowerCase()) return a;

@@ -1,49 +1,55 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
+const { logError } = require('./historyHandler');
 
 const cogDir = path.join(__dirname, '..', 'cogs');
-const allCommands = []; // Collects SlashCommandBuilder JSON for registration
+let allCommands = [];
+const listeners = new WeakMap();
 
-/**
- * Scan src/cogs/*, require each index.js, register commands on the client.
- * Each cog's index.js must export: { commands: [{ data, execute }], events? }
- */
-async function loadCogs(client) {
-  const cogFolders = fs.readdirSync(cogDir).filter(f =>
-    fs.statSync(path.join(cogDir, f)).isDirectory()
-  );
+function guardedListener(context, handler) {
+  return (...args) => Promise.resolve().then(() => handler(...args)).catch(error => {
+    console.error(`[${context}]`, error?.message ?? error);
+    logError(context, error);
+  });
+}
 
-  for (const folder of cogFolders) {
-    const indexPath = path.join(cogDir, folder, 'index.js');
-    if (!fs.existsSync(indexPath)) continue;
-
+async function loadCogs(client, { directory = cogDir } = {}) {
+  const commands = new Map();
+  const events = [];
+  const failures = [];
+  for (const folder of fs.readdirSync(directory, { withFileTypes: true }).filter(item => item.isDirectory()).map(item => item.name).sort()) {
+    const filename = path.join(directory, folder, 'index.js');
+    if (!fs.existsSync(filename)) continue;
     try {
-      const cog = require(indexPath);
-
-      if (!cog.commands || !Array.isArray(cog.commands)) continue;
-
+      const cog = require(filename);
+      if (!Array.isArray(cog.commands)) throw new Error('Cog must export a commands array.');
       for (const command of cog.commands) {
-        if (!command.data || !command.execute) continue;
-        client.commands.set(command.data.name, command);
-        allCommands.push(command.data.toJSON());
+        if (!command.data?.toJSON || typeof command.execute !== 'function') throw new Error('Invalid command definition.');
+        const definition = command.data.toJSON();
+        if (commands.has(definition.name)) throw new Error(`Duplicate command: ${definition.name}`);
+        command.category = folder;
+        commands.set(definition.name, { command, definition });
       }
-
-      // If the cog exposes extra event handlers, attach them
-      if (cog.events) {
-        for (const [event, handler] of Object.entries(cog.events)) {
-          client.on(event, (...args) => handler(...args, client));
-        }
+      for (const [name, handler] of Object.entries(cog.events || {})) {
+        if (typeof handler !== 'function') throw new Error(`Invalid event handler: ${name}`);
+        events.push({ name, handler: guardedListener(`cog:${folder}:${name}`, (...args) => handler(...args, client)) });
       }
-
-      console.log(`⚙️  Loaded cog: ${folder} (${cog.commands.length} commands)`);
-    } catch (err) {
-      console.error(`❌ Failed to load cog ${folder}:`, err.message);
+      console.log(`Loaded cog: ${folder} (${cog.commands.length} commands)`);
+    } catch (error) {
+      failures.push(new Error(`${folder}: ${error.message}`, { cause: error }));
     }
   }
+  // Do not bulk-register a partial list: Discord would remove commands belonging
+  // to a failed cog. Stage everything before changing the client.
+  if (failures.length) throw new AggregateError(failures, `Unable to load cogs: ${failures.map(error => error.message).join('; ')}`);
+  for (const { name, handler } of listeners.get(client) || []) client.removeListener(name, handler);
+  client.commands.clear();
+  for (const [name, { command }] of commands) client.commands.set(name, command);
+  allCommands = [...commands.values()].map(({ definition }) => definition);
+  for (const { name, handler } of events) client.on(name, handler);
+  listeners.set(client, events);
+  return getAllCommands();
 }
 
-function getAllCommands() {
-  return allCommands;
-}
-
-module.exports = { loadCogs, getAllCommands };
+function getAllCommands() { return structuredClone(allCommands); }
+module.exports = { loadCogs, getAllCommands, guardedListener };

@@ -11,7 +11,7 @@ module.exports = {
   // ═══════════════════════════════════
   // OWNER / PAPA
   // ═══════════════════════════════════
-  ownerId: '113974200267571201',   // Discord ID of the server owner (Papa)
+  ownerId: process.env.OWNER_ID?.trim() || '113974200267571201',
 
   // ═══════════════════════════════════
   // AINA'S PERSONALITY
@@ -68,14 +68,40 @@ You never break character — you ARE Aina, not an AI assistant.`;
     model: process.env.GROQ_MODEL?.trim() || 'openai/gpt-oss-20b',
     maxTokens: 1000,
     memoryLimit: 20,           // Messages kept per user in memory
+    memoryTtlMs: 60 * 60 * 1000, // Idle conversations expire after one hour
+    maxSessions: 1000,
+    maxInputLength: 4000,
+    timeoutMs: 30000,
   },
 
   // ═══════════════════════════════════
   // TTS SETTINGS
   // ═══════════════════════════════════
   tts: {
-    voice: 'en-US-JennyNeural',  // Microsoft Edge TTS voice
+    provider: process.env.TTS_PROVIDER?.trim() || 'edge',
+    groqModel: process.env.GROQ_TTS_MODEL?.trim() || 'canopylabs/orpheus-v1-english',
+    groqVoice: process.env.GROQ_TTS_VOICE?.trim() || 'autumn',
+    voice: process.env.TTS_VOICE?.trim() || 'en-US-JennyNeural',
+    backends: {
+      windows: { voice: process.env.WINDOWS_TTS_VOICE || '' },
+      piper: { url: process.env.PIPER_TTS_URL || 'http://127.0.0.1:5000', voice: process.env.PIPER_TTS_VOICE || 'en_US-lessac-medium' },
+      kokoro: { url: process.env.KOKORO_TTS_URL || 'http://127.0.0.1:8880/v1', model: 'kokoro', voice: process.env.KOKORO_TTS_VOICE || 'af_heart' },
+      local: { url: process.env.LOCAL_TTS_URL || 'http://127.0.0.1:8080/v1', model: process.env.LOCAL_TTS_MODEL || 'tts', voice: process.env.LOCAL_TTS_VOICE || 'default', voices: (process.env.LOCAL_TTS_VOICES || 'default').split(',').map(v => v.trim()).filter(Boolean) },
+      espeak: { executable: process.env.ESPEAK_TTS_PATH || 'espeak-ng', voice: process.env.ESPEAK_TTS_VOICE || 'en-us' },
+      gemini: { model: process.env.GEMINI_TTS_MODEL || 'gemini-3.8-flash-lite-tts', voice: process.env.GEMINI_TTS_VOICE || 'Charon' },
+      elevenlabs: { model: process.env.ELEVENLABS_TTS_MODEL || 'eleven_flash_v2_5', voice: process.env.ELEVENLABS_TTS_VOICE || '' },
+      cartesia: { model: process.env.CARTESIA_TTS_MODEL || 'sonic-3.6', version: process.env.CARTESIA_TTS_VERSION || '2026-08-14', voice: process.env.CARTESIA_TTS_VOICE || '' },
+      azure: { region: process.env.AZURE_TTS_REGION || '', voice: process.env.AZURE_TTS_VOICE || 'en-US-GuyNeural' },
+      google: { voice: process.env.GOOGLE_TTS_VOICE || 'en-US-Standard-B' },
+      ibm: { url: process.env.IBM_TTS_URL || '', voice: process.env.IBM_TTS_VOICE || 'en-US_MichaelV3Voice' },
+      cloudflare: { accountId: process.env.CLOUDFLARE_TTS_ACCOUNT_ID || '', voice: process.env.CLOUDFLARE_TTS_VOICE || 'aura-2-en/apollo' },
+    },
     audioDir: 'assets/audio',    // Temporary audio file cache
+    maxQueueSize: 5,
+    connectionTimeoutMs: 15000,
+    synthesisTimeoutMs: 30000,
+    playbackTimeoutMs: 120000,
+    autoLeaveEmpty: true,
   },
 
   // ═══════════════════════════════════
@@ -89,7 +115,7 @@ You never break character — you ARE Aina, not an AI assistant.`;
   // ALARM SETTINGS
   // ═══════════════════════════════════
   alarms: {
-    timezone: 'Asia/Manila',
+    timezone: process.env.ALARM_TIMEZONE?.trim() || 'Asia/Manila',
     imagesDir: 'assets/images/alarms',
     dataDir: 'data/alarms',
     maxAlarmsPerGuild: 50,
@@ -101,6 +127,8 @@ You never break character — you ARE Aina, not an AI assistant.`;
   emoji: {
     dataDir: 'data/emoji',
     maxScanDays: 365,
+    maxScanMessages: 50000,
+    maxScanDurationMs: 600000,
   },
 
   // ═══════════════════════════════════
@@ -139,8 +167,12 @@ You never break character — you ARE Aina, not an AI assistant.`;
   // DEVELOPER SETTINGS
   // ═══════════════════════════════════
   dev: {
-    guildOnly: true,            // true = instant slash cmd registration, false = global (1hr delay)
-    guildId: 'PASTE_YOUR_SERVER_ID_HERE',
+    commandGuildIds: (process.env.COMMAND_GUILD_IDS || '').split(',').map(id => id.trim()).filter(Boolean),
+    // Preserve existing global deployments when neither scope nor guild is set.
+    // New installations should explicitly choose a scope in .env.
+    guildOnly: process.env.COMMAND_SCOPE ? process.env.COMMAND_SCOPE === 'guild' : Boolean(process.env.GUILD_ID?.trim()),
+    guildId: process.env.GUILD_ID?.trim() || 'PASTE_YOUR_SERVER_ID_HERE',
+    registerCommands: process.env.REGISTER_COMMANDS !== 'false',
     verboseLogging: true,
   },
 };

@@ -2,6 +2,7 @@
 const path = require('path');
 const { randomBytes } = require('crypto');
 const { ButtonBuilder, ButtonStyle, ActionRowBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
+const tts = require('../utils/ttsManager');
 
 class DiscordBridge {
   constructor(client, directory, ownerId = process.env.CRITTER_OWNER_ID || '') {
@@ -71,15 +72,94 @@ class DiscordBridge {
     }
     return out.sort((a, b) => a.name.localeCompare(b.name));
   }
+  async messageDestination(channelId) {
+    const channel = await this.client.channels.fetch(channelId).catch(() => null);
+    const ownerId = await this.resolveOwner();
+    const member = await channel?.guild?.members.fetch(ownerId).catch(() => null);
+    if (!channel || !member || !await this.accessible(channel, member)) throw new Error('Choose a channel or active thread both you and Aina can access and post in.');
+    return channel;
+  }
+  async voiceContext(channelId, voiceChannelId, { current = false } = {}) {
+    if (!this.client?.isReady() || this.client.isShuttingDown) throw new Error('Aina is offline or shutting down.');
+    const textChannel = await this.messageDestination(channelId);
+    const guild = textChannel.guild;
+    const member = await guild.members.fetch(await this.resolveOwner());
+    const status = tts.getStatus(guild.id);
+    const targetId = current ? status?.channelId : voiceChannelId || member.voice?.channelId || status?.channelId;
+    if (!targetId) throw new Error('Join a voice channel in this server, then select it in the TTS panel.');
+    const voice = guild.channels.cache.get(targetId) || await guild.channels.fetch(targetId).catch(() => null);
+    if (!voice || voice.type !== ChannelType.GuildVoice || voice.guild.id !== guild.id) throw new Error('Choose a normal voice channel in the same server as the message.');
+    const manage = member.permissions?.has(PermissionFlagsBits.MoveMembers);
+    if (member.voice?.channelId !== voice.id && !manage) throw new Error('Join the selected voice channel first. Move Members permission allows remote voice control.');
+    if (status && status.channelId !== voice.id && !manage) throw new Error('Aina is already in another voice channel. Move Members permission is required to move her.');
+    if (!voice.permissionsFor(member)?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect]) ||
+        !voice.permissionsFor(this.client.user)?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak])) {
+      throw new Error('You need View Channel/Connect, and Aina needs View Channel/Connect/Speak in the selected voice channel.');
+    }
+    return { guild, member, voice };
+  }
+  async voiceState(channelId, provider = 'groq', { refresh = false } = {}) {
+    if (!this.client?.isReady()) throw new Error('Start Aina to use voice.');
+    const textChannel = await this.messageDestination(channelId);
+    const guild = textChannel.guild;
+    const member = await guild.members.fetch(await this.resolveOwner());
+    const channels = [...guild.channels.cache.values()].filter(channel => channel.type === ChannelType.GuildVoice &&
+      channel.permissionsFor(member)?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect]) &&
+      channel.permissionsFor(this.client.user)?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak]))
+      .map(channel => ({ id: channel.id, name: channel.name })).sort((a, b) => a.name.localeCompare(b.name));
+    const providers = tts.voiceChoices();
+    const discovered = await tts.discoverVoices(provider, { refresh });
+    const index = providers.findIndex(item => item.provider === provider);
+    if (index < 0) throw new Error('Choose a supported TTS provider.');
+    providers[index] = discovered;
+    return { guildId: guild.id, channels, memberChannelId: member.voice?.channelId || '', current: tts.getStatus(guild.id), ...tts.configuration(), providers };
+  }
+  async controlVoice(channelId, action, voiceChannelId, provider = 'groq') {
+    if (!['join', 'stop', 'leave'].includes(action)) throw new Error('Unknown voice action.');
+    const { guild, voice } = await this.voiceContext(channelId, voiceChannelId, { current: action !== 'join' });
+    if (action === 'join') await tts.join(voice);
+    else if (action === 'stop') tts.stop(guild.id);
+    else tts.leave(guild.id);
+    return this.voiceState(channelId, provider);
+  }
+  async postMessage(channelId, text, { nonce, tts: withSpeech = false, voiceChannelId, ttsProvider, ttsVoice, onSpeechState } = {}) {
+    if (!this.client?.isReady()) throw new Error('Aina is offline. Start the bot.');
+    require('./command-sender').validMessage(text);
+    const channel = await this.messageDestination(channelId);
+    let voice;
+    if (withSpeech) {
+      tts.validateSpeech(text, channel.guild.id, { provider: ttsProvider, voice: ttsVoice });
+      ({ voice } = await this.voiceContext(channelId, voiceChannelId));
+      await tts.join(voice);
+    }
+    let message;
+    try {
+      message = await channel.send({
+        content: text,
+        allowedMentions: { parse: [], repliedUser: false },
+        nonce: nonce || randomBytes(12).toString('hex'), enforceNonce: true,
+      });
+    } catch (error) {
+      const rejected = Number(error.status) >= 400 && Number(error.status) < 500;
+      return { posted: false, uncertain: !rejected, error: rejected ? 'Discord rejected the message. Check channel permissions and Aina status.' : 'Discord delivery was not confirmed. Check the channel before sending again.' };
+    }
+    if (!message?.id) return { posted: false, uncertain: true, error: 'No message confirmation received. Check Discord before sending again.' };
+    const result = { posted: true, messageId: message.id, guildId: channel.guild.id };
+    if (withSpeech) {
+      result.voiceChannelId = voice.id;
+      // Keep text delivery confirmed even if speech later fails. Never retry
+      // paid synthesis or resend the text automatically after partial playback.
+      result.speechCompletion = Promise.resolve().then(() => tts.speak(channel.guild.id, text, { channelId: voice.id, onState: onSpeechState, provider: ttsProvider, voice: ttsVoice }))
+        .then(() => ({ state: 'completed' }), error => ({ state: /cancelled/i.test(error.message) ? 'cancelled' : 'failed', error: error.message }));
+    }
+    return result;
+  }
   async post(channelId, commands, commandPrefix, { nonce } = {}) {
     if (!this.client?.isReady()) throw new Error('Aina is offline. Start the bot or copy the command.');
     if (!Array.isArray(commands) || !commands.length || commands.length > 50) throw new Error('Post between 1 and 50 command previews at a time.');
     const { validText } = require('./command-sender');
     commands.forEach(command => validText(command, commandPrefix));
-    const channel = await this.client.channels.fetch(channelId).catch(() => null);
-    const ownerId = await this.resolveOwner();
-    const member = await channel?.guild?.members.fetch(ownerId).catch(() => null);
-    if (!channel || !member || !await this.accessible(channel, member)) throw new Error('Choose a channel or active thread both you and Aina can access and post in.');
+    const channel = await this.messageDestination(channelId);
     const results = [];
     for (const command of commands) {
       let message;

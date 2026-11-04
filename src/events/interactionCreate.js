@@ -1,112 +1,41 @@
 const { MessageFlags } = require('discord.js');
 const { logCommand, logError } = require('../handlers/historyHandler');
+const registry = require('../utils/userRegistry');
 const embed = require('../utils/embed');
-const { DUNGEON_BUTTONS } = require('../../config/constants');
-const dungeonManager = require('../utils/dungeonManager');
+
+async function reportFailure(interaction, error) {
+  console.error('[Interaction]', error?.message ?? error);
+  logError(`interaction:${interaction.commandName || interaction.customId || 'unknown'}`, error);
+  const payload = {
+    embeds: [embed.error('Something went wrong', 'This action could not be completed. Check Aina’s console for details, then try again.')],
+    allowedMentions: { parse: [] },
+  };
+  try {
+    if (interaction.deferred && !interaction.replied) await interaction.editReply(payload);
+    else if (interaction.replied) await interaction.followUp({ ...payload, flags: MessageFlags.Ephemeral });
+    else await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
+  } catch (replyError) { logError('interaction:error-reply', replyError); }
+}
 
 module.exports = {
   name: 'interactionCreate',
   async execute(interaction, client) {
-
-    // ── Slash Commands ─────────────────────────────────────────
-    if (interaction.isChatInputCommand()) {
-      const command = client.commands.get(interaction.commandName);
-      if (!command) return;
-
-      try {
-        logCommand(interaction);
-        await command.execute(interaction, client);
-      } catch (err) {
-        console.error(`[Command] Error in /${interaction.commandName}:`, err.message);
-        logError(`command:${interaction.commandName}`, err);
-        const reply = {
-          embeds: [embed.error('Something went wrong', err.message)],
-          flags: MessageFlags.Ephemeral,
-        };
-        if (interaction.replied || interaction.deferred) {
-          await interaction.followUp(reply);
-        } else {
-          await interaction.reply(reply);
+    if (client.isShuttingDown) return;
+    try {
+      if (interaction.isChatInputCommand()) {
+        const command = client.commands.get(interaction.commandName);
+        if (!command) return interaction.reply({ content: 'This command is unavailable. Ask the host to check command registration.', flags: MessageFlags.Ephemeral });
+        if (['alarm', 'dungeon', 'emoji', 'fab', 'ttv'].includes(interaction.commandName) && !interaction.guild) {
+          return interaction.reply({ content: 'Use this command in a server.', flags: MessageFlags.Ephemeral });
         }
+        logCommand(interaction);
+        registry.record(interaction.user, interaction.guild?.id, 'command');
+        await command.execute(interaction, client);
+      } else if (interaction.isButton?.()) {
+        const dungeon = require('../cogs/dungeon');
+        if (dungeon.isDungeonButton(interaction.customId)) await dungeon.handleButton(interaction);
       }
-      return;
-    }
-
-    // ── Non-button components — skip ───────────────────────────
-    if (interaction.isMessageComponent && !interaction.isButton()) return;
-
-    // ── Dungeon Buttons ────────────────────────────────────────
-    if (interaction.isButton()) {
-      const { customId, user, guild } = interaction;
-      const buttonIds = Object.values(DUNGEON_BUTTONS);
-      if (!buttonIds.includes(customId)) return;
-
-      const state = dungeonManager.get(guild.id);
-      if (!state) {
-        await interaction.reply({
-          embeds: [embed.error('No Active Dungeon', 'There is no active dungeon in this server.')],
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
-      }
-
-      if (!state.players.includes(user.id)) {
-        await interaction.reply({
-          embeds: [embed.error('Not Your Dungeon', 'You are not part of this dungeon!')],
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
-      }
-
-      await interaction.deferUpdate();
-
-      const { buildDungeonMessage } = require('../cogs/dungeon/index');
-
-      if (customId === DUNGEON_BUTTONS.QUIT) {
-        dungeonManager.remove(guild.id);
-        await interaction.editReply({ content: '🏃 The party fled the dungeon!', embeds: [], components: [] });
-        return;
-      }
-
-      if (customId === DUNGEON_BUTTONS.STATUS) {
-        const render = dungeonManager.renderCurrent(guild.id);
-        const { embeds, components } = buildDungeonMessage(state, render);
-        await interaction.editReply({ embeds, components });
-        return;
-      }
-
-      // Movement
-      const dirMap = {
-        [DUNGEON_BUTTONS.UP]:       { dr: -1, dc:  0 },
-        [DUNGEON_BUTTONS.DOWN]:     { dr:  1, dc:  0 },
-        [DUNGEON_BUTTONS.LEFT]:     { dr:  0, dc: -1 },
-        [DUNGEON_BUTTONS.RIGHT]:    { dr:  0, dc:  1 },
-        [DUNGEON_BUTTONS.INTERACT]: null,
-      };
-
-      const dir = dirMap[customId];
-      let result;
-
-      if (dir === null) {
-        result = { moved: true, event: { msg: '✋ Nothing to interact with here.' } };
-      } else {
-        result = dungeonManager.move(guild.id, dir.dr, dir.dc);
-      }
-
-      if (!result.moved && dir !== null) return;
-
-      if (result.won) {
-        dungeonManager.remove(guild.id);
-        await interaction.editReply({
-          embeds: [embed.success('Dungeon Cleared! 🏆', `The party conquered the dungeon in **${state.steps}** steps! Incredible!`)],
-          components: [],
-        });
-        return;
-      }
-
-      const render = dungeonManager.renderCurrent(guild.id);
-      const { embeds, components } = buildDungeonMessage(state, render, result.event);
-      await interaction.editReply({ embeds, components });
-    }
+    } catch (error) { await reportFailure(interaction, error); }
   },
+  reportFailure,
 };

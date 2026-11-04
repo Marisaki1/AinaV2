@@ -1,20 +1,10 @@
 const { MessageFlags } = require('discord.js');
 
 const fabulaManager          = require('../utils/fabulaManager');
-const { buildEquipmentEmbed, backButton } = require('../utils/sheetBuilder');
-const { DAMAGE_TYPES, WEAPON_CATEGORIES } = require('../utils/constants');
+const { buildSectionPage } = require('../utils/sheetBuilder');
 const embed = require('../../../utils/embed');
 
-function requireChar(interaction) {
-  const char = fabulaManager.load(interaction.guild.id, interaction.user.id);
-  if (!char) {
-    interaction.reply({
-      embeds: [embed.error('No Character', "You don't have a character yet.")],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-  return char;
-}
+const { requireCharacter: requireChar } = require('../utils/validation');
 
 // ── /fab equipment view ───────────────────────────────────────────────
 
@@ -30,8 +20,7 @@ async function handleView(interaction) {
   }
 
   await interaction.reply({
-    embeds:     [buildEquipmentEmbed(char)],
-    components: [backButton(targetUser.id)],
+    ...buildSectionPage(char, 'equipment', targetUser.id),
     flags:      MessageFlags.Ephemeral,
   });
 }
@@ -42,7 +31,7 @@ async function handleWeapon(interaction, slot) {
   const char = requireChar(interaction);
   if (!char) return;
 
-  const name       = interaction.options.getString('name');
+  const name       = interaction.options.getString('name').trim();
   const accuracy   = interaction.options.getString('accuracy')   ?? '';
   const damage     = interaction.options.getString('damage')     ?? '';
   const damageType = interaction.options.getString('damage-type') ?? '';
@@ -50,7 +39,7 @@ async function handleWeapon(interaction, slot) {
   const quality    = interaction.options.getString('quality')    ?? '';
 
   const weapon = { name, accuracy, damage, damageType, category, quality };
-  const char2  = fabulaManager.update(interaction.guild.id, interaction.user.id, {
+  fabulaManager.update(interaction.guild.id, interaction.user.id, {
     equipment: { ...char.equipment, [slot]: weapon },
   });
 
@@ -69,7 +58,7 @@ async function handleArmor(interaction) {
   const char = requireChar(interaction);
   if (!char) return;
 
-  const name       = interaction.options.getString('name');
+  const name       = interaction.options.getString('name').trim();
   const def        = interaction.options.getInteger('def')        ?? 0;
   const mdef       = interaction.options.getInteger('mdef')       ?? 0;
   const initiative = interaction.options.getInteger('initiative') ?? 0;
@@ -91,7 +80,7 @@ async function handleShield(interaction) {
   const char = requireChar(interaction);
   if (!char) return;
 
-  const name    = interaction.options.getString('name');
+  const name    = interaction.options.getString('name').trim();
   const def     = interaction.options.getInteger('def')     ?? 0;
   const mdef    = interaction.options.getInteger('mdef')    ?? 0;
   const quality = interaction.options.getString('quality')  ?? '';
@@ -113,7 +102,7 @@ async function handleAccessoryAdd(interaction) {
   if (!char) return;
 
   const slot   = interaction.options.getInteger('slot') - 1; // 1-indexed → 0-indexed
-  const name   = interaction.options.getString('name');
+  const name   = interaction.options.getString('name').trim();
   const effect = interaction.options.getString('effect') ?? '';
 
   if (slot < 0 || slot > 2) {
@@ -155,13 +144,7 @@ async function handleAccessoryRemove(interaction) {
   accessories[slot] = null;
 
   fabulaManager.update(interaction.guild.id, interaction.user.id, {
-    equipment: { ...char.equipment, accessories: accessories.filter((_, i) => i !== slot || accessories[i] !== null) },
-  });
-
-  // Rebuild to correctly splice
-  const newAcc = char.equipment.accessories.filter((_, i) => i !== slot);
-  fabulaManager.update(interaction.guild.id, interaction.user.id, {
-    equipment: { ...char.equipment, accessories: newAcc },
+    equipment: { accessories },
   });
 
   await interaction.reply({
@@ -176,7 +159,7 @@ async function handleItemAdd(interaction) {
   const char = requireChar(interaction);
   if (!char) return;
 
-  const name = interaction.options.getString('name');
+  const name = interaction.options.getString('name').trim();
   const qty  = interaction.options.getInteger('qty')  ?? 1;
   const desc = interaction.options.getString('desc')  ?? '';
 
@@ -184,7 +167,7 @@ async function handleItemAdd(interaction) {
   const existing = items.findIndex(it => it.name.toLowerCase() === name.toLowerCase());
 
   if (existing >= 0) {
-    items[existing].qty = (items[existing].qty ?? 1) + qty;
+    items[existing] = { ...items[existing], qty: Math.min(Number.MAX_SAFE_INTEGER, (items[existing].qty ?? 1) + qty) };
   } else {
     items.push({ name, qty, desc });
   }
@@ -205,7 +188,7 @@ async function handleItemRemove(interaction) {
   const char = requireChar(interaction);
   if (!char) return;
 
-  const name = interaction.options.getString('name').toLowerCase();
+  const name = interaction.options.getString('name').trim().toLowerCase();
   const qty  = interaction.options.getInteger('qty') ?? null;
 
   const items = [...(char.equipment.items ?? [])];
@@ -275,6 +258,10 @@ async function handleStats(interaction) {
   if (def        != null) updates.def        = Math.max(0, def);
   if (mdef       != null) updates.mdef       = Math.max(0, mdef);
   if (initiative != null) updates.initiative = initiative.trim();
+
+  if (!Object.keys(updates).length) {
+    return interaction.reply({ content: 'Choose at least one total to update: def, mdef, or initiative.', flags: MessageFlags.Ephemeral });
+  }
 
   const updated = fabulaManager.update(interaction.guild.id, interaction.user.id, updates);
 

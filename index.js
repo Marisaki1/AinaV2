@@ -1,117 +1,124 @@
-require('dotenv').config();
-const { Client, GatewayIntentBits, Collection, REST, Routes, Partials } = require('discord.js');
+const path = require('node:path');
+const { Client, GatewayIntentBits, Collection, REST, Partials, Events } = require('discord.js');
+const { syncCommands } = require('./src/utils/commandRegistration');
 const { loadCogs, getAllCommands } = require('./src/handlers/cogHandler');
 const { loadEvents } = require('./src/handlers/eventHandler');
 const { logSession, logError } = require('./src/handlers/historyHandler');
-const { startScheduler } = require('./src/utils/alarmScheduler');
-const config = require('./config/config');
-const fs = require('fs');
-const { createService } = require('./src/critter/server');
+const { ROOT } = require('./src/utils/jsonStore');
 
-// ── Validate environment ─────────────────────────────────────────────
+function validateEnvironment(env = process.env, settings = require('./config/config')) {
+  const problems = [];
+  if (env.COMMAND_SCOPE && !['guild', 'global'].includes(env.COMMAND_SCOPE)) problems.push('COMMAND_SCOPE must be guild or global.');
+  if (env.REGISTER_COMMANDS && !['true', 'false'].includes(env.REGISTER_COMMANDS)) problems.push('REGISTER_COMMANDS must be true or false.');
+  if (env.COMMAND_GUILD_IDS && env.COMMAND_GUILD_IDS.split(',').some(id => !/^\d{17,20}$/.test(id.trim()))) problems.push('COMMAND_GUILD_IDS must be a comma-separated list of server IDs.');
+  if (!env.DISCORD_TOKEN?.trim() || /^your_|^paste_/i.test(env.DISCORD_TOKEN)) problems.push('Set DISCORD_TOKEN in .env.');
+  if (!/^\d{17,20}$/.test(env.CLIENT_ID || '')) problems.push('Set CLIENT_ID to your Discord application ID.');
+  if (settings.dev.registerCommands !== false && settings.dev.guildOnly && !/^\d{17,20}$/.test(settings.dev.guildId || '')) {
+    problems.push('Guild command registration requires GUILD_ID. Set COMMAND_SCOPE=global only if global registration is intended.');
+  }
+  if (!require('moment-timezone').tz.zone(settings.alarms.timezone)) problems.push('ALARM_TIMEZONE must be a valid IANA timezone.');
+  return problems;
+}
 
-// ── Ensure directories exist ─────────────────────────────────────────
+function createClient() {
+  const client = new Client({
+    partials: [Partials.Channel, Partials.Message, Partials.Reaction, Partials.User],
+    intents: [
+      GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.GuildMessageReactions, GatewayIntentBits.GuildVoiceStates,
+      GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers,
+      GatewayIntentBits.GuildEmojisAndStickers, GatewayIntentBits.DirectMessages,
+    ],
+  });
+  client.commands = new Collection();
+  return client;
+}
 
-const dirs = [
-  'data/alarms', 'data/emoji', 'data/dungeons', 'data/dungeons/saves',
-  'history/commands', 'history/errors', 'history/sessions',
-  'assets/images/alarms',
-];
-for (const d of dirs) fs.mkdirSync(d, { recursive: true });
+async function registerCommands(settings = require('./config/config'), env = process.env) {
+  const rest = new REST().setToken(env.DISCORD_TOKEN);
+  const scopes = new Set([settings.dev.guildOnly ? settings.dev.guildId : null, ...(settings.dev.commandGuildIds || [])]);
+  const results = [];
+  for (const guildId of scopes) {
+    const result = await syncCommands({ rest, applicationId: env.CLIENT_ID, guildId, commands: getAllCommands() });
+    console.log(`${result.changed ? 'Updated and verified' : 'Verified unchanged'} ${result.count} commands (${guildId ? 'guild ' + guildId : 'global'} scope).`);
+    results.push(result);
+  }
+  return results;
+}
 
-// ── Create Discord client ────────────────────────────────────────────
-
-const client = new Client({
-  partials: [Partials.Message, Partials.Reaction, Partials.User],
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildMessageReactions,
-    GatewayIntentBits.GuildVoiceStates,   // ← Required for /ttv voice connections
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildEmojisAndStickers,
-    GatewayIntentBits.DirectMessages,
-  ],
-});
-
-client.commands = new Collection();
-
-// ── Boot sequence ────────────────────────────────────────────────────
+function createShutdown(client) {
+  let stopping;
+  return function shutdown(reason = 'shutdown') {
+    if (stopping) return stopping;
+    client.isShuttingDown = true;
+    stopping = (async () => {
+      console.log(`Aina is shutting down (${reason}).`);
+      const tasks = [
+        () => require('./src/utils/alarmScheduler').stopScheduler(),
+        () => require('./src/utils/ttsManager').shutdown(),
+        () => client.destroy(),
+        () => require('./src/utils/emojiManager').shutdown(),
+        () => require('./src/utils/userRegistry').flush(),
+        () => client.critter?.close(),
+      ];
+      const failures = [];
+      for (const task of tasks) {
+        try { await task(); } catch (error) { failures.push(error); logError('shutdown', error); }
+      }
+      logSession('shutdown', { reason, errors: failures.length });
+      if (failures.length) process.exitCode = 1;
+    })();
+    return stopping;
+  };
+}
 
 async function main() {
-  console.log('🌸 Starting Aina v2...\n');
-
+  // Anchor config/data paths even when launched by an absolute path or supervisor.
+  process.chdir(ROOT);
+  require('dotenv').config({ path: path.join(ROOT, '.env') });
+  const config = require('./config/config');
+  const client = createClient();
+  const shutdown = createShutdown(client);
+  for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => {
+    const deadline = setTimeout(() => process.exit(1), 10000);
+    deadline.unref();
+    shutdown(signal).then(() => process.exit(process.exitCode || 0));
+  });
+  process.on('unhandledRejection', error => {
+    console.error('[Unhandled rejection]', error?.message ?? error);
+    logError('unhandled_rejection', error);
+  });
+  console.log('Starting Aina...');
   try {
-    client.critter = createService({ client });
+    client.critter = require('./src/critter/server').createService({ client });
     await client.critter.start();
-    console.log(`📖 Critter Workshop: ${client.critter.url}`);
-  } catch (err) {
-    console.error('[Critter] Could not start local workspace:', err.message);
+    console.log(`Critter Workshop: ${client.critter.url}`);
+  } catch (error) {
+    console.error('[Critter] Could not start local workspace:', error.message);
     client.critter = null;
   }
 
   try {
-    for (const key of ['DISCORD_TOKEN', 'CLIENT_ID']) {
-      if (!process.env[key]) throw new Error(`Missing ${key} in .env`);
-    }
-    if (!process.env.GROQ_API_KEY) console.warn('⚠️ Missing GROQ_API_KEY: AI chat is unavailable.');
-    // 1. Load all cogs (commands)
+    const problems = validateEnvironment();
+    if (problems.length) throw new Error(problems.join('\n'));
+    if (!process.env.GROQ_API_KEY) console.warn('GROQ_API_KEY is missing: AI chat is unavailable.');
     await loadCogs(client);
-    console.log('');
-
-    // 2. Load all events
     await loadEvents(client);
-    console.log('');
-
-    // 3. Register slash commands with Discord
-    const commands = getAllCommands();
-    const rest = new REST().setToken(process.env.DISCORD_TOKEN);
-
-    if (config.dev.guildOnly && config.dev.guildId !== 'PASTE_YOUR_SERVER_ID_HERE') {
-      await rest.put(
-        Routes.applicationGuildCommands(process.env.CLIENT_ID, config.dev.guildId),
-        { body: commands }
-      );
-      console.log(`⚡ ${commands.length} slash commands registered to guild (instant)`);
-    } else {
-      await rest.put(
-        Routes.applicationCommands(process.env.CLIENT_ID),
-        { body: commands }
-      );
-      console.log(`⚡ ${commands.length} slash commands registered globally (up to 1hr delay)`);
-    }
-
-    // 4. Connect to Discord, then start online services.
+    if (config.dev.registerCommands !== false) await registerCommands();
+    // Online-only work starts after clientReady, not merely after login returns.
+    client.once(Events.ClientReady, () => require('./src/utils/alarmScheduler').startScheduler(client));
     await client.login(process.env.DISCORD_TOKEN);
-    startScheduler(client);
-
-    logSession('startup', { commands: commands.length });
-  } catch (err) {
-    console.error('❌ Fatal startup error:', err);
-    logError('startup', err);
-    client.destroy();
-    if (client.critter?.server.listening) {
-      console.log(`📖 The offline Critter editor is still available at ${client.critter.url}`);
-    } else process.exitCode = 1;
+    logSession('startup', { commands: getAllCommands().length });
+  } catch (error) {
+    console.error('[Startup]', error.message);
+    logError('startup', error);
+    require('./src/utils/alarmScheduler').stopScheduler();
+    await client.destroy();
+    if (client.critter?.server.listening) console.log(`The offline Critter editor remains available at ${client.critter.url}`);
+    else process.exitCode = 1;
   }
+  return { client, shutdown };
 }
 
-// ── Graceful shutdown ────────────────────────────────────────────────
-
-async function shutdown() {
-  console.log('\n👋 Aina is shutting down...');
-  logSession('shutdown', { reason: 'SIGINT' });
-  client.destroy();
-  if (client.critter) await client.critter.close();
-  process.exit(0);
-}
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
-
-process.on('unhandledRejection', (err) => {
-  console.error('⚠️ Unhandled rejection:', err);
-  logError('unhandled_rejection', err);
-});
-
-main();
+if (require.main === module) main().catch(error => { console.error('[Fatal]', error.message); process.exitCode = 1; });
+module.exports = { main, createClient, validateEnvironment, registerCommands, createShutdown };

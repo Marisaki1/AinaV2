@@ -1,20 +1,11 @@
 const { MessageFlags } = require('discord.js');
 
 const fabulaManager          = require('../utils/fabulaManager');
-const { buildStatusEmbed, backButton } = require('../utils/sheetBuilder');
+const { buildSectionPage } = require('../utils/sheetBuilder');
 const { STATUS_NAMES, STATUS_EFFECTS } = require('../utils/constants');
 const embed = require('../../../utils/embed');
 
-function requireChar(interaction) {
-  const char = fabulaManager.load(interaction.guild.id, interaction.user.id);
-  if (!char) {
-    interaction.reply({
-      embeds: [embed.error('No Character', "You don't have a character yet.")],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-  return char;
-}
+const { requireCharacter: requireChar } = require('../utils/validation');
 
 // ── /fab status add ───────────────────────────────────────────────────
 
@@ -111,8 +102,7 @@ async function handleStatusView(interaction) {
   }
 
   await interaction.reply({
-    embeds:     [buildStatusEmbed(char)],
-    components: [backButton(targetUser.id)],
+    ...buildSectionPage(char, 'status', targetUser.id),
     flags:      MessageFlags.Ephemeral,
   });
 }

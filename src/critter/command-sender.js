@@ -2,11 +2,20 @@ const fs = require('fs');
 const path = require('path');
 const { randomUUID } = require('crypto');
 const Core = require('./public/core');
+const { resolveSpeech } = require('../utils/speechVoices');
+const config = require('../../config/config');
 const fail = (message, status = 400) => Object.assign(new Error(message), { status });
 
 function validText(text, prefix) {
   if (typeof text !== 'string' || text !== text.trim() || text.length <= prefix.length || text.length > 1700 || /[\r\n\x00-\x1f\x7f]/.test(text) || text.includes('```') || text.startsWith('/') || !text.startsWith(prefix)) {
     throw fail('Use one Avrae command with the configured prefix, up to 1700 characters.');
+  }
+  return text;
+}
+
+function validMessage(text) {
+  if (typeof text !== 'string' || !text.trim() || text.length > 2000) {
+    throw fail('Enter a message from 1 to 2000 characters.');
   }
   return text;
 }
@@ -19,6 +28,7 @@ class CommandSender {
     this.history = fs.existsSync(this.file) ? JSON.parse(fs.readFileSync(this.file, 'utf8')) : [];
     if (!Array.isArray(this.history)) throw fail('Bot post history is invalid. Restore a local backup.', 503);
     for (const item of this.history) {
+      if (item.speech && ['pending', 'queued', 'speaking'].includes(item.speech.state)) { item.speech.state = 'interrupted'; item.speech.error = 'Aina restarted. Speech was not resumed; it may have played partially.'; }
       if (item.delivery === 'sending') { item.delivery = 'uncertain'; item.error = 'Aina restarted during posting. Check Discord before posting again.'; }
       if (item.delivery === 'queued') { item.delivery = 'cancelled'; item.error = 'Cancelled on restart.'; }
     }
@@ -36,18 +46,30 @@ class CommandSender {
       prefix: this.store.value.preferences.prefix, config: this.store.value.sender,
       recent: this.history.slice(-80).reverse().map(item=>{const event=this.bridge.events?.find(e=>e.messageId===item.messageId);return event?{...item,previewResolution:event.kind,previewResolvedAt:event.createdAt}:item;}), execution: 'manual' };
   }
-  submit({ requestId, channelId, text }) {
+  submit({ requestId, channelId, text, kind = 'command', tts = false, voiceChannelId = '', ttsProvider, ttsVoice }) {
+    if (!['command', 'message'].includes(kind)) throw fail('Unknown post type.');
+    if (typeof tts !== 'boolean') throw fail('TTS must be enabled or disabled.');
+    if (tts && kind !== 'message') throw fail('TTS is only available for Plain Message.');
+    if (tts && (typeof voiceChannelId !== 'string' || !/^\d{1,22}$/.test(voiceChannelId))) throw fail('Choose a voice channel for TTS.');
+    if (tts) {
+      let settings;
+      try { settings = resolveSpeech(config.tts, { provider: ttsProvider, voice: ttsVoice }); }
+      catch (error) { throw fail(error.message); }
+      ttsProvider = settings.provider; ttsVoice = settings.speechVoice;
+    } else { voiceChannelId = ''; ttsProvider = undefined; ttsVoice = undefined; }
     if (typeof requestId !== 'string' || !/^[a-zA-Z0-9_-]{16,80}$/.test(requestId)) throw fail('A unique request ID is required.');
     const old = this.history.find(h => h.requestId === requestId);
     if (old) {
-      if (old.channelId !== channelId || old.text !== text) throw fail('This request ID belongs to a different command.', 409);
+      if (old.channelId !== channelId || old.text !== text || (old.kind || 'command') !== kind || Boolean(old.tts) !== tts || (old.voiceChannelId || '') !== voiceChannelId || (old.ttsProvider || (old.tts ? ttsProvider : undefined)) !== ttsProvider || (old.ttsVoice || (old.tts ? ttsVoice : undefined)) !== ttsVoice) throw fail('This request ID belongs to a different command or message.', 409);
       return old;
     }
     if (this.closed || !this.bridge.client?.isReady()) throw fail('Aina is offline. Start the bot or copy the command.', 409);
     if (typeof channelId !== 'string' || !channelId) throw fail('Choose a channel above.');
-    validText(text, this.store.value.preferences.prefix);
+    if (kind === 'message') validMessage(text);
+    else validText(text, this.store.value.preferences.prefix);
     if (this.queue.length >= 50 || this.history.length >= 10000) throw fail('The post queue or history is full. Finish waiting posts or archive history before continuing.', 429);
-    const item = { requestId, channelId, text, prefix: this.store.value.preferences.prefix, nonce: randomUUID().replace(/-/g, '').slice(0, 24), delivery: 'queued', execution: 'manual', createdAt: Date.now() };
+    const item = { requestId, channelId, text, kind, prefix: this.store.value.preferences.prefix, nonce: randomUUID().replace(/-/g, '').slice(0, 24), delivery: 'queued', execution: kind === 'message' ? 'not-applicable' : 'manual', createdAt: Date.now() };
+    if (tts) Object.assign(item, { tts, voiceChannelId, ttsProvider, ttsVoice, speech: { state: 'pending' } });
     this.history.push(item);
     try { this.persist(); } catch { this.history.pop(); throw fail('Could not retain the post request. Nothing was submitted.', 503); }
     this.queue.push(item);
@@ -61,12 +83,20 @@ class CommandSender {
         const item = this.queue.shift(); item.delivery = 'sending';
         try {
           this.persist();
-          const result = (await this.bridge.post(item.channelId, [item.text], item.prefix, { nonce: item.nonce }))[0];
+          const result = item.kind === 'message'
+            ? await this.bridge.postMessage(item.channelId, item.text, { nonce: item.nonce, tts: !!item.tts, voiceChannelId: item.voiceChannelId, ttsProvider: item.ttsProvider, ttsVoice: item.ttsVoice,
+              onSpeechState: state => { item.speech = { state }; try { this.persist(); } catch { item.warning = 'Speech status could not be saved locally.'; } } })
+            : (await this.bridge.post(item.channelId, [item.text], item.prefix, { nonce: item.nonce }))[0];
           if (result?.posted && result.messageId) {
             item.delivery = 'sent'; item.messageId = result.messageId; item.guildId = result.guildId || ''; item.deliveredAt = Date.now();
             if (result.warning) item.warning = result.warning;
+            if (item.tts && result.speechCompletion) {
+              if (item.speech.state === 'pending') item.speech.state = 'queued';
+              result.speechCompletion.then(speech => { item.speech = { ...speech, finishedAt: Date.now() }; try { this.persist(); } catch { item.warning = 'Speech status could not be saved locally.'; } });
+            }
           } else { item.delivery = result?.uncertain ? 'uncertain' : 'failed'; item.error = result?.error || 'Posting failed. Check Discord before trying again.'; }
-        } catch { item.delivery = 'failed'; item.error = 'Posting could not start. Check channel permissions and Aina status.'; }
+          if (item.tts && item.delivery !== 'sent') item.speech = { state: 'cancelled', error: 'Speech was not started because message delivery was not confirmed.' };
+        } catch (error) { item.delivery = 'failed'; item.error = item.tts ? error.message : 'Posting could not start. Check channel permissions and Aina status.'; if (item.tts) item.speech = { state: 'cancelled' }; }
         try { this.persist(); } catch {
           item.warning = 'Local history could not be saved. Check Discord; do not repost automatically.';
           this.cancel(); break;
@@ -99,12 +129,12 @@ class CommandSender {
     return this.store.value.sender;
   }
   cancel() {
-    for (const item of this.queue) { item.delivery = 'cancelled'; item.error = 'Cancelled before posting.'; }
+    for (const item of this.queue) { item.delivery = 'cancelled'; item.error = 'Cancelled before posting.'; if (item.tts) item.speech = { state: 'cancelled' }; }
     this.queue = [];
     try { this.persist(); } catch { /* Nothing queued is dispatched after cancellation. */ }
     return this.view();
   }
   async close() { this.closed = true; this.cancel(); if (this.running) await this.running; }
 }
-module.exports = { CommandSender, validText };
+module.exports = { CommandSender, validText, validMessage };
 

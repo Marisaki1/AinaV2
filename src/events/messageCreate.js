@@ -1,97 +1,36 @@
-/**
- * src/events/messageCreate.js
- *
- * Handles:
- *   - Custom emoji / sticker tracking for every guild message
- *   - @mention AI chat, with owner recognition (Papa address)
- *   - User registry recording on every interaction
- */
-
-const { chat }          = require('../utils/groqClient');
-const { getHistory, addMessage } = require('../utils/memory');
-const emojiManager      = require('../utils/emojiManager');
-const userRegistry      = require('../utils/userRegistry');
-const embed             = require('../utils/embed');
-const config            = require('../../config/config');
+const { getChatErrorMessage } = require('../utils/groqClient');
+const conversation = require('../utils/conversation');
+const emojiManager = require('../utils/emojiManager');
+const userRegistry = require('../utils/userRegistry');
+const embed = require('../utils/embed');
 
 module.exports = {
   name: 'messageCreate',
-
   async execute(message, client) {
-    if (message.author.bot) return;
+    if (client.isShuttingDown) return;
+    if (!message.author || message.author.bot || message.webhookId) return;
+    try { if (message.guild) emojiManager.trackMessage(message); }
+    catch (error) { console.error('[Emoji tracking]', error.message); }
 
-    // ── Emoji tracking ─────────────────────────────────────────
-    if (message.guild) {
-      const guildId = message.guild.id;
+    const botId = client.user?.id;
+    const mentioned = botId ? new RegExp(`<@!?${botId}>`).test(message.content || '')
+      : message.mentions?.has(client.user, { ignoreEveryone: true, ignoreRoles: true, ignoreRepliedUser: true });
+    if (message.guild && !mentioned) return;
 
-      const emojiMatches = emojiManager.extractCustomEmojiIds(message.content);
-      for (const { id, name } of emojiMatches) {
-        const emoji = message.guild.emojis.cache.get(id);
-        if (emoji) emojiManager.updateEmoji(guildId, id, name);
-      }
-
-      if (message.stickers?.size) {
-        for (const sticker of message.stickers.values()) {
-          if (sticker.guildId === guildId) {
-            emojiManager.updateSticker(guildId, sticker.id, sticker.name);
-          }
-        }
-      }
-    }
-
-    // ── AI Chat via @mention ───────────────────────────────────
-    const mentioned = message.mentions.has(client.user);
-    if (!mentioned) return;
-
-    // Record user and determine owner status BEFORE doing anything else
-    const userRecord = userRegistry.record(
-      message.author,
-      message.guild?.id ?? null,
-      'message',
-    );
-    const ownerFlag = userRecord.isOwner;
-
-    // Strip the bot mention from the message
-    const userMessage = message.content
-      .replace(/<@!?[\d]+>/g, '')
-      .trim();
-
+    const userMessage = (message.content || '').replace(botId ? new RegExp(`<@!?${botId}>`, 'g') : /<@!?\d+>/g, '').trim();
+    const allowedMentions = { parse: [], repliedUser: false };
     if (!userMessage) {
-      const greeting = ownerFlag
-        ? 'Yes, Papa? You called for me~? 💜'
-        : 'Yes? You called for me~? 💜';
-
-      await message.reply({ embeds: [embed.aina(greeting)] });
+      const greeting = userRegistry.isOwner(message.author.id) ? 'Yes, Papa? You called for me? 💜' : 'Yes? You called for me? 💜';
+      await message.reply({ embeds: [embed.aina(greeting)], allowedMentions });
       return;
     }
-
-    await message.channel.sendTyping();
-
+    try { await message.channel.sendTyping(); } catch {}
     try {
-      const history = getHistory(message.author.id);
-      addMessage(message.author.id, 'user', userMessage);
-
-      const response = await chat(
-        [...history, { role: 'user', content: userMessage }],
-        { isOwner: ownerFlag },
-      );
-
-      addMessage(message.author.id, 'user', userMessage);
-      addMessage(message.author.id, 'assistant', response);
-
-      const e = embed.aina(response);
-      e.setAuthor({
-        name:    'Aina',
-        iconURL: client.user.displayAvatarURL(),
-      });
-      e.setFooter({ text: 'Use /endchat to clear my memory of our chat~' });
-
-      await message.reply({ embeds: [e] });
-    } catch (err) {
-      console.error('[AI] Error:', err.message);
-      await message.reply({
-        embeds: [embed.error('Chat unavailable', getChatErrorMessage(err))],
-      });
+      const response = await conversation.respond(message.author, message.guild, message.channelId || message.channel?.id, userMessage);
+      await message.reply({ embeds: [conversation.responseEmbed(response, client)], allowedMentions });
+    } catch (error) {
+      console.error('[Chat mention]', error.message);
+      await message.reply({ embeds: [embed.error('Chat unavailable', getChatErrorMessage(error))], allowedMentions });
     }
   },
 };

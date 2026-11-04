@@ -1,319 +1,168 @@
-const {
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-} = require('discord.js');
-
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { renderBar, getHealthColor } = require('./barRenderer');
-const { STATUS_EFFECTS }            = require('./constants');
-const config                        = require('../../../../config/config');
+const { STATUS_EFFECTS } = require('./constants');
+const { isImageUrl } = require('./validation');
+const config = require('../../../../config/config');
 
-// ── Shared helpers ────────────────────────────────────────────────────
-
-function blank() { return { name: '\u200b', value: '\u200b', inline: true }; }
-
+function clip(value, limit = 1024) {
+  const text = String(value ?? '');
+  return text.length <= limit ? text : `${text.slice(0, limit - 1)}…`;
+}
+function button(id, label, style = ButtonStyle.Secondary) {
+  return new ButtonBuilder().setCustomId(id).setLabel(label).setStyle(style);
+}
+function field(name, value, inline = false) { return { name, value: String(value || '—'), inline }; }
 function fmtWeapon(item) {
   if (!item) return '*—*';
-  const parts = [];
-  if (item.category)   parts.push(item.category);
-  if (item.damageType) parts.push(item.damageType);
-  const acc    = item.accuracy ? `+${item.accuracy} Acc` : null;
-  const dmg    = item.damage   ? `${item.damage} dmg`    : null;
-  const detail = [acc, dmg].filter(Boolean).join(' • ');
-  return [`**${item.name}**`, detail, item.quality ? `*${item.quality}*` : ''].filter(Boolean).join('\n');
+  const acc = item.accuracy ? `${/^[+-]/.test(item.accuracy) ? '' : '+'}${item.accuracy} Acc` : '';
+  return [`**${item.name}**`, [item.category, item.damageType].filter(Boolean).join(' • '),
+    [acc, item.damage ? `${item.damage} dmg` : ''].filter(Boolean).join(' • '), item.quality || ''].filter(Boolean).join('\n');
 }
-
-function fmtArmor(item) {
+function fmtDefense(item) {
   if (!item) return '*—*';
-  const init = item.initiative != null
-    ? ` • Init ${item.initiative >= 0 ? '+' : ''}${item.initiative}`
-    : '';
-  return [
-    `**${item.name}**`,
-    `DEF +${item.def ?? 0} • MDEF +${item.mdef ?? 0}${init}`,
-    item.quality ? `*${item.quality}*` : '',
-  ].filter(Boolean).join('\n');
+  const initiative = item.initiative == null ? '' : ` • Init ${item.initiative >= 0 ? '+' : ''}${item.initiative}`;
+  return [`**${item.name}**`, `DEF +${item.def ?? 0} • MDEF +${item.mdef ?? 0}${initiative}`, item.quality || ''].filter(Boolean).join('\n');
 }
-
-function fmtShield(item) {
-  if (!item) return '*—*';
-  return [
-    `**${item.name}**`,
-    `DEF +${item.def ?? 0} • MDEF +${item.mdef ?? 0}`,
-    item.quality ? `*${item.quality}*` : '',
-  ].filter(Boolean).join('\n');
-}
-
-function fmtAccessory(item) {
-  if (!item) return '*—*';
-  return [`**${item.name}**`, item.effect || ''].filter(Boolean).join('\n');
-}
-
-// ── Main Character Sheet ──────────────────────────────────────────────
 
 function buildMainSheet(char, ownerId) {
-  const hpBar = renderBar(char.hp.current, char.hp.max);
-  const mpBar = renderBar(char.mp.current, char.mp.max);
-  const ipBar = renderBar(char.ip.current, char.ip.max);
-
-  const statusLine = char.statuses.length > 0
-    ? char.statuses.map(s => {
-        const found = STATUS_EFFECTS.find(e => e.name === s);
-        return found ? `${found.emoji} ${found.name}` : s;
-      }).join('  ')
-    : '✅ None';
-
-  const classLine = char.classes.length > 0
-    ? char.classes.map(c => `⚔️ **${c.name}** Lv${c.level}`).join('\n')
-    : '*No classes — use `/fab class add`*';
-
-  const subtitleParts = [char.pronouns, char.theme, char.origin].filter(Boolean);
-
-  const embed = new EmbedBuilder()
+  const status = char.statuses.map(name => {
+    const found = STATUS_EFFECTS.find(entry => entry.name === name);
+    return found ? `${found.emoji} ${name}` : name;
+  }).join('  ') || '✅ None';
+  const classes = char.classes.map(cls => `⚔️ **${cls.name}** Lv${cls.level}`).join('\n') || '*No classes — use `/fab class add`*';
+  const subtitle = [char.pronouns, char.theme, char.origin].filter(Boolean).join(' — ');
+  const sheet = new EmbedBuilder()
     .setColor(getHealthColor(char.hp.current, char.hp.max))
-    .setTitle(`${char.name}  •  Level ${char.level}`)
-    .setDescription(subtitleParts.length ? `*${subtitleParts.join(' — ')}*` : null)
+    .setTitle(clip(`${char.name} • Level ${char.level}`, 256))
+    .setDescription(subtitle ? clip(subtitle, 1000) : null)
     .addFields(
-      {
-        name: '💛 Vitals',
-        value: [
-          `❤️ **HP**  \`${hpBar}\`  **${char.hp.current} / ${char.hp.max}**`,
-          `💙 **MP**  \`${mpBar}\`  **${char.mp.current} / ${char.mp.max}**`,
-          `⚙️ **IP**   \`${ipBar}\`  **${char.ip.current} / ${char.ip.max}**`,
-        ].join('\n'),
-        inline: false,
-      },
-      {
-        name: '🎲 Attributes',
-        value: [
-          `💪 **MIG** ${char.attributes.MIG}　🏃 **DEX** ${char.attributes.DEX}`,
-          `🧠 **INS** ${char.attributes.INS}　🌀 **WLP** ${char.attributes.WLP}`,
-        ].join('\n'),
-        inline: true,
-      },
-      {
-        name: '🛡️ Defenses',
-        value: [
-          `🛡️ **DEF** ${char.def}　🔮 **MDEF** ${char.mdef}`,
-          `⚡ **Initiative** ${char.initiative}`,
-        ].join('\n'),
-        inline: true,
-      },
-      blank(),
-      {
-        name: '✨ Resources',
-        value: [
-          `✨ **Fabula Points** ${char.fabulaPoints}`,
-          `💰 **Zenit** ${char.zenit}　📘 **EXP** ${char.exp}`,
-        ].join('\n'),
-        inline: true,
-      },
-      {
-        name: '🎓 Classes',
-        value: classLine,
-        inline: true,
-      },
-      {
-        name: '⚠️ Status Effects',
-        value: statusLine,
-        inline: false,
-      },
-    );
-
-  if (char.imageUrl) embed.setThumbnail(char.imageUrl);
-  embed.setFooter({ text: 'Use the buttons below to manage vitals or view other sections.' });
-  embed.setTimestamp();
-
-  // Row 1 — vital quick-edit buttons
-  const row1 = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`fab_qk_hp_${ownerId}`).setLabel('❤️ HP').setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId(`fab_qk_mp_${ownerId}`).setLabel('💙 MP').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(`fab_qk_ip_${ownerId}`).setLabel('⚙️ IP').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`fab_qk_fp_${ownerId}`).setLabel('✨ FP').setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId(`fab_qk_zenit_${ownerId}`).setLabel('💰 Zenit').setStyle(ButtonStyle.Secondary),
-  );
-
-  // Row 2 — section view buttons
-  const row2 = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`fab_sec_equipment_${ownerId}`).setLabel('📋 Equipment').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`fab_sec_skills_${ownerId}`).setLabel('🎓 Skills').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`fab_sec_spells_${ownerId}`).setLabel('🔮 Spells').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`fab_sec_bonds_${ownerId}`).setLabel('🤝 Bonds').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`fab_sec_status_${ownerId}`).setLabel('⚠️ Status').setStyle(ButtonStyle.Secondary),
-  );
-
-  return { embeds: [embed], components: [row1, row2] };
-}
-
-// ── Equipment Sub-Embed ───────────────────────────────────────────────
-
-function buildEquipmentEmbed(char) {
-  const acc = Array.from({ length: 3 }, (_, i) => ({
-    name:   `💎 Accessory ${i + 1}`,
-    value:  fmtAccessory(char.equipment.accessories[i]),
-    inline: true,
-  }));
-
-  const itemList = char.equipment.items.length > 0
-    ? char.equipment.items
-        .map(it => `• **${it.name}** ×${it.qty ?? 1}${it.desc ? ` — *${it.desc}*` : ''}`)
-        .join('\n')
-    : '*No items*';
-
-  return new EmbedBuilder()
-    .setColor(config.embedColorBlue)
-    .setTitle(`📋 Equipment — ${char.name}`)
-    .addFields(
-      { name: '⚔️ Main Hand',  value: fmtWeapon(char.equipment.mainhand),  inline: true },
-      { name: '🗡️ Off Hand',   value: fmtWeapon(char.equipment.offhand),   inline: true },
-      blank(),
-      { name: '🛡️ Armor',      value: fmtArmor(char.equipment.armor),      inline: true },
-      { name: '🔰 Shield',     value: fmtShield(char.equipment.shield),    inline: true },
-      blank(),
-      ...acc,
-      { name: '🎒 Items',      value: itemList,                             inline: false },
-      { name: '🛡️ Total DEF',  value: String(char.def),                    inline: true },
-      { name: '🔮 Total MDEF', value: String(char.mdef),                   inline: true },
-      { name: '⚡ Initiative',  value: char.initiative,                     inline: true },
+      field('💛 Vitals', ['hp', 'mp', 'ip'].map(key => `**${key.toUpperCase()}** \`${renderBar(char[key].current, char[key].max)}\` **${char[key].current} / ${char[key].max}**`).join('\n')),
+      field('🎲 Attributes', clip(Object.entries(char.attributes).map(([name, die]) => `**${name}** ${die}`).join(' • ')), true),
+      field('🛡️ Defenses', clip(`**DEF** ${char.def} • **MDEF** ${char.mdef}\n**Initiative** ${char.initiative}`), true),
+      field('✨ Resources', `**Fabula Points** ${char.fabulaPoints}\n**Zenit** ${char.zenit} • **EXP** ${char.exp}`, true),
+      field('🎓 Classes', clip(classes, 700), true),
+      field('⚠️ Status Effects', clip(status, 700)),
     )
+    .setFooter({ text: 'Only the owner can edit vitals. Open a section for its full, paginated details.' })
     .setTimestamp();
+  if (char.imageUrl && isImageUrl(char.imageUrl)) sheet.setThumbnail(char.imageUrl);
+  const resources = [
+    ['hp', '❤️ HP', ButtonStyle.Danger], ['mp', '💙 MP', ButtonStyle.Primary],
+    ['ip', '⚙️ IP'], ['fp', '✨ FP', ButtonStyle.Success], ['zenit', '💰 Zenit'],
+  ];
+  const sections = [['equipment', '📋 Equipment'], ['skills', '🎓 Skills'], ['spells', '🔮 Spells'], ['bonds', '🤝 Bonds'], ['status', '⚠️ Status']];
+  return {
+    embeds: [sheet],
+    components: [
+      new ActionRowBuilder().addComponents(resources.map(([key, label, style]) => button(`fab_qk_${key}_${ownerId}`, label, style))),
+      new ActionRowBuilder().addComponents(sections.map(([key, label]) => button(`fab_sec_${key}_${ownerId}`, label))),
+    ],
+    allowedMentions: { parse: [] },
+  };
 }
 
-// ── Skills Sub-Embed ──────────────────────────────────────────────────
-
-function buildSkillsEmbed(char) {
-  const embed = new EmbedBuilder()
-    .setColor(config.embedColor)
-    .setTitle(`🎓 Classes & Skills — ${char.name}`)
-    .setTimestamp();
-
-  if (char.classes.length === 0) {
-    return embed.setDescription('*No classes added yet. Use `/fab class add` to begin.*');
+function sectionData(char, section) {
+  const data = { color: config.embedColor, fields: [] };
+  if (section === 'equipment') {
+    data.title = `📋 Equipment — ${char.name}`;
+    data.color = config.embedColorBlue;
+    data.fields.push(field('⚔️ Main Hand', fmtWeapon(char.equipment.mainhand), true), field('🗡️ Off Hand', fmtWeapon(char.equipment.offhand), true),
+      field('🛡️ Armor', fmtDefense(char.equipment.armor), true), field('🔰 Shield', fmtDefense(char.equipment.shield), true));
+    for (let slot = 0; slot < 3; slot++) {
+      const item = char.equipment.accessories[slot];
+      data.fields.push(field(`💎 Accessory ${slot + 1}`, item ? `**${item.name}**\n${item.effect || ''}` : '*—*', true));
+    }
+    for (const item of char.equipment.items) data.fields.push(field(`🎒 ${item.name} ×${item.qty ?? 1}`, item.desc || 'No description'));
+    if (!char.equipment.items.length) data.fields.push(field('🎒 Items', '*No items*'));
+    data.fields.push(field('🛡️ Total DEF', char.def, true), field('🔮 Total MDEF', char.mdef, true), field('⚡ Initiative', char.initiative, true));
+  } else if (section === 'skills') {
+    data.title = `🎓 Classes & Skills — ${char.name}`;
+    for (const cls of char.classes) {
+      data.fields.push(field(`⚔️ ${cls.name} — Level ${cls.level}`, cls.skills.length ? cls.skills.map(skill => `**${skill.name}**${skill.description ? `\n${skill.description}` : ''}`).join('\n\n') : '*No skills — use `/fab skill add`*'));
+    }
+  } else if (section === 'spells') {
+    data.title = `🔮 Spells & Abilities — ${char.name}`;
+    data.color = config.embedColorBlue;
+    for (const spell of char.spells) data.fields.push(field(`🔮 ${spell.name} — ${spell.mpCost} MP`, `Target: ${spell.target || '—'}\n${spell.description || ''}`));
+    for (const ability of char.abilities) data.fields.push(field(`⚡ ${ability.name}`, ability.description || 'No description'));
+  } else if (section === 'bonds') {
+    data.title = `🤝 Bonds & Identity — ${char.name}`;
+    data.color = config.embedColorGreen;
+    for (const bond of char.bonds) data.fields.push(field(`🤝 ${bond.name}`, bond.feelings.join(', ')));
+    data.fields.push(field('🌟 Traits', char.traits.map((trait, index) => `${index + 1}. ${trait}`).join('\n') || '*None set*'));
+    data.fields.push(field('🎭 Quirk', char.quirks || '*None set*'));
+  } else if (section === 'status') {
+    data.title = `⚠️ Status Effects — ${char.name}`;
+    data.color = char.statuses.length ? config.embedColorRed : config.embedColorGreen;
+    for (const name of char.statuses) {
+      const known = STATUS_EFFECTS.find(effect => effect.name === name);
+      data.fields.push(field(`${known?.emoji || '•'} ${name}`, known?.description || 'Custom status'));
+    }
+    data.description = 'Status effects are tracked as notes; they do not automatically change rolls, resources, or turns.';
+  } else {
+    throw new Error('Unknown character section. Open `/fab character view` again.');
   }
-
-  for (const cls of char.classes) {
-    const skillText = cls.skills.length > 0
-      ? cls.skills
-          .map(s => `▸ **${s.name}**${s.description ? `\n　*${s.description}*` : ''}`)
-          .join('\n')
-      : '*No skills — use `/fab skill add`*';
-
-    embed.addFields({
-      name:   `⚔️ ${cls.name}  —  Level ${cls.level}`,
-      value:  skillText,
-      inline: false,
-    });
-  }
-
-  return embed;
+  if (!data.fields.length) data.fields.push(field('Nothing added yet', section === 'status' ? '✅ No active status effects.' : 'Use the corresponding /fab commands to add entries.'));
+  return data;
 }
 
-// ── Spells & Abilities Sub-Embed ──────────────────────────────────────
-
-function buildSpellsEmbed(char) {
-  const embed = new EmbedBuilder()
-    .setColor(config.embedColorBlue)
-    .setTitle(`🔮 Spells & Abilities — ${char.name}`)
-    .setTimestamp();
-
-  if (char.spells.length === 0 && char.abilities.length === 0) {
-    return embed.setDescription('*No spells or abilities yet.*');
+// Split long entries without losing text, then enforce both per-field and total
+// embed limits. A character can grow without making its sheet impossible to open.
+function buildSectionPages(char, section) {
+  const data = sectionData(char, section);
+  const title = clip(data.title, 256);
+  const fields = [];
+  for (const entry of data.fields) {
+    let remaining = String(entry.value);
+    let index = 0;
+    while (remaining.length) {
+      let end = Math.min(1024, remaining.length);
+      if (end < remaining.length) {
+        const newline = remaining.lastIndexOf('\n', end - 1);
+        if (newline > 512) end = newline + 1;
+        else if (/[\uD800-\uDBFF]/.test(remaining[end - 1])) end--;
+      }
+      fields.push({ ...entry, name: clip(`${entry.name}${index ? ' (continued)' : ''}`, 256), value: remaining.slice(0, end) });
+      remaining = remaining.slice(end);
+      index++;
+    }
   }
-
-  if (char.spells.length > 0) {
-    embed.addFields({
-      name:  '🔮 Spells',
-      value: char.spells
-        .map(s => [
-          `**${s.name}** — 💙 ${s.mpCost} MP`,
-          `Target: *${s.target || '—'}*`,
-          s.description || '',
-        ].filter(Boolean).join('\n'))
-        .join('\n\n'),
-      inline: false,
-    });
+  const pages = [];
+  let current = [];
+  let length = title.length + (data.description?.length || 0);
+  for (const entry of fields) {
+    const size = entry.name.length + entry.value.length;
+    if (current.length && (current.length === 25 || length + size > 5500)) {
+      pages.push(current); current = []; length = title.length + (data.description?.length || 0);
+    }
+    current.push(entry); length += size;
   }
-
-  if (char.abilities.length > 0) {
-    embed.addFields({
-      name:  '⚡ Special Abilities',
-      value: char.abilities
-        .map(a => `**${a.name}**${a.description ? `\n${a.description}` : ''}`)
-        .join('\n\n'),
-      inline: false,
-    });
-  }
-
-  return embed;
+  if (current.length) pages.push(current);
+  return pages.map((entries, index) => new EmbedBuilder()
+    .setTitle(title).setColor(data.color).setDescription(data.description || null)
+    .addFields(entries).setFooter({ text: `Page ${index + 1} / ${pages.length}` }).setTimestamp());
 }
 
-// ── Bonds & Identity Sub-Embed ────────────────────────────────────────
-
-function buildBondsEmbed(char) {
-  const embed = new EmbedBuilder()
-    .setColor(config.embedColorGreen)
-    .setTitle(`🤝 Bonds & Identity — ${char.name}`)
-    .setTimestamp();
-
-  const bondText = char.bonds.length > 0
-    ? char.bonds.map(b => `**${b.name}** — ${b.feelings.join(', ')}`).join('\n')
-    : '*No bonds — use `/fab bond add`*';
-
-  const traitText = char.traits.length > 0
-    ? char.traits.map((t, i) => `${i + 1}. ${t}`).join('\n')
-    : '*None set*';
-
-  embed.addFields(
-    { name: '🤝 Bonds',    value: bondText,              inline: false },
-    { name: '🌟 Traits',   value: traitText,             inline: true  },
-    { name: '🎭 Quirk',    value: char.quirks || '*None set*', inline: true  },
+function buildSectionPage(char, section, ownerId, requestedPage = 0) {
+  const pages = buildSectionPages(char, section);
+  const page = Math.max(0, Math.min(pages.length - 1, Number.isInteger(requestedPage) ? requestedPage : 0));
+  const navigation = backButton(ownerId);
+  if (pages.length > 1) navigation.addComponents(
+    button(`fab_page_${section}_${ownerId}_${page - 1}`, 'Previous').setDisabled(page === 0),
+    button(`fab_page_${section}_${ownerId}_${page + 1}`, 'Next').setDisabled(page === pages.length - 1),
   );
-
-  return embed;
+  return { embeds: [pages[page]], components: [navigation], allowedMentions: { parse: [] } };
 }
-
-// ── Status Effects Sub-Embed ──────────────────────────────────────────
-
-function buildStatusEmbed(char) {
-  const hasStatus = char.statuses.length > 0;
-
-  const embed = new EmbedBuilder()
-    .setColor(hasStatus ? config.embedColorRed : config.embedColorGreen)
-    .setTitle(`⚠️ Status Effects — ${char.name}`)
-    .setTimestamp();
-
-  if (!hasStatus) {
-    return embed.setDescription('✅ No active status effects.');
-  }
-
-  const body = char.statuses.map(s => {
-    const found = STATUS_EFFECTS.find(e => e.name === s);
-    return found
-      ? `${found.emoji} **${found.name}**\n*${found.description}*`
-      : `• **${s}**`;
-  }).join('\n\n');
-
-  return embed.setDescription(body);
-}
-
-// ── Back-to-Sheet Button ──────────────────────────────────────────────
 
 function backButton(ownerId) {
-  return new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`fab_sec_main_${ownerId}`)
-      .setLabel('← Back to Sheet')
-      .setStyle(ButtonStyle.Secondary),
-  );
+  return new ActionRowBuilder().addComponents(button(`fab_sec_main_${ownerId}`, '← Back to Sheet'));
 }
 
 module.exports = {
-  buildMainSheet,
-  buildEquipmentEmbed,
-  buildSkillsEmbed,
-  buildSpellsEmbed,
-  buildBondsEmbed,
-  buildStatusEmbed,
-  backButton,
+  buildMainSheet, buildSectionPage, buildSectionPages, backButton,
+  buildEquipmentEmbed: char => buildSectionPages(char, 'equipment')[0],
+  buildSkillsEmbed: char => buildSectionPages(char, 'skills')[0],
+  buildSpellsEmbed: char => buildSectionPages(char, 'spells')[0],
+  buildBondsEmbed: char => buildSectionPages(char, 'bonds')[0],
+  buildStatusEmbed: char => buildSectionPages(char, 'status')[0],
 };

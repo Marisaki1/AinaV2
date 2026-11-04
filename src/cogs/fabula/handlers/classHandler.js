@@ -1,19 +1,10 @@
 const { MessageFlags } = require('discord.js');
 
 const fabulaManager          = require('../utils/fabulaManager');
-const { buildSkillsEmbed, backButton } = require('../utils/sheetBuilder');
+const { buildSectionPage } = require('../utils/sheetBuilder');
 const embed = require('../../../utils/embed');
 
-function requireChar(interaction) {
-  const char = fabulaManager.load(interaction.guild.id, interaction.user.id);
-  if (!char) {
-    interaction.reply({
-      embeds: [embed.error('No Character', "You don't have a character yet.")],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-  return char;
-}
+const { requireCharacter: requireChar } = require('../utils/validation');
 
 // ── /fab class add ────────────────────────────────────────────────────
 
@@ -107,8 +98,7 @@ async function handleClassView(interaction) {
   }
 
   await interaction.reply({
-    embeds:     [buildSkillsEmbed(char)],
-    components: [backButton(targetUser.id)],
+    ...buildSectionPage(char, 'skills', targetUser.id),
     flags:      MessageFlags.Ephemeral,
   });
 }
@@ -130,6 +120,10 @@ async function handleSkillAdd(interaction) {
       embeds: [embed.error('Class Not Found', `No class named "${className}". Use \`/fab class add\` first.`)],
       flags: MessageFlags.Ephemeral,
     });
+  }
+
+  if (char.classes[classIdx].skills.some(skill => skill.name.toLowerCase() === skillName.toLowerCase())) {
+    return interaction.reply({ embeds: [embed.error('Skill Already Added', `**${skillName}** already exists in *${className}*.`)], flags: MessageFlags.Ephemeral });
   }
 
   const classes = char.classes.map((c, i) => {
@@ -164,6 +158,10 @@ async function handleSkillRemove(interaction) {
     });
   }
 
+  if (!char.classes[classIdx].skills.some(skill => skill.name.toLowerCase() === skillName.toLowerCase())) {
+    return interaction.reply({ embeds: [embed.error('Skill Not Found', `No skill named "${skillName}" exists in *${className}*.`)], flags: MessageFlags.Ephemeral });
+  }
+
   const classes = char.classes.map((c, i) => {
     if (i !== classIdx) return c;
     const skills = c.skills.filter(s => s.name.toLowerCase() !== skillName.toLowerCase());
@@ -187,6 +185,11 @@ async function handleSkillEdit(interaction) {
   const className   = interaction.options.getString('class').trim();
   const skillName   = interaction.options.getString('name').trim();
   const description = interaction.options.getString('description');
+
+  const selectedClass = char.classes.find(c => c.name.toLowerCase() === className.toLowerCase());
+  if (!selectedClass || !selectedClass.skills.some(skill => skill.name.toLowerCase() === skillName.toLowerCase())) {
+    return interaction.reply({ embeds: [embed.error('Skill Not Found', `No skill named "${skillName}" exists in *${className}*.`)], flags: MessageFlags.Ephemeral });
+  }
 
   const classes = char.classes.map(c => {
     if (c.name.toLowerCase() !== className.toLowerCase()) return c;
