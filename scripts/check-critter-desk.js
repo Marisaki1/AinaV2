@@ -52,11 +52,16 @@ const { creature, bestiary } = require('../test/critter-fixture'), C = require('
     assert.match(await page.locator('[data-roster]').first().textContent(), /TewiCombat/);
     await page.locator('#combat-ability-board [data-pane-entry]').filter({ hasText: 'Icy Strike' }).click(); await page.locator('[data-combat-target][value="Dragon"]').check();
     assert.equal((await page.locator('#command-lines pre').textContent()), '!i aoo "TewiCombat" "Icy Strike" -t "Dragon" -rr 1');
+    await page.locator('[name="action-mode"][value="ma"]').check();
+    assert.equal((await page.locator('#command-lines pre').textContent()), '!ma "Tewi Inaba" "Icy Strike" -t "Dragon" -rr 1');
+    await page.locator('[name="action-mode"][value="aoo"]').check();
+    assert.equal((await page.locator('#command-lines pre').textContent()), '!i aoo "TewiCombat" "Icy Strike" -t "Dragon" -rr 1');
     await page.locator('[name="combat-critical"][value="crit"]').check(); await page.locator('.bonus-disclosure>summary').click(); await page.locator('#attack-bonus').fill('-2'); await page.locator('#damage-bonus').fill('1d6[fire]+3');
     const criticalCommand = '!i aoo "TewiCombat" "Icy Strike" -t "Dragon" crit -b "-2" -d "1d6[fire]+3" -rr 1';
     assert.equal(await page.locator('#command-lines pre').textContent(), criticalCommand);
     await page.locator('#save-state').getByText('Choices saved', { exact: true }).waitFor(); await page.reload(); await page.locator('[name="combat-critical"]').first().waitFor();
     assert.equal(await page.locator('[name="combat-critical"]:checked').inputValue(), 'crit'); assert.equal(await page.locator('#attack-bonus').inputValue(), '-2'); assert.equal(await page.locator('#damage-bonus').inputValue(), '1d6[fire]+3'); assert.equal(await page.locator('#command-lines pre').textContent(), criticalCommand);
+    assert.equal(await page.locator('[name="action-mode"]:checked').inputValue(), 'aoo');
     await page.locator('[name="combat-critical"][value="nocrit"]').check(); assert.equal(await page.locator('#command-lines pre').textContent(), criticalCommand.replace(' crit ', ' nocrit '));
     await page.locator('[data-category="saves"]').click(); await page.locator('[data-roll-stat="dex"]').click(); assert.equal(await page.locator('[name="combat-critical"]').count(), 0); assert.equal(await page.locator('#command-lines pre').textContent(), '!i os "TewiCombat" dex');
     await page.locator('[data-category="actions"]').click(); assert.equal(await page.locator('[name="combat-critical"]:checked').inputValue(), 'nocrit');

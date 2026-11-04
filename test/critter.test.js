@@ -109,6 +109,11 @@ test('command modes quote embedded quotes, select multiple targets, and use the 
   assert.equal(Core.command({ mode: 'rc', actor: 'Cult 4', action: 'Healing Word', level: 2 }), '!i rc "Cult 4" "Healing Word" -l 2');
   assert.equal(Core.command({ mode: 'moncast', sourceName: 'Cult Female', action: 'Healing Word' }), '!moncast "Cult Female" "Healing Word"');
 });
+
+test('monster actions use the source creature, while encounter actions use its combat name', () => {
+  assert.equal(Core.command({ mode: 'ma', sourceName: 'Bandit Enforcer', actor: 'Bandit 2', action: 'Heavy Maul', targets: ['Sanae'], repeat: 1 }), '!ma "Bandit Enforcer" "Heavy Maul" -t "Sanae" -rr 1');
+  assert.equal(Core.command({ mode: 'aoo', sourceName: 'Bandit Enforcer', actor: 'Bandit 2', action: 'Heavy Maul', targets: ['Sanae'], repeat: 1 }), '!i aoo "Bandit 2" "Heavy Maul" -t "Sanae" -rr 1');
+});
 test('HP, saves, opt, and combat controls use documented command syntax', () => {
   assert.equal(Core.command({ mode: 'hp', actor: 'Target', value: '-7' }), '!i hp "Target" -7');
   assert.equal(Core.command({ mode: 'hp', actor: 'Target', value: '8' }), '!i hp "Target" +8');
