@@ -93,6 +93,8 @@ async function main() {
     client.critter = require('./src/critter/server').createService({ client });
     await client.critter.start();
     console.log(`Critter Workshop: ${client.critter.url}`);
+    const worldbuilder = client.critter.worldbuilder.status();
+    console.log(worldbuilder.state === 'ready' ? 'WorldBuilder is ready in the Aina tab.' : 'WorldBuilder could not start. Open its Aina tab for details.');
   } catch (error) {
     console.error('[Critter] Could not start local workspace:', error.message);
     client.critter = null;

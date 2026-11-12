@@ -7,6 +7,7 @@ const categories = {
   emoji: ['emoji', 'Emoji and stickers'], ai: ['ai', 'AI chat'],
   ttv: ['tts', 'Text to voice'], fabula: ['fabula', 'Fabula'],
   utility: ['utility', 'Help and diagnostics'], critter: ['critter', 'Critter Workshop'],
+  transcript: ['transcript', 'Channel transcripts'],
 };
 
 const helpCommand = {

@@ -1,0 +1,330 @@
+{
+  "name": "Kazuo",
+  "flavor": {
+    "description": "",
+    "environment": "",
+    "faction": "",
+    "imageUrl": "",
+    "nameIsProper": true
+  },
+  "stats": {
+    "size": "Medium",
+    "race": "Human",
+    "alignment": "",
+    "armorClass": 20,
+    "armorType": "Robe of the Archmagi, Staff of Power",
+    "numHitDie": 36,
+    "hitDieSize": 8,
+    "speed": "30 ft.",
+    "abilityScores": {
+      "strength": 10,
+      "dexterity": 16,
+      "constitution": 20,
+      "intelligence": 10,
+      "wisdom": 14,
+      "charisma": 27
+    },
+    "proficiencyBonus": 9,
+    "savingThrows": [
+      {
+        "ability": "strength",
+        "value": 2,
+        "proficient": false
+      },
+      {
+        "ability": "dexterity",
+        "value": 5,
+        "proficient": false
+      },
+      {
+        "ability": "constitution",
+        "value": 16,
+        "proficient": true
+      },
+      {
+        "ability": "intelligence",
+        "value": 2,
+        "proficient": false
+      },
+      {
+        "ability": "wisdom",
+        "value": 13,
+        "proficient": true
+      },
+      {
+        "ability": "charisma",
+        "value": 19,
+        "proficient": true
+      }
+    ],
+    "skills": [
+      {
+        "name": "Acrobatics",
+        "proficient": true,
+        "value": 12
+      },
+      {
+        "name": "Animal Handling",
+        "proficient": true,
+        "value": 11
+      },
+      {
+        "name": "Arcana",
+        "proficient": true,
+        "value": 9
+      },
+      {
+        "name": "Athletics",
+        "proficient": true,
+        "value": 9
+      },
+      {
+        "name": "Deception",
+        "proficient": true,
+        "value": 17
+      },
+      {
+        "name": "History",
+        "proficient": true,
+        "value": 9
+      },
+      {
+        "name": "Insight",
+        "proficient": true,
+        "value": 11
+      },
+      {
+        "name": "Intimidation",
+        "proficient": true,
+        "value": 17
+      },
+      {
+        "name": "Investigation",
+        "proficient": true,
+        "value": 9
+      },
+      {
+        "name": "Medicine",
+        "proficient": true,
+        "value": 11
+      },
+      {
+        "name": "Nature",
+        "proficient": true,
+        "value": 9
+      },
+      {
+        "name": "Perception",
+        "proficient": true,
+        "value": 11
+      },
+      {
+        "name": "Performance",
+        "proficient": true,
+        "value": 17
+      },
+      {
+        "name": "Persuasion",
+        "proficient": true,
+        "value": 17
+      },
+      {
+        "name": "Religion",
+        "proficient": true,
+        "value": 9
+      },
+      {
+        "name": "Sleight of Hand",
+        "proficient": true,
+        "value": 12
+      },
+      {
+        "name": "Stealth",
+        "proficient": true,
+        "value": 12
+      },
+      {
+        "name": "Survival",
+        "proficient": true,
+        "value": 11
+      }
+    ],
+    "damageVulnerabilities": [],
+    "damageResistances": [
+      "Psychic"
+    ],
+    "damageImmunities": [],
+    "conditionImmunities": [],
+    "senses": [
+      "Devil's Sight 120 ft.",
+      "Passive Perception 21"
+    ],
+    "languages": [
+      "Common",
+      "Deep Speech"
+    ],
+    "challengeRating": 30,
+    "experiencePoints": 155000,
+    "additionalAbilities": [
+      {
+        "name": "Pact Magic",
+        "description": "Kazuo has twelve 9th-level spell slots, regained after a Short Rest. Once per Long Rest, Eldritch Master restores all expended slots after 1 minute. Spell save DC 30; spell attack +24."
+      },
+      {
+        "name": "Spellcasting",
+        "description": "Charisma is Kazuo's spellcasting ability. His Pact Magic slots are 9th level. Cantrips: Eldritch Blast, Mage Hand, Minor Illusion, Prestidigitation. Known: Armor of Agathys, Hex, Detect Thoughts, Counterspell, Dispel Magic, Fly, Sending, Banishment, Dimension Door, Scrying, Contact Other Plane, Hold Monster, Mass Suggestion, Finger of Death, Forcecage, Plane Shift, Power Word Stun, Demiplane, Blade of Disaster, Foresight, Globe of Invulnerability. Mystic Arcanum (once each without a slot): Arcane Gate, Etherealness, Dominate Monster, Power Word Kill. Signature Arcanum: Heal at 6th level and Wall of Force at 5th level, each once per Long Rest without a slot, or with an appropriate slot. Other free casts: Teleport once per Long Rest and also with slots; Rary's Telepathic Bond; Unseen Servant, Comprehend Languages, and Protection from Evil and Good at will; Misty Step and Dissonant Whispers once each per Long Rest. Find Familiar is a ritual."
+      },
+      {
+        "name": "Great Old One",
+        "description": "Awakened Mind: telepathy 30 ft. Thought Shield: his thoughts cannot be read; he has Psychic resistance, and Psychic damage he takes is also dealt to the source. Create Thrall: he can touch an Incapacitated humanoid to charm it. Entropic Ward is described under Reactions."
+      },
+      {
+        "name": "Epic Boons",
+        "description": "School Mastery: Conjuration (Unseen Servant, Teleport), Divination (Comprehend Languages, Rary's Telepathic Bond), Abjuration (Protection from Evil and Good, Heal), and Evocation (Wall of Force; Rote Casting spell not yet selected). Fortitude: +40 maximum HP, and healing received from spells or Hit Dice increases by 10. Fate: add 2d4 to a d20 roll made by Kazuo or a creature within 60 ft.; recharges when initiative is rolled. Skill: proficiency in all skills. Ability score increases are included in his scores."
+      },
+      {
+        "name": "Feats",
+        "description": "Fey Touched, Resilient (Constitution), War Caster, and Alert. He has advantage on Constitution saves to maintain Concentration."
+      },
+      {
+        "name": "Eldritch Invocations",
+        "description": "Agonizing Blast, Eldritch Spear, Devil's Sight, Armor of Shadows, One with Shadows, Ascendant Step, Mask of Many Faces, Master of Myriad Forms, Eyes of the Rune Keeper, Gaze of Two Minds, Voice of the Chain Master, and Investment of the Chain Master."
+      },
+      {
+        "name": "Attuned Items",
+        "description": "Robe of the Archmagi, Rod of the Pact Keeper +3, and Staff of Power. The specified bonuses are already included in his statistics. He has advantage on saves against spells. The rod restores a spell slot once per day; the staff has 20 charges."
+      },
+      {
+        "name": "Gear",
+        "description": "Sending Stones (Shuu holds the twin), Portable Hole, Bag of Holding, and three Potions of Supreme Healing. Six Manuals and Tomes have already been consumed and are reflected in his scores."
+      },
+      {
+        "name": "Crow Familiar",
+        "description": "A raven familiar reflavored as a crow: Tiny; AC 12; HP 1 (1d4 − 1); Speed 10 ft., fly 50 ft.; STR 2, DEX 14, CON 8, INT 2, WIS 12, CHA 6; Perception +3, passive Perception 13. Beak: +4 to hit, reach 5 ft., 1 Piercing damage. It can mimic simple sounds. Voice of the Chain Master and Investment of the Chain Master apply. It can warn Kazuo telepathically from any distance on the same plane when Shuu or a party member drops."
+      },
+      {
+        "name": "Rescue Teleport",
+        "description": "Kazuo can use Teleport to reach Shuu, then on a later turn cast Teleport again to bring up to eight willing creatures to safety. Demiplane is a fallback shelter; Plane Shift can move the group to another plane."
+      },
+      {
+        "name": "Initiative",
+        "description": "Initiative +8."
+      }
+    ],
+    "actions": [
+      {
+        "name": "Wall of Force",
+        "description": "Action, range 120 ft.; Concentration, up to 10 minutes. Kazuo creates an invisible wall of force as a dome, globe, or contiguous panels. Nothing can physically pass through it, it is immune to damage, and Dispel Magic cannot dispel it; Disintegrate destroys it. It extends into the Ethereal Plane and blocks ethereal travel. Signature Arcanum: once per Long Rest without a slot, or using an appropriate spell slot."
+      },
+      {
+        "name": "Heal",
+        "description": "Action, range 60 ft. One creature Kazuo can see regains 70 HP, and the Blinded, Deafened and Poisoned conditions end on it. Signature Arcanum: once per Long Rest without a slot.\n\n<avrae hidden>\n{\"_v\":2,\"name\":\"Heal\",\"activation_type\":1,\"automation\":[{\"type\":\"spell\",\"id\":2618979,\"level\":6,\"dc\":\"30\",\"attackBonus\":\"24\",\"castingMod\":\"8\"}]}\n</avrae>"
+      },
+      {
+        "name": "Heal (9th-level slot)",
+        "description": "Action, range 60 ft. One creature Kazuo can see regains 100 HP, and the Blinded, Deafened and Poisoned conditions end on it. Uses a 9th-level spell slot.\n\n<avrae hidden>\n{\"_v\":2,\"name\":\"Heal (9th-level slot)\",\"activation_type\":1,\"automation\":[{\"type\":\"spell\",\"id\":2618979,\"level\":9,\"dc\":\"30\",\"attackBonus\":\"24\",\"castingMod\":\"8\"}]}\n</avrae>"
+      },
+      {
+        "name": "Forcecage",
+        "description": "Action, range 100 ft. A magical force prison traps creatures fully within its area. Attempts to leave using teleportation or interplanar travel require a DC 30 Charisma save. Concentration, up to 1 hour.\n\n<avrae hidden>\n{\"_v\":2,\"name\":\"Forcecage\",\"activation_type\":1,\"automation\":[{\"type\":\"spell\",\"id\":2618916,\"level\":9,\"dc\":\"30\",\"attackBonus\":\"24\",\"castingMod\":\"8\"}]}\n</avrae>"
+      },
+      {
+        "name": "Contact Other Plane",
+        "description": "One minute or Ritual. Contact an extraplanar entity; Kazuo makes a DC 15 Intelligence save and, on success, may ask up to five questions.\n\n<avrae hidden>\n{\"_v\":2,\"name\":\"Contact Other Plane\",\"activation_type\":1,\"automation\":[{\"type\":\"spell\",\"id\":2619052,\"level\":9,\"dc\":\"30\",\"attackBonus\":\"24\",\"castingMod\":\"8\"}]}\n</avrae>"
+      },
+      {
+        "name": "Dispel Magic",
+        "description": "Action, range 120 ft. End ongoing spells on a creature, object or magical effect as described by Dispel Magic. Kazuo casts it with a 9th-level slot.\n\n<avrae hidden>\n{\"_v\":2,\"name\":\"Dispel Magic\",\"activation_type\":1,\"automation\":[{\"type\":\"spell\",\"id\":2619103,\"level\":9,\"dc\":\"30\",\"attackBonus\":\"24\",\"castingMod\":\"8\"}]}\n</avrae>"
+      },
+      {
+        "name": "Armor of Agathys",
+        "description": "Bonus Action, self. Kazuo casts Armor of Agathys with a 9th-level slot; the spell lasts up to 1 hour.\n\n<avrae hidden>\n{\"_v\":2,\"name\":\"Armor of Agathys\",\"activation_type\":3,\"automation\":[{\"type\":\"spell\",\"id\":2618870,\"level\":9,\"dc\":\"30\",\"attackBonus\":\"24\",\"castingMod\":\"8\"}]}\n</avrae>"
+      },
+      {
+        "name": "Eldritch Blast",
+        "description": "Ranged Spell Attack: +24 to hit, range 300 ft. Four beams; make a separate attack for each beam. Hit: 1d10 + 8 Force damage. Hex adds 1d6 Necrotic to a hit against its cursed target.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Eldritch Blast\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"target\",\n      \"target\": \"each\",\n      \"effects\": [\n        {\n          \"type\": \"attack\",\n          \"attackBonus\": \"24\",\n          \"hit\": [\n            {\n              \"type\": \"damage\",\n              \"damage\": \"(1d10+8)[force]\"\n            }\n          ],\n          \"miss\": []\n        }\n      ]\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Blade of Disaster",
+        "description": "Bonus Action; Concentration, up to 1 minute. Create a blade-shaped planar rift; when cast and on later turns as a Bonus Action, make up to two melee spell attacks against targets within 5 ft. of the blade. Each attack: +24 to hit, 4d12 Force damage; critical on 18–20, dealing 12d12 Force damage. On later turns the blade can move up to 30 ft. before attacking and can pass harmlessly through barriers.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Blade of Disaster\",\n  \"activation_type\": 3,\n  \"criton\": 18,\n  \"automation\": [\n    {\n      \"type\": \"target\",\n      \"target\": \"each\",\n      \"effects\": [\n        {\n          \"type\": \"attack\",\n          \"attackBonus\": \"24\",\n          \"hit\": [\n            {\n              \"type\": \"condition\",\n              \"condition\": \"lastAttackDidCrit\",\n              \"onTrue\": [\n                {\n                  \"type\": \"damage\",\n                  \"damage\": \"6d12[force]\"\n                }\n              ],\n              \"onFalse\": [\n                {\n                  \"type\": \"damage\",\n                  \"damage\": \"4d12[force]\"\n                }\n              ],\n              \"errorBehaviour\": \"raise\"\n            }\n          ],\n          \"miss\": []\n        }\n      ]\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Dissonant Whispers",
+        "description": "Action, range 60 ft. One visible creature makes a DC 30 Wisdom save: 11d6 Psychic damage on failure, or half on success. On failure it uses its Reaction, if available, to move away by the safest route. Both the free cast and the 9th-level slot cast use 11d6.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Dissonant Whispers\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"roll\",\n      \"dice\": \"11d6[psychic]\",\n      \"name\": \"damage\",\n      \"displayName\": \"Damage\"\n    },\n    {\n      \"type\": \"target\",\n      \"target\": \"each\",\n      \"effects\": [\n        {\n          \"type\": \"save\",\n          \"stat\": \"wis\",\n          \"dc\": \"30\",\n          \"fail\": [\n            {\n              \"type\": \"damage\",\n              \"damage\": \"{damage}\",\n              \"fixedValue\": true\n            },\n            {\n              \"type\": \"text\",\n              \"text\": \"The target uses its Reaction, if available, to move away by the safest route.\"\n            }\n          ],\n          \"success\": [\n            {\n              \"type\": \"damage\",\n              \"damage\": \"({damage})/2\",\n              \"fixedValue\": true\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Finger of Death",
+        "description": "Action, range 60 ft. DC 30 Constitution save; 7d8 + 30 Necrotic damage on failure, half on success. A Humanoid killed by the spell rises as a Zombie at the start of Kazuo's next turn.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Finger of Death\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"spell\",\n      \"id\": 2618885,\n      \"level\": 9,\n      \"dc\": \"30\",\n      \"attackBonus\": \"24\",\n      \"castingMod\": \"8\"\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Hold Monster",
+        "description": "Action, range 90 ft. DC 30 Wisdom save or Paralyzed, Concentration up to 1 minute; repeat the save at the end of each target's turn. A 9th-level slot can target up to five creatures.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Hold Monster\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"spell\",\n      \"id\": 2619152,\n      \"level\": 9,\n      \"dc\": \"30\",\n      \"attackBonus\": \"24\",\n      \"castingMod\": \"8\"\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Banishment",
+        "description": "Action, range 30 ft. DC 30 Charisma save or transported to a harmless demiplane and Incapacitated, Concentration up to 1 minute. A 9th-level slot can target up to six creatures. Resolve the destination and return rules for the creature's type.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Banishment\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"spell\",\n      \"id\": 2618906,\n      \"level\": 9,\n      \"dc\": \"30\",\n      \"attackBonus\": \"24\",\n      \"castingMod\": \"8\"\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Dominate Monster",
+        "description": "Action, range 60 ft. Mystic Arcanum: DC 30 Wisdom save or Charmed, Concentration up to 1 hour; a target fighting Kazuo or his allies has advantage. Repeat the save whenever the target takes damage.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Dominate Monster\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"spell\",\n      \"id\": 2619147,\n      \"level\": 8,\n      \"dc\": \"30\",\n      \"attackBonus\": \"24\",\n      \"castingMod\": \"8\"\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Dominate Monster (9th-level slot)",
+        "description": "Action, range 60 ft. DC 30 Wisdom save or Charmed, Concentration up to 8 hours; a target fighting Kazuo or his allies has advantage. Repeat the save whenever it takes damage.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Dominate Monster (9th-level slot)\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"spell\",\n      \"id\": 2619147,\n      \"level\": 9,\n      \"dc\": \"30\",\n      \"attackBonus\": \"24\",\n      \"castingMod\": \"8\"\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Mass Suggestion",
+        "description": "Action, range 60 ft. Up to twelve creatures that can hear and understand Kazuo make DC 30 Wisdom saves against his suggested activity. On failure they are Charmed and follow the stated rules. A 9th-level slot extends the duration.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Mass Suggestion\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"spell\",\n      \"id\": 2619029,\n      \"level\": 9,\n      \"dc\": \"30\",\n      \"attackBonus\": \"24\",\n      \"castingMod\": \"8\"\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Power Word Kill",
+        "description": "Action, range 60 ft. One visible creature with 100 HP or fewer dies; otherwise it takes 12d12 Psychic damage. Mystic Arcanum, once.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Power Word Kill\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"spell\",\n      \"id\": 2618886,\n      \"level\": 9,\n      \"dc\": \"30\",\n      \"attackBonus\": \"24\",\n      \"castingMod\": \"8\"\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Power Word Stun",
+        "description": "Action, range 60 ft. A creature with 150 HP or fewer is Stunned; otherwise its speed is 0 until the start of Kazuo's next turn. A Stunned target repeats a DC 30 Constitution save at the end of its turns.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Power Word Stun\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"spell\",\n      \"id\": 2618889,\n      \"level\": 9,\n      \"dc\": \"30\",\n      \"attackBonus\": \"24\",\n      \"castingMod\": \"8\"\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Hex",
+        "description": "Bonus Action, range 90 ft. Concentration up to 24 hours with a 9th-level slot. Choose an ability; the cursed target has disadvantage on checks with it. Kazuo deals 1d6 additional Necrotic damage when he hits that target with an attack roll.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Hex\",\n  \"activation_type\": 3,\n  \"automation\": [\n    {\n      \"type\": \"spell\",\n      \"id\": 2618988,\n      \"level\": 9,\n      \"dc\": \"30\",\n      \"attackBonus\": \"24\",\n      \"castingMod\": \"8\"\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Fly",
+        "description": "Action, touch. Up to seven willing creatures gain 60 ft. fly speed and can hover; Concentration up to 10 minutes.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Fly\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"spell\",\n      \"id\": 2618909,\n      \"level\": 9,\n      \"dc\": \"30\",\n      \"attackBonus\": \"24\",\n      \"castingMod\": \"8\"\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Foresight",
+        "description": "One minute, touch. A willing creature has advantage on D20 Tests; other creatures have disadvantage on attacks against it. Lasts 8 hours, ending early if Kazuo casts it again.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Foresight\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"spell\",\n      \"id\": 2618918,\n      \"level\": 9,\n      \"dc\": \"30\",\n      \"attackBonus\": \"24\",\n      \"castingMod\": \"8\"\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Protection from Evil and Good",
+        "description": "Action, touch. Concentration up to 10 minutes. A willing creature is protected against specified creature types under the spell's rules; cast at will.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Protection from Evil and Good\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"spell\",\n      \"id\": 2618912,\n      \"level\": 1,\n      \"dc\": \"30\",\n      \"attackBonus\": \"24\",\n      \"castingMod\": \"8\"\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Detect Thoughts",
+        "description": "Action, self, Concentration up to 1 minute. Sense or read thoughts; deeper probing requires the target's DC 30 Wisdom save.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Detect Thoughts\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"spell\",\n      \"id\": 2619099,\n      \"level\": 9,\n      \"dc\": \"30\",\n      \"attackBonus\": \"24\",\n      \"castingMod\": \"8\"\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Scrying",
+        "description": "Ten minutes. A chosen creature on the same plane makes a DC 30 Wisdom save with modifiers based on knowledge and connections; on failure a sensor follows it for up to 10 minutes, Concentration. Alternatively observe a known location.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Scrying\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"spell\",\n      \"id\": 2619007,\n      \"level\": 9,\n      \"dc\": \"30\",\n      \"attackBonus\": \"24\",\n      \"castingMod\": \"8\"\n    }\n  ]\n}\n</avrae>"
+      },
+      {
+        "name": "Globe of Invulnerability (9th-level slot)",
+        "description": "Action. An immobile 10-ft. emanation; a 9th-level slot protects against spells of level 8 or lower cast from outside. Concentration up to 1 minute.\n\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Globe of Invulnerability (9th-level slot)\",\n  \"activation_type\": 1,\n  \"automation\": [\n    {\n      \"type\": \"spell\",\n      \"id\": 2618950,\n      \"level\": 9,\n      \"dc\": \"30\",\n      \"attackBonus\": \"24\",\n      \"castingMod\": \"8\"\n    }\n  ]\n}\n</avrae>"
+      }
+    ],
+    "reactions": [
+      {
+        "name": "Entropic Ward",
+        "description": "Reaction: impose disadvantage on an attack against Kazuo. If it misses, Kazuo has advantage on his next attack against the attacker."
+      },
+      {
+        "name": "Counterspell",
+        "description": "Reaction, range 60 ft., when a creature he can see casts a spell with Verbal, Somatic, or Material components. The caster makes a DC 30 Constitution saving throw. On failure its spell dissipates and the action is wasted; a spell slot used to cast it is not expended. Kazuo spends a 9th-level slot."
+      }
+    ],
+    "legendaryActions": [],
+    "legendaryActionsPerRound": 0,
+    "legendaryActionsDescription": ""
+  }
+}

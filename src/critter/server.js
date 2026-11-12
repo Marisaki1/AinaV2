@@ -16,13 +16,19 @@ const CriticalTraits = require('./critical-traits');
 const { calculate } = require('./creature-calculations');
 const { EncounterMirror } = require('./mirror');
 const { CommandSender } = require('./command-sender');
+const { Siege } = require('./siege');
+const { Roleplay } = require('./roleplay');
+const { WorldBuilder } = require('./worldbuilder');
 
-function createService({ client = null, directory, ownerId, port = Number(process.env.CRITTER_PORT || 4317), remoteTransport, mirrorVerifier } = {}) {
+function createService({ client = null, directory, ownerId, port = Number(process.env.CRITTER_PORT || 4317), remoteTransport, mirrorVerifier, roleplayAssetDirectory, worldbuilderOptions } = {}) {
   const store = new WorkspaceStore(directory);
   const bridge = new DiscordBridge(client, store.directory, ownerId);
   const mirror = new EncounterMirror(store, bridge, { verifier: mirrorVerifier });
   const remote = new RemoteEdits(store, { transport: remoteTransport });
   const sender = new CommandSender(store, bridge);
+  const siege = new Siege(store, bridge);
+  const roleplay = new Roleplay(store, bridge, roleplayAssetDirectory);
+  const worldbuilder = new WorldBuilder({enabled:!directory,...worldbuilderOptions});
   let origin = '';
   function json(response, status, data) {
     response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -39,10 +45,14 @@ function createService({ client = null, directory, ownerId, port = Number(proces
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
   }
   const assets = { '/spellcasting-model.js': ['spellcasting-model.js','text/javascript'], '/spellcasting-ui.js': ['spellcasting-ui.js','text/javascript'], '/resource-ui.js': ['resource-ui.js','text/javascript'], '/critical-model.js': ['critical-model.js', 'text/javascript'], '/critical-editor.js': ['critical-editor.js', 'text/javascript'], '/attack-modifiers.js': ['attack-modifiers.js', 'text/javascript'], '/party-roster.js': ['party-roster.js', 'text/javascript'], '/ability-tools-model.js': ['ability-tools-model.js', 'text/javascript'], '/ability-extras-ui.js': ['ability-extras-ui.js', 'text/javascript'], '/ability-tools-ui.js': ['ability-tools-ui.js', 'text/javascript'], '/action-formulas.js': ['action-formulas.js', 'text/javascript'], '/combat-controls.js': ['combat-controls.js', 'text/javascript'], '/creature-fields.js': ['creature-fields.js', 'text/javascript'], '/creature-math.js': ['creature-math.js', 'text/javascript'], '/creature-panels.js': ['creature-panels.js', 'text/javascript'], '/workshop.css': ['workshop.css', 'text/css'], '/sender-ui.js': ['sender-ui.js', 'text/javascript'], '/sender.css': ['sender.css', 'text/css'], '/tab-bridge.js': ['tab-bridge.js', 'text/javascript'], '/search-select.js': ['search-select.js', 'text/javascript'], '/search-select.css': ['search-select.css', 'text/css'], '/direct-ui.js': ['direct-ui.js', 'text/javascript'], '/feedback.js': ['feedback.js', 'text/javascript'], '/authoring-model.js': ['authoring-model.js', 'text/javascript'], '/authoring-ui.js': ['authoring-ui.js', 'text/javascript'], '/mirror-model.js': ['mirror-model.js', 'text/javascript'], '/mirror-ui.js': ['mirror-ui.js', 'text/javascript'], '/combat-traits.js': ['combat-traits.js', 'text/javascript'], '/traits-ui.js': ['traits-ui.js', 'text/javascript'], '/combat-model.js': ['combat-model.js', 'text/javascript'], '/editor-ui.js': ['editor-ui.js', 'text/javascript'], '/': ['index.html', 'text/html'], '/advanced': ['advanced.html', 'text/html'], '/desk.js': ['desk.js', 'text/javascript'], '/desk.css': ['desk.css', 'text/css'], '/sources.js': ['sources.js', 'text/javascript'], '/app.js': ['app.js', 'text/javascript'], '/core.js': ['core.js', 'text/javascript'], '/remote-common.js': ['remote-common.js', 'text/javascript'], '/remote-ui.js': ['remote-ui.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'] };
+  assets['/siege-ui.js'] = ['siege-ui.js', 'text/javascript'];
+  assets['/worldbuilder-ui.js'] = ['worldbuilder-ui.js', 'text/javascript'];
+  assets['/asset-picker.js'] = ['asset-picker.js', 'text/javascript'];
+  assets['/roleplay-ui.js'] = ['roleplay-ui.js', 'text/javascript'];
   const server = http.createServer(async (request, response) => {
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Referrer-Policy', 'no-referrer');
-    response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
+    response.setHeader('Content-Security-Policy', `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self'; frame-src ${worldbuilder.enabled?worldbuilder.url:"'none'"}; object-src 'none'; base-uri 'none'; frame-ancestors 'none'`);
     try {
       // Loopback binding + exact Host check prevent LAN access and DNS rebinding.
       if (request.headers.host !== new URL(origin).host) return json(response, 403, { error: `Open ${origin} on this computer.` });
@@ -53,7 +63,37 @@ function createService({ client = null, directory, ownerId, port = Number(proces
         response.writeHead(200, { 'Content-Type': mime + '; charset=utf-8', 'Cache-Control': 'no-store' });
         return response.end(fs.readFileSync(path.join(__dirname, 'public', file)));
       }
+      if(request.method==='GET'&&url.pathname.startsWith('/npc-assets/')){if(request.headers['sec-fetch-site']==='cross-site')return json(response,403,{error:'Cross-origin requests are not allowed.'});const image=roleplay.image(decodeURIComponent(url.pathname.slice('/npc-assets/'.length)));response.writeHead(200,{'Content-Type':image.mime,'Cache-Control':'no-store'});return response.end(image.buffer);}
       if (request.headers['x-aina-local'] !== '1' || request.headers['sec-fetch-site'] === 'cross-site') return json(response, 403, { error: 'Use the local workspace interface.' });
+      if(request.method==='GET'&&url.pathname==='/api/worldbuilder')return json(response,200,worldbuilder.status());
+      if(request.method==='GET'&&url.pathname==='/api/roleplay')return json(response,200,roleplay.view());
+      if(request.method==='POST'&&url.pathname.startsWith('/api/roleplay/')){const data=await body(request),route=url.pathname.slice('/api/roleplay/'.length);
+        if(route==='folder')return json(response,200,roleplay.createFolder(String(data.folder||'')));
+        if(route==='upload')return json(response,200,roleplay.upload(data));
+        if(route==='save')return json(response,200,roleplay.save(data));
+        if(route==='delete'){roleplay.remove(data.id);return json(response,200,{ok:true});}
+        if(route==='config'){roleplay.configure(data);return json(response,200,{ok:true});}
+        if(route==='send')return json(response,200,await roleplay.send(data));
+        if(route==='edit-message')return json(response,200,await roleplay.editMessage(data));
+        return json(response,404,{error:'Unknown roleplay action.'});}
+      if (request.method === 'GET' && url.pathname === '/api/siege') return json(response, 200, siege.view());
+      if (request.method === 'POST' && url.pathname.startsWith('/api/siege/')) {
+        const data = await body(request), route = url.pathname.slice('/api/siege/'.length);
+        if (route === 'create') return json(response, 200, { battalion: siege.create(data) });
+        if (route === 'type-save') return json(response, 200, { type: siege.saveType(data) });
+        if (route === 'settings') return json(response, 200, { settings: siege.saveSettings(data) });
+        if (route === 'leader-save') { const leader=siege.saveLeader(data);let warning='';if(data.id&&siege.view().active?.status==='voting'){try{await siege.sync();}catch{warning='Leader saved, but Discord could not be refreshed. Use Refresh Discord post.';}}return json(response, 200, { leader, warning }); }
+        if (route === 'leader-delete') { siege.deleteLeader(data.id); return json(response, 200, { ok: true }); }
+        if (route === 'configure') { siege.configure(data); const active=siege.view().active;let warning='';if(active?.status==='voting'&&[active.leftId,active.rightId].includes(data.id)){try{await siege.sync();}catch{warning='Saved locally, but Discord could not be refreshed. Use Refresh Discord post.';}}return json(response, 200, { ok: true, warning }); }
+        if (route === 'adjust') { siege.adjust(data); return json(response, 200, { ok: true }); }
+        if (route === 'type-delete') { siege.deleteType(data.id); return json(response, 200, { ok: true }); }
+        if (route === 'delete') { siege.remove(data.id); return json(response, 200, { ok: true }); }
+        if (route === 'sync') { await siege.sync(); return json(response, 200, { ok: true }); }
+        if (route === 'edit') { siege.edit(data);let warning='';const active=siege.view().active;if(active?.status==='voting'&&[active.leftId,active.rightId].includes(data.id)){try{await siege.sync();}catch{warning='Battalion saved, but Discord could not be refreshed. Use Refresh Discord post.';}}return json(response, 200, { ok: true, warning }); }
+        if (route === 'reset') { siege.reset(data.id); return json(response, 200, { ok: true }); }
+        if (route === 'start') return json(response, 200, { battle: await siege.start(data) });
+        return json(response, 404, { error: 'Unknown siege action.' });
+      }
       if (url.pathname.startsWith('/api/sender/')) {
         const route = url.pathname.slice('/api/sender/'.length);
         // Same trusted-local-machine boundary as /api/post. User-account login is retired.
@@ -218,13 +258,14 @@ function createService({ client = null, directory, ownerId, port = Number(proces
       json(response, 404, { error: 'Unknown endpoint.' });
     } catch (e) { json(response, e.status || 400, { error: e.message, ...(e.code ? { code: e.code } : {}), ...(e.details ? { details: e.details } : {}) }); }
   });
-  const service = { server, store, bridge, remote, mirror, sender, get url() { return origin; },
+  const service = { server, store, bridge, remote, mirror, sender, siege, roleplay, worldbuilder, get url() { return origin; },
     async start() {
       await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolve); });
       origin = `http://127.0.0.1:${server.address().port}`;
+      await worldbuilder.start(origin);
       return origin;
     },
-    async close() { await sender.close(); await remote.close(); await new Promise(resolve => server.close(resolve)); },
+    async close() { await worldbuilder.close(); await sender.close(); await remote.close(); await new Promise(resolve => server.close(resolve)); },
     importJSON(value, label) {
       const imported = Core.importData(value), current = store.read();
       current.workspace.documents.push({ id: randomUUID(), label, data: imported.data, keys: Core.list(imported).map(() => randomUUID()) });

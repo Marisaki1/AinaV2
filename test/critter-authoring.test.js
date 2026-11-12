@@ -1,6 +1,20 @@
 const test = require('node:test'), assert = require('node:assert/strict');
 const { build } = require('../src/critter/authoring');
 const A = require('../src/critter/public/authoring-model'), C = require('../src/critter/public/core'), T = require('../src/critter/public/combat-traits');
+
+test('recharge generates an Avrae effect with a conditional self-removing button', () => {
+  const input = { name: 'Breath', kind: 'damage', target: 'each', damages: [{ dice: '1d6', type: 'cold' }], recharge: { enabled: true, threshold: 5 } };
+  const { entry, automation } = build(input);
+  assert.match(entry.name, /Recharge 5/);
+  const effect = automation.automation.find(node => node.target === 'self').effects[0];
+  assert.equal(effect.stacking, false); assert.equal(effect.buttons[0].label, 'Roll Recharge');
+  const [roll, branch] = effect.buttons[0].automation;
+  assert.equal(roll.dice, '1d6'); assert.equal(branch.condition, 'rechargeRoll >= 5');
+  assert.equal(branch.onTrue[0].type, 'remove_ieffect'); assert(!branch.onFalse.some(node => node.type === 'remove_ieffect'));
+  assert.throws(() => build({ ...input, recharge: { enabled: true, threshold: 7 } }), /1 to 6/);
+  const choice = build({ ...input, damages: [{ dice: '1d6', type: 'choice' }], damageChoices: ['cold', 'fire'] }).automation;
+  assert.equal(choice.automation.find(node => node.target === 'self').effects[0].type, 'condition');
+});
 const { snapshot } = require('./mirror-fixture');
 const YAML = require('yaml');
 const { fieldsFor, editAbility } = require('../src/critter/ability-editor');

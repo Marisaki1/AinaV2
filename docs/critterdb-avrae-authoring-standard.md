@@ -12,11 +12,16 @@ as JSON. Do not create a Markdown stat block, per-creature guide, or receipt
 unless the user explicitly asks for one. Existing application setup documents
 are not additional creature-authoring standards. This document contains the
 required workflow and checks; they must not depend on reading a creature guide.
+All reusable creature creation, editing, and Avrae automation guidance belongs
+in this file. Update it in place when the workflow changes; do not create a
+second authoring guide or character-specific Markdown. Application setup and
+feature documentation serve separate purposes and should not duplicate this
+standard.
 
-The corrected [Seija export](../exports/Seija_Kijin_CritterDB_Avrae.json) is the
-reference for structure, explicit manual fallbacks, concentration links, and
-working restricted expressions. Her DC 16, spell points, damage, powers, and
-timing are specific to Seija; never copy them into another creature by default.
+The [corrected reference export](../exports/Seija_Kijin_CritterDB_Avrae.json)
+illustrates structure, manual fallbacks, concentration links and restricted
+expressions. It is not a source of rules, names, stats or mechanics for other
+creatures.
 
 ## Contents
 
@@ -183,8 +188,8 @@ a CritterDB creature/bestiary export or import it into CritterDB.
 
 **Existing-creature edits preserve identity by default.** A different name or
 an authoring script is not authorization to strip database fields. Removing IDs
-requires an explicit new/duplicate request. The Reiko generator follows this
-rule; its `--new` option is only for an explicitly requested new copy.
+requires an explicit new/duplicate request. A generator's new-copy option is
+only for an explicitly requested new copy.
 
 Before delivering an update, compare `_id`, `id`, `bestiaryId`,
 `publishedBestiaryId`, `__v`, sharing and other original root metadata against
@@ -207,7 +212,7 @@ Use these formulas only where the source rule calls for them:
 | Expertise | Ability modifier + `2 * PB`, only if explicitly granted. |
 | Average HP | `floor(numberOfDice * (dieSize + 1) / 2) + numberOfDice * CON modifier`, subject to any explicit source exceptions. |
 | Formula-based attack/DC | Usually ability modifier + PB for hit and `8 + ability modifier + PB` for DC; use only the designated ability/formula. |
-| Fixed/custom attack/DC | Preserve the specified value instead of forcing a formula. Seija's default DC is explicitly 16. |
+| Fixed/custom attack/DC | Preserve the specified value instead of forcing a formula. |
 | AC | Aina defaults to base + DEX. On import, derive a base that retains the current AC, then recalculate from that base when DEX changes. Honor selected capped-DEX/no-DEX formulas and explicit exceptions. |
 
 Saving throw entries use full lowercase abilities, e.g.
@@ -242,25 +247,27 @@ CritterDB stores abilities as ordered arrays of `{name, description}` objects:
 | Legendary overview / resource notes | `stats.legendaryActionsDescription` |
 
 Preserve any extra entry properties. Do not move an imported ability solely
-because its existing section is unconventional: Seija's source stores some
-spell-point abilities in legendary actions despite their printed action type.
-Keep her activation rules explicit rather than inventing legendary costs.
+because its existing section is unconventional. Keep the actual activation
+rules explicit rather than inventing a cost based on its section.
 
 The description contains readable text/HTML followed by an Avrae payload:
 
 ```html
-<p>Readable rules, including exact activation, damage, and ending conditions.</p>
+<p>Readable rules for a confirmed damage ability.</p>
 <avrae hidden>
 _v: 2
 name: Stable command name
 automation:
-  - type: text
-    text: Read and resolve the stated rule manually.
+  - type: target
+    target: each
+    effects:
+      - type: damage
+        damage: 1d6[force]
 </avrae>
 ```
 
-The block content is YAML; JSON is also valid YAML and is used in Seija's
-export. Each normal block should contain one unambiguous `_v: 2` action object
+The block content is YAML; JSON is also valid YAML. Each normal block should
+contain one unambiguous `_v: 2` action object
 with `name` and an `automation` node array. Do not wrap it in Markdown fences
 inside the actual description. Some existing exports contain multiple action
 objects/blocks: preserve them and validate every payload rather than flattening
@@ -417,7 +424,7 @@ Use a `roll` node for an arbitrary die roll; this alone does not cause damage.
 **Automation conditions use a restricted evaluator, not general Python or full
 alias scripting.** A valid JSON/YAML array is fine as structural data; a list
 literal inside an evaluated condition is not supported by the interpreter used
-in the reproduced Seija failure.
+in the project's restricted evaluator regression.
 
 Never generate this known-broken expression:
 
@@ -484,7 +491,7 @@ Missing input needs an explicit documented default. Single-recipient healing
 must reject multiple selected targets so one resource expenditure is not
 silently applied to several creatures.
 
-A command like `!i aoo "Seija Kijin" "Reverse Needle Attack" -t "Tewi" -choice 2`
+A command like `!i aoo "Caster" "Spell Attack" -t "Target" -choice 2`
 is valid. An error that quotes the old List expression is a stored-automation
 problem. Do not blame command syntax or ask the user to cycle through `=`, `==`,
 or brackets to repair the automation.
@@ -564,8 +571,7 @@ immunity check. Never apply a condition to a known immune target silently.
 An intended executable breath/condition ability must have a real target/save
 tree. A description that says "DC ... saving throw" is not enough evidence that
 the importer created that action. Inspect the imported action, not just its
-visible description. In the earlier Reiko export, Paralyzing Breath remained
-prose-only; that was not a completed automation implementation.
+visible description. A prose-only breath is not a completed automation.
 
 After the user confirms the rule, encode:
 
@@ -609,9 +615,8 @@ unrelated movement restriction or Bleeding effect.
 - Buttons are repeatable unless a verified mechanism prevents repeats. Never
   claim once-per-turn enforcement from a label or duration alone. The operator
   must avoid duplicate damage/save clicks.
-- For Seija's This Side Down, the user's final instruction is immediate damage,
-  Prone and movement restriction on casting. There is no Resolve fall step.
-  Do not generalize this timing change to other creatures' rules.
+- Preserve the specific timing the user supplies; never add a separate resolve
+  step when the requested outcome takes effect immediately.
 
 ### Concentration, scope, and cleanup
 
@@ -686,7 +691,7 @@ detect it. Explain whether Strength-based skills are included by the actual
 rule instead of guessing from an interface scope label.
 
 Add-creature commands precede per-copy setup commands. Use each actual alias,
-e.g. `Seija One` and `Seija Two`, independently. Reapplication replaces only the
+e.g. `Creature One` and `Creature Two`, independently. Reapplication replaces only the
 generated effect; removal targets its exact name and preserves unrelated
 effects. For live effect-aware rolls prepare `!i os "Alias" dex` and
 `!i oc "Alias" stealth`. Lookup `!ms "Source name" dex` and
@@ -718,6 +723,38 @@ encounter effects can oppose them; do not claim the local default proves the
 final roll state or silently remove opposing sources.
 
 ## 10. Spellcasting and resources
+
+### Spell lists, readable rules and executable mechanics
+
+- Keep the complete specified spell list and casting limits readable in the
+  requested trait or section. A list of spells is not itself a set of buttons.
+  Confirm the desired individual spell actions; do not add a separate action
+  for every spell by default.
+- A spell or feature with no requested, supported damage, healing, attack,
+  saving throw, or configured mechanical buff/debuff stays readable text.
+  In particular, movement or travel such as teleportation does not by itself
+  require an initiative effect, hidden text-only action or artificial command.
+  Preserve its meaningful game rules, targeting, costs and restrictions in text.
+- Where automation is requested, implement the confirmed supported operations;
+  retain range, destinations, willing targets and other contextual decisions
+  as readable rules or explicit operator choices. Do not describe a reminder
+  as a mechanical implementation or infer automatic spatial enforcement.
+- Confirm edition, variants and relevant spell details where unresolved; never
+  invent saves, damage, upcast increments, resource costs or effect durations.
+  Reuse a verified native spell only when it matches the requested rules.
+- Preserve the specified attack count as a readable reminder and automate
+  individual attacks where requested. Conditional riders apply only when their
+  actual prerequisites are met; do not silently add them to every attack.
+- Keep a familiar's or companion's rules in the parent creature's readable
+  trait. If an independently playable encounter combatant is requested, create
+  a separate creature from the confirmed source and modifications; a cosmetic
+  reflavor alone does not change its mechanics.
+- Preserve explicitly stated nonstandard spell slots, DCs and other values;
+  do not silently normalize them to player-character progression. Ask about
+  conflicts, such as a resistance stated in a trait but excluded from defenses.
+  Track slots, free casts and arcanum manually unless monster-compatible
+  tracking is verified. Export/import, publication, bestiary refresh and an
+  existing encounter copy are distinct states (see section 13).
 
 ### Reuse native spells when their actual rules match
 
@@ -787,11 +824,19 @@ per-copy resources are local/manual records, independent for each encounter
 copy. Posting or confirming a command does not spend them. Generic character
 custom counters must not be assumed to exist for monster combatants.
 
-Recharge, legendary-action budgets, reaction use, once-per-turn limits,
-spell-point expenditure, and arbitrary custom resources remain manual unless
-their particular native integration has been verified. Do not invent an
-automatic counter, rest reset, or recharge threshold. Do not turn an ambiguous
-half-recovery rule into a guessed fixed amount.
+For an explicitly specified recharge range, an activated ability can add a
+non-stacking `Recharging: <ability>` initiative effect to its acting combatant.
+Its Avrae **Roll Recharge** button rolls 1d6, tests the confirmed threshold,
+and removes its own effect on success; on failure it remains. The operator
+clicks the button at the specified time. The effect is per combatant and is
+only stored when the actor is in combat. This does not prevent the operator
+from running the action again prematurely or prove an automatic turn trigger.
+Verify generated automation and distinguish local schema tests from live
+Discord tests.
+
+Legendary-action budgets, reaction use, once-per-turn limits, spell-point
+expenditure, and arbitrary custom resources remain manual unless their native
+integration has been verified. Do not invent a threshold or rest reset.
 
 ## 11. Preservation and export
 
@@ -858,7 +903,7 @@ From the project root in PowerShell:
 npm.cmd test
 ```
 
-Optional existing Seija/compiler expression regression:
+Optional existing reference/compiler expression regression:
 
 ```powershell
 $env:AINA_AVRAE_PYTHON = Join-Path $env:TEMP 'aina-avrae-evaluator\Scripts\python.exe'
@@ -871,9 +916,9 @@ dependency. See [the verification guide](spellcasting-and-preview-controls.md#ve
 If absent, report the missing check rather than claiming a pass.
 
 **Important:** `scripts/check-avrae-compat.js` currently targets the corrected
-Seija export and a compiler regression fixture. It does not automatically test
+reference export and a compiler regression fixture. It does not automatically test
 every newly created creature. A future creature needs its own extracted
-payloads, assertions and expression/dice cases. Do not run Seija's tests and
+payloads, assertions and expression/dice cases. Do not run reference tests and
 report that a different creature's automation has been verified.
 
 Other optional proof scripts such as `scripts/verify-avrae-authoring.py` use
@@ -953,7 +998,7 @@ application separate.
 | Trait scope, exact IDs and per-alias commands | `src/critter/public/combat-traits.js`, `src/critter/combat-traits.js` |
 | Shared defaults and per-ability overrides | `src/critter/spellcasting.js`, `src/critter/public/spellcasting-model.js` |
 | Critical range generation | `src/critter/critical-traits.js` |
-| Corrected reference/export generation | `exports/Seija_Kijin_CritterDB_Avrae.json`, `scripts/adjust-seija.js` |
+| Corrected reference/export generation | `exports/Seija_Kijin_CritterDB_Avrae.json`, `scripts/adjust-seija.js` (structural reference only) |
 
 ### Primary references
 

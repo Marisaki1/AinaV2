@@ -25,7 +25,7 @@ module.exports = {
       if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
         if (!command) return interaction.reply({ content: 'This command is unavailable. Ask the host to check command registration.', flags: MessageFlags.Ephemeral });
-        if (['alarm', 'dungeon', 'emoji', 'fab', 'ttv'].includes(interaction.commandName) && !interaction.guild) {
+        if (['alarm', 'dungeon', 'emoji', 'fab', 'ttv', 'transcript'].includes(interaction.commandName) && !interaction.guild) {
           return interaction.reply({ content: 'Use this command in a server.', flags: MessageFlags.Ephemeral });
         }
         logCommand(interaction);

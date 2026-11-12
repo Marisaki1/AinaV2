@@ -41,5 +41,5 @@ const safely = task => Promise.resolve(task).catch(e => console.error('[Critter]
 module.exports = { commands: [command], events: {
   messageCreate: (message, client) => safely(client.critter?.bridge.onMessage(message)),
   messageReactionAdd: (reaction, user, client) => safely(client.critter?.bridge.onReaction(reaction, user)),
-  interactionCreate: (interaction, client) => safely(client.critter?.bridge.onButton(interaction)),
+  interactionCreate: (interaction, client) => safely(interaction.customId?.startsWith('siege:') ? client.critter?.siege.onButton(interaction) : client.critter?.bridge.onButton(interaction)),
 } };

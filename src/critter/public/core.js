@@ -86,7 +86,7 @@
   function blankWorkspace() {
     return { format: 'aina-critter-workspace', version: 1, documents: [], encounters: [],
       currentEncounter: { name: 'Untitled encounter', entries: [] }, controllers: [],
-      preferences: { prefix: '!', channelId: '' }, sender: { buttons: [], channelId: '', labels: {} }, combatTraits: {}, creatureCalculations: {}, history: [], favorites: [], queue: [] };
+      preferences: { prefix: '!', channelId: '' }, sender: { buttons: [], channelId: '', labels: {} }, roleplay: { npcs: [], channelId: '', recent: [] }, combatTraits: {}, creatureCalculations: {}, history: [], favorites: [], queue: [], siege: { battalions: [], active: null, history: [] } };
   }
   function validateWorkspace(value) {
     if (!object(value) || value.format !== 'aina-critter-workspace' || value.version !== 1) throw new Error('This is not an Aina workspace backup (version 1).');
@@ -113,6 +113,7 @@
     prefix(clean.preferences.prefix);
     if (typeof clean.preferences.channelId !== 'string') throw new Error('Invalid destination channel preference.');
     if (!object(clean.sender) || !Array.isArray(clean.sender.buttons) || clean.sender.buttons.length > 50 || typeof clean.sender.channelId !== 'string') throw new Error('Invalid Discord sender configuration.');
+    if (!object(clean.roleplay) || !Array.isArray(clean.roleplay.npcs) || !Array.isArray(clean.roleplay.recent) || typeof clean.roleplay.channelId !== 'string') throw new Error('Invalid roleplay configuration.');
     const senderIds = new Set();
     const destinationLabels = clean.sender.labels || {};
     if (!object(destinationLabels) || Object.keys(destinationLabels).length > 100 || Object.entries(destinationLabels).some(([id, label]) => !/^\d{17,20}$/.test(id) || typeof label !== 'string' || !label.trim() || label.length > 80 || /[\r\n\x00-\x1f]/.test(label))) throw new Error('Invalid destination labels.');

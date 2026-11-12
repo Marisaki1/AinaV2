@@ -52,8 +52,10 @@ window.AuthoringUI = (() => {
     if(options.defaultDC!==undefined)draft.dc=options.defaultDC;
     if(options.defaultAttackBonus!==undefined)draft.attackBonus=options.defaultAttackBonus;
     draft = AbilityExtrasUI.hydrate(options.definition, draft);
+    draft.recharge = { enabled: false, threshold: 5, ...(options.definition?.recharge || {}) };
     const collect = () => {
       AbilityExtrasUI.collect(draft);
+      if ($('#recharge-enabled')) draft.recharge = { enabled: $('#recharge-enabled').checked, threshold: $('#recharge-threshold').value };
       for (const k of ['name', 'kind', 'rules', 'target', 'attackBonus', 'criton', 'reach', 'range', 'attackRoll', 'saveStat', 'dc', 'rollDice']) if ($('#build-' + k)) draft[k] = $('#build-' + k).value;
       draft.half = $('#build-half')?.checked || false; draft.enabled = $('#build-enabled')?.checked || false;
       draft.damages.forEach((p, i) => { for (const k of ['count', 'sides', 'bonus', 'type']) if ($(`#damage-${i}-${k}`)) p[k] = $(`#damage-${i}-${k}`).value; });
@@ -80,6 +82,7 @@ window.AuthoringUI = (() => {
       for (const id of ['build-kind', 'build-enabled', 'ongoing-enabled', 'repeat-save-enabled', ...d.damages.map((_, i) => `damage-${i}-type`)]) if ($('#' + id)) $('#' + id).onchange = () => { const previousKind = draft.kind; collect(); if (!['attack', 'save', 'damage'].includes(draft.kind)) draft.scaling.enabled = false; if (id === 'build-kind' && draft.kind === 'effect' && previousKind !== 'effect') { draft.damages = []; draft.enabled = true; } draw(); };
       if ($('#build-damage-add')) $('#build-damage-add').onclick = () => { collect(); draft.damages.push({ count: '1', sides: '6', bonus: '0', type: 'fire' }); draw(); };
       document.querySelectorAll('[data-damage-remove]').forEach(b => b.onclick = () => { collect(); draft.damages.splice(Number(b.dataset.damageRemove), 1); draw(); });
+      if (automated) $('#build-preview').insertAdjacentHTML('beforebegin', `<fieldset class="compact-fieldset"><legend>Recharge</legend><label class="check-row"><input id="recharge-enabled" type="checkbox" ${d.recharge.enabled ? 'checked' : ''}>Add Avrae Roll Recharge button</label>${input('recharge-threshold', 'Minimum successful d6 roll (through 6)', d.recharge.threshold, 'number')}<p class="hint">Using this action as a combatant adds a Recharging effect. Click its Roll Recharge button on the creature's turn.</p></fieldset>`);
       AbilityExtrasUI.bind(draft, collect, draw);
       $('#authoring-root').oninput = () => { preview = null; if ($('#build-accept')) $('#build-accept').disabled = true; };
       $('#build-preview').onclick = safe(async () => {

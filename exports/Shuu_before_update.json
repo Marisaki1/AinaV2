@@ -1,0 +1,156 @@
+{
+  "__v": 0,
+  "_id": "6aeb1fba75da40a67aee5d1a",
+  "bestiaryId": "6a9bd89315443bd5efcdd7d2",
+  "flavor": {
+    "description": "A towering warlord who rose to the top of his crew by breaking every rival in it. Shuu fights in a permanent state of fury, shrugs off wounds that would kill lesser men, and leads from the very front of every raid.",
+    "environment": "Any",
+    "faction": "Shuu's Bandits",
+    "imageUrl": "",
+    "nameIsProper": true
+  },
+  "name": "Bandit Boss Shuu",
+  "sharing": {
+    "linkSharingEnabled": false
+  },
+  "stats": {
+    "abilityScores": {
+      "charisma": 12,
+      "constitution": 22,
+      "dexterity": 14,
+      "intelligence": 8,
+      "strength": 24,
+      "wisdom": 12
+    },
+    "actions": [
+      {
+        "description": "<i>Melee Weapon Attack:</i> +13 to hit, reach 30 ft., one target. <i>Hit:</i> 26 (3d12 + 7) slashing damage.\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Cleave\",\n  \"automation\": [\n    {\n      \"type\": \"target\",\n      \"target\": \"each\",\n      \"effects\": [\n        {\n          \"type\": \"attack\",\n          \"attackBonus\": \"13\",\n          \"hit\": [\n            {\n              \"type\": \"damage\",\n              \"damage\": \"(3d12+7)[slashing]\"\n            }\n          ],\n          \"miss\": []\n        }\n      ]\n    }\n  ]\n}\n</avrae>",
+        "name": "Cleave"
+      },
+      {
+        "description": "<i>Melee Weapon Attack:</i> +14 to hit, reach 30 ft., one target. <i>Hit:</i> 33 (3d12 + 14) slashing damage.\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Heavy Cleave\",\n  \"automation\": [\n    {\n      \"type\": \"target\",\n      \"target\": \"each\",\n      \"effects\": [\n        {\n          \"type\": \"attack\",\n          \"attackBonus\": \"14\",\n          \"hit\": [\n            {\n              \"type\": \"damage\",\n              \"damage\": \"(3d12+14)[slashing]\"\n            }\n          ],\n          \"miss\": []\n        }\n      ]\n    }\n  ]\n}\n</avrae>",
+        "name": "Heavy Cleave"
+      },
+      {
+        "description": "<i>Ranged Weapon Attack:</i> +13 to hit, range 120/240 ft., one target. <i>Hit:</i> 14 (2d6 + 7) slashing damage.\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Hurl Axe\",\n  \"automation\": [\n    {\n      \"type\": \"target\",\n      \"target\": \"each\",\n      \"effects\": [\n        {\n          \"type\": \"attack\",\n          \"attackBonus\": \"13\",\n          \"hit\": [\n            {\n              \"type\": \"damage\",\n              \"damage\": \"(2d6+7)[slashing]\"\n            }\n          ],\n          \"miss\": []\n        }\n      ]\n    }\n  ]\n}\n</avrae>",
+        "name": "Hurl Axe"
+      },
+      {
+        "description": "<i>Ranged Weapon Attack:</i> +7 to hit, range 80/320 ft., one target. <i>Hit:</i> 7 (1d12 + 1) piercing damage.\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Improvised Shot\",\n  \"automation\": [\n    {\n      \"type\": \"target\",\n      \"target\": \"each\",\n      \"effects\": [\n        {\n          \"type\": \"attack\",\n          \"attackBonus\": \"7\",\n          \"hit\": [\n            {\n              \"type\": \"damage\",\n              \"damage\": \"(1d12+1)[piercing]\"\n            }\n          ],\n          \"miss\": []\n        }\n      ]\n    }\n  ]\n}\n</avrae>",
+        "name": "Improvised Shot"
+      },
+      {
+        "description": "<i>Ranged Weapon Attack:</i> +8 to hit, range 80/320 ft., one target. <i>Hit:</i> 14 (2d12 + 1) piercing damage.\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Improvised Heavy Shot\",\n  \"automation\": [\n    {\n      \"type\": \"target\",\n      \"target\": \"each\",\n      \"effects\": [\n        {\n          \"type\": \"attack\",\n          \"attackBonus\": \"8\",\n          \"hit\": [\n            {\n              \"type\": \"damage\",\n              \"damage\": \"(2d12+1)[piercing]\"\n            }\n          ],\n          \"miss\": []\n        }\n      ]\n    }\n  ]\n}\n</avrae>",
+        "name": "Improvised Heavy Shot"
+      }
+    ],
+    "additionalAbilities": [
+      {
+        "description": "Shuu makes three Cleave attacks. One of them can be replaced with a Heavy Cleave attack, or he makes three Improvised Shot attacks, one of which can be replaced with an Improvised Heavy Shot attack.",
+        "name": "Multiattack"
+      },
+      {
+        "description": "(Bonus Action) Shuu enters a rage for 1 minute. While raging, he has advantage on Strength checks and Strength saving throws, resistance to all damage, and his weapon attacks deal an extra 4 damage. The rage ends early if he is knocked unconscious or chooses to end it.\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Rage\",\n  \"activation_type\": 3,\n  \"automation\": [\n    {\n      \"type\": \"target\",\n      \"target\": \"self\",\n      \"effects\": [\n        {\n          \"type\": \"ieffect2\",\n          \"name\": \"Rage\",\n          \"duration\": 10,\n          \"end\": false,\n          \"stacking\": false,\n          \"effects\": {\n            \"resistances\": [\n              \"acid\",\n              \"bludgeoning\",\n              \"cold\",\n              \"fire\",\n              \"force\",\n              \"lightning\",\n              \"necrotic\",\n              \"piercing\",\n              \"poison\",\n              \"psychic\",\n              \"radiant\",\n              \"slashing\",\n              \"thunder\"\n            ],\n            \"check_adv\": [\n              \"strength\"\n            ],\n            \"save_adv\": [\n              \"strength\"\n            ],\n            \"damage_bonus\": \"4\"\n          },\n          \"desc\": \"Advantage on Strength checks and saving throws, resistance to all damage, and +4 weapon damage for 1 minute.\",\n          \"buttons\": [\n            {\n              \"label\": \"End Rage\",\n              \"automation\": [\n                {\n                  \"type\": \"remove_ieffect\"\n                }\n              ]\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}\n</avrae>",
+        "name": "Rage (3/Day)"
+      },
+      {
+        "description": "When Shuu makes his first attack on his turn, he can gain advantage on all melee weapon attack rolls until the start of his next turn. Attack rolls against him have advantage during that time.\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Reckless Attack\",\n  \"automation\": [\n    {\n      \"type\": \"target\",\n      \"target\": \"self\",\n      \"effects\": [\n        {\n          \"type\": \"ieffect2\",\n          \"name\": \"Reckless Attack\",\n          \"duration\": 1,\n          \"end\": false,\n          \"stacking\": false,\n          \"effects\": {\n            \"attack_advantage\": 1\n          },\n          \"desc\": \"Advantage on attack rolls until the start of his next turn (melee weapon attacks only). Attack rolls against him have advantage.\",\n          \"buttons\": [\n            {\n              \"label\": \"End Reckless Attack\",\n              \"automation\": [\n                {\n                  \"type\": \"remove_ieffect\"\n                }\n              ]\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}\n</avrae>",
+        "name": "Reckless Attack"
+      },
+      {
+        "description": "If Shuu drops to 0 hit points while raging and doesn't die outright, he can make a DC 10 Constitution saving throw. On a success, he drops to 1 hit point instead. The DC increases by 5 each time he uses this feature and resets after a Long Rest.\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Relentless Rage\",\n  \"automation\": [\n    {\n      \"type\": \"target\",\n      \"target\": \"self\",\n      \"effects\": [\n        {\n          \"type\": \"save\",\n          \"stat\": \"con\",\n          \"dc\": \"10\",\n          \"fail\": [\n            {\n              \"type\": \"text\",\n              \"text\": \"Shuu drops to 0 hit points as normal.\"\n            }\n          ],\n          \"success\": [\n            {\n              \"type\": \"text\",\n              \"text\": \"Shuu drops to 1 hit point instead of 0.\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}\n</avrae>",
+        "name": "Relentless Rage"
+      },
+      {
+        "description": "When Shuu scores a critical hit with a melee weapon attack, he rolls two additional weapon damage dice.",
+        "name": "Brutal Critical"
+      },
+      {
+        "description": "Shuu has advantage on Dexterity saving throws against effects he can see.",
+        "name": "Danger Sense"
+      },
+      {
+        "description": "Shuu has advantage on an attack roll against a creature if at least one of Shuu's allies is within 5 feet of the creature and the ally isn't incapacitated.",
+        "name": "Pack Tactics"
+      }
+    ],
+    "alignment": "Chaotic Evil",
+    "armorClass": 18,
+    "armorType": "Unarmored Defense",
+    "challengeRating": 18,
+    "conditionImmunities": [
+      "Frightened",
+      "Charmed"
+    ],
+    "damageImmunities": [],
+    "damageResistances": [
+      "Bludgeoning",
+      "Slashing",
+      "Piercing"
+    ],
+    "damageVulnerabilities": [],
+    "experiencePoints": 20000,
+    "hitDieSize": 12,
+    "languages": [
+      "Common",
+      "Thieves Cant"
+    ],
+    "legendaryActions": [
+      {
+        "description": "Shuu moves up to half his speed without provoking opportunity attacks, then makes one Cleave attack.",
+        "name": "Charge (Costs 1 Action)"
+      },
+      {
+        "description": "Each bandit ally within 60 ft. of Shuu that can hear him gains 15 temporary hit points and has advantage on the next attack roll it makes before the end of its next turn.\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Warlord's Roar\",\n  \"automation\": [\n    {\n      \"type\": \"target\",\n      \"target\": \"each\",\n      \"effects\": [\n        {\n          \"type\": \"temphp\",\n          \"amount\": \"15\"\n        },\n        {\n          \"type\": \"ieffect2\",\n          \"name\": \"Warlord's Roar\",\n          \"duration\": 1,\n          \"end\": true,\n          \"stacking\": false,\n          \"effects\": {\n            \"attack_advantage\": 1\n          },\n          \"desc\": \"Advantage on the next attack roll it makes before the end of its next turn. Remove this effect after that attack.\",\n          \"buttons\": [\n            {\n              \"label\": \"Advantage Used\",\n              \"automation\": [\n                {\n                  \"type\": \"remove_ieffect\"\n                }\n              ]\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}\n</avrae>",
+        "name": "Warlord's Roar (Costs 1 Action)"
+      },
+      {
+        "description": "Shuu slams his weapon into the ground. Each creature within 15 ft. of him must make a DC 21 Strength saving throw, taking 27 (6d8) bludgeoning damage and being knocked prone on a failed save, or half as much damage and not knocked prone on a success.\n<avrae hidden>\n{\n  \"_v\": 2,\n  \"name\": \"Earthshaker Slam\",\n  \"automation\": [\n    {\n      \"type\": \"roll\",\n      \"dice\": \"(6d8)[bludgeoning]\",\n      \"name\": \"damage\",\n      \"displayName\": \"Damage\"\n    },\n    {\n      \"type\": \"target\",\n      \"target\": \"each\",\n      \"effects\": [\n        {\n          \"type\": \"save\",\n          \"stat\": \"str\",\n          \"dc\": \"21\",\n          \"fail\": [\n            {\n              \"type\": \"damage\",\n              \"damage\": \"{damage}\",\n              \"fixedValue\": true\n            },\n            {\n              \"type\": \"ieffect2\",\n              \"name\": \"Prone\",\n              \"duration\": -1,\n              \"end\": false,\n              \"stacking\": false,\n              \"effects\": {\n                \"attack_advantage\": -1\n              },\n              \"desc\": \"Disadvantage on its attack rolls. Attack rolls against it have advantage from within 5 ft. and disadvantage otherwise. Standing up costs half its speed.\",\n              \"buttons\": [\n                {\n                  \"label\": \"Stand Up\",\n                  \"automation\": [\n                    {\n                      \"type\": \"remove_ieffect\"\n                    }\n                  ]\n                }\n              ]\n            }\n          ],\n          \"success\": [\n            {\n              \"type\": \"damage\",\n              \"damage\": \"({damage})/2\",\n              \"fixedValue\": true\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}\n</avrae>",
+        "name": "Earthshaker Slam (Costs 2 Actions)"
+      }
+    ],
+    "legendaryActionsDescription": "Shuu can take 3 legendary actions, choosing from the options below. Only one legendary action can be used at a time and only at the end of another creature's turn. Spent legendary actions are regained at the start of his turn.",
+    "legendaryActionsPerRound": 3,
+    "numHitDie": 22,
+    "proficiencyBonus": 6,
+    "race": "Human",
+    "reactions": [
+      {
+        "description": "When Shuu takes damage from a creature within 5 ft. of him, he can use his reaction to make one Cleave attack against that creature.",
+        "name": "Savage Retaliation"
+      }
+    ],
+    "savingThrows": [
+      {
+        "ability": "strength",
+        "proficient": true,
+        "value": 13
+      },
+      {
+        "ability": "constitution",
+        "proficient": true,
+        "value": 12
+      }
+    ],
+    "senses": [],
+    "size": "Medium",
+    "skills": [
+      {
+        "name": "Athletics",
+        "proficient": true,
+        "value": 13
+      },
+      {
+        "name": "Intimidation",
+        "proficient": true,
+        "value": 7
+      },
+      {
+        "name": "Perception",
+        "proficient": true,
+        "value": 7
+      }
+    ],
+    "speed": "40 ft."
+  }
+}

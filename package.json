@@ -34,7 +34,8 @@
     "test:critter:ability-tools": "node scripts/check-critter-ability-tools.js",
     "test:critter:critical-party": "node scripts/check-critter-critical-party.js",
     "test:critter:spellcasting": "node scripts/check-critter-spellcasting.js",
-    "test:avrae:expressions": "node scripts/check-avrae-compat.js"
+    "test:avrae:expressions": "node scripts/check-avrae-compat.js",
+    "test:worldbuilder": "node scripts/check-worldbuilder-integration.js"
   },
   "dependencies": {
     "@discordjs/voice": "^0.19.2",

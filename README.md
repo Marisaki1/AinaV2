@@ -89,6 +89,7 @@ Server permission overwrites still apply. Administrator is not required for the 
 | Fabula viewing | Members can view other server characters using the optional user argument; replies are private to the requester |
 | Voice join/say/stop/leave | Members in the destination/current voice channel, or someone with Move Members; moving Aina away from another channel requires Move Members |
 | Critter commands | Existing workspace owner authorization |
+| Transcript export | Only Marisaki's Discord user ID `113974200267571201`; both Marisaki and Aina must be able to view the selected channel and read its history |
 
 ## Configuration
 
@@ -189,6 +190,29 @@ A scan reads accessible cached message channels/threads, or the selected channel
 
 Existing statistics from older versions contain totals without message IDs. Those totals are preserved, but the first new scan can overlap them. For a clean rebuild, an administrator can deliberately use `/emoji clear` and then scan. **Clear immediately removes the server's stored totals and deduplication records.** One scan runs per server, and clearing is blocked while it runs.
 
+### Channel transcripts
+
+Use `/transcript` in a server to save a channel or thread's available text history to `data/transcripts/` on the computer running Aina. It defaults to the current channel, scans backward to the beginning, and writes messages in chronological order. Every completed export is kept locally. A file of up to 8 MiB is also attached to the private reply when Discord accepts the upload; larger files remain available locally. Long exports can outlast Discord's interaction response window: check the local folder and bot console if the private reply expires.
+
+Only the Discord user ID `113974200267571201` can run the command, including when `OWNER_ID` is set differently. Both that user and Aina need View Channel and Read Message History. Private threads also require membership or Manage Threads. This exports one selected channel or thread at a time; threads are not included automatically when their parent channel is exported. Deleted messages and history unavailable to the bot cannot be recovered. Enable Message Content Intent for message and embed content.
+
+By default, message text and text from embeds are included, with no dates, image links, or attachment links. Your D&D speaker IDs are labeled `DM:`, `Sanae:`, and `Shuu:`; Aina's specified bot ID is also labeled `DM:`. Other authors use their server display name or Discord username. Formatting and line breaks in messages are kept. Messages with no remaining text after exclusions are omitted.
+
+| `/transcript` option | Effect |
+| --- | --- |
+| `channel` | Choose a text channel or thread in this server; defaults to the current channel. |
+| `text_only` | Set true to omit speaker labels, dates, image links, and all attachment links. |
+| `speakers` | Include speaker labels; default true. Set false to omit them. |
+| `dates` | Include UTC timestamps; default false. |
+| `attachments` | Include links to non-image attachments; default false. Files are not downloaded. |
+| `embed_text` | Include titles, descriptions, fields, and other visible embed text; default true. Set false to keep message content only. |
+| `images` | Include image attachment links, embedded image links, and direct image URLs in message text; default false. Images are not downloaded. |
+| `from_date`, `through_date` | Optional inclusive UTC calendar dates in `YYYY-MM-DD` format. |
+
+Examples: `/transcript` saves the current channel with D&D speaker labels; `/transcript text_only:True` saves text without labels, dates, or attachment links; `/transcript channel:#campaign dates:True from_date:2026-01-01` adds timestamps and starts from that UTC date. `text_only:True` takes precedence over `speakers`, `dates`, `attachments`, and `images`. The `embed_text` option still applies in text-only mode, allowing written bot dialogue to be retained.
+
+Exports contain private channel content and are excluded from Git under `data/`. Back them up only where you intend to retain them. Discord messages may change or disappear while an export is in progress; the result reflects what Discord returned during the scan, and fetching stops before the command's invocation. An interrupted or failed history scan does not create a completed file. Attachments, images, reactions, and thread replies are not archived unless their textual links are explicitly requested or a thread is exported separately.
+
 ### Text to voice
 
 ```text
@@ -284,6 +308,14 @@ Sheet views respond privately to the requester. Other members can inspect a serv
 Fabula is a **persistent tracker**: equipment does not automatically recompute DEF/MDEF/initiative, EXP does not automatically level up, adding a spell does not cast it or spend MP, and status descriptions do not implement combat effects. Set totals and spend resources explicitly according to your campaign. The existing status descriptions are campaign configuration, not a claim of complete official rules automation. Previously posted sheets are snapshots; reopening or using a control fetches current data.
 
 ### Critter Workshop
+
+The **Roleplay** tab lets the workspace owner create and edit NPCs and post as them in a chosen channel. Put PNG, JPEG or WebP files in `assets/critter/npcs/`, or upload them from the NPC editor; a filename becomes the default NPC name. Images in this folder can also be selected when editing a siege battalion leader. The workspace backup contains NPC settings, but copy the image folder separately when moving to another machine.
+
+Use subfolders such as `assets/critter/npcs/Town/Guild/` to organize images. Every current local asset selector in Roleplay and Siege uses the same searchable folder-and-image browser. **New folder** creates an asset directory; uploads go into the NPC editor's **Folder**. That field also groups the NPC in the cast and **Choose NPCs to display** grid; it can be changed without moving the NPC's saved image. The chooser keeps **Done** visible while its cards scroll. Existing root images remain under **Unfiled**. Roleplay supports eight simultaneously loaded NPCs and remembers their drafts, channels, temporary names/images, voice settings, and folder filters. New local image controls should use the shared `AssetPicker` in `src/critter/public/asset-picker.js`.
+
+Run Aina's Discord bot, choose a default roleplay channel, create an NPC, load it into a slot, and press **Send**. An NPC can remember its own channel or use the default. Aina and the workspace owner must be able to post in the channel; Aina also needs **Manage Webhooks** in the destination channel (or the parent of a thread). The first post creates an Aina Roleplay webhook; its credential is stored only in `data/critter/roleplay-webhooks.json`. Do not share that file. Discord may rate-limit changes to the webhook avatar, especially when alternating between NPCs. A failed or uncertain post retains the draft; check Discord before sending again. Webhook messages are not Avrae commands issued by a player.
+
+Type dialogue without the NPC name: each line is sent as `> NPC name: dialogue`. Enter sends from the focused box; Shift+Enter adds a line. To grant webhook permission for a thread, open its parent channel's **Edit Channel → Permissions**, add Aina or its role, and allow **View Channel** and **Manage Webhooks**. Confirm that channel overrides do not deny these permissions. Aina also needs permission to send in the thread. Only a server member with permission to manage the channel can change these settings.
 
 The existing Critter implementation is outside this improvement pass. Open `http://127.0.0.1:4317` on the bot computer while Aina runs, or use `npm.cmd run critter` for the standalone local service. Discord commands are included in the reference below.
 
@@ -427,6 +459,12 @@ Generated from the same builders registered with Discord. `<option>` is required
 | `/fab identity trait-remove <number>` | Remove a trait by number<br>number: min 1 |
 | `/fab identity quirk <text>` | Set your character quirk<br>text: max 150 characters |
 
+### transcript
+
+| Command | Description and choices |
+| --- | --- |
+| `/transcript [channel] [text_only] [speakers] [dates] [attachments] [embed_text] [images] [from_date] [through_date]` | Save a channel or thread transcript locally<br>from_date: max 10 characters · through_date: max 10 characters |
+
 ### tts
 
 | Command | Description and choices |
@@ -441,7 +479,7 @@ Generated from the same builders registered with Discord. `<option>` is required
 
 | Command | Description and choices |
 | --- | --- |
-| `/help [category] [page]` | Browse Aina’s available commands<br>category: alarms, dungeon, emoji, ai, ttv, fabula, utility, critter · page: min 1 |
+| `/help [category] [page]` | Browse Aina’s available commands<br>category: alarms, dungeon, emoji, ai, ttv, fabula, utility, critter, transcript · page: min 1 |
 | `/ping` | Check Aina’s latency and uptime |
 
 <!-- commands:end -->
@@ -457,6 +495,7 @@ Generated from the same builders registered with Discord. `<option>` is required
 | `data/fabula/<guild>/<user>.json` | Persistent character sheets |
 | `data/users/registry.json` | IDs, names, first/last seen, observed server IDs, command/chat request counters |
 | `data/critter/` | Existing workshop data; retain its backups and exported files |
+| `data/transcripts/` | Locally saved private channel transcripts; one complete UTF-8 text file per successful export |
 | `history/{commands,errors,sessions}/YYYY-MM-DD.jsonl` | New append-only logs with UTC dates/times |
 | `history/.../*.json` | Legacy logs retained without conversion |
 | `assets/images/alarms/` | Host-installed reminder images |
@@ -512,6 +551,8 @@ A cog exports `{ commands: [{ data, execute }], events? }`. The loader validates
 
 ## Troubleshooting
 
+In **Siege → Manage Squads**, edit the squad and open **Heal & restore**. **HP change** accepts positive healing or negative damage (for example, `-125` removes 125 HP). **Healing uses** accepts positive amounts to restore spent uses or negative amounts to spend available uses. Both clamp at their limits; healing does not revive a defeated squad. Finish or cancel an active battle before adjusting its squads. **Reset** explicitly restores full HP and healing uses.
+
 | Symptom | Check |
 | --- | --- |
 | Startup rejects configuration | Run doctor. Set real token/application IDs; explicit guild scope needs GUILD_ID. Confirm timezone and true/false registration values. |
@@ -527,3 +568,18 @@ A cog exports `{ commands: [{ data, execute }], events? }`. The loader validates
 | Fabula totals do not change with equipment/status | These are manual tracker values. Use equipment stats/resource commands to apply the campaign's result. |
 | Data file cannot be read | Preserve it, stop Aina, restore a backup, and inspect the error. Corrupt files are not silently discarded. |
 | Local workshop works but bot is offline | The existing offline fallback keeps the editor open. Read the startup error and correct Discord setup before restarting. |
+
+
+## WorldBuilder in Aina
+
+Run `npm start` from the Aina project folder and open the usual Aina address (`http://127.0.0.1:4317/#worldbuilder`). WorldBuilder fills the window with its original design. Its top-left hamburger opens Aina tools. Outside WorldBuilder, the normal Aina tab bar returns with WorldBuilder as its last tab. Combat, Initiative, Siege, Library, Commands and Roleplay each use the full workspace; returning to WorldBuilder preserves the open editor. Aina starts the Python backend and stops it when Aina exits. No WorldBuilder launcher or second terminal is needed, and it does not open a browser window. The source lives in `src/critter/WorldBuilder/WorldBuilder/`.
+
+The transferred database was verified and restored to `src/critter/WorldBuilder/WorldBuilder/data-recovered-transfer/`; the empty `data/` database was left intact. The local `aina-data.json` selects that recovered directory. Existing account **a** can log in with its original WorldBuilder password: unique saved display names are accepted as login aliases, preserving the original internal account ID, username and password hash. `owner` remains a valid login for that original account. **Create account** adds a named local account with a separate first world. **Log out** is in the account menu at the top right. Login and Create account are always separate accessible choices; usernames are editable. Passwords are hashed with Django's password storage; sessions and CSRF protection remain enabled. Creating a new account does not transfer ownership of existing worlds. Complete installation backups are available only to the installation owner; other accounts can export their own worlds.
+
+Aina keeps the WorldBuilder frame mounted when switching tabs, preserving unsaved editor state. It uses WorldBuilder's stable local port (default `8777`) so local sessions and draft recovery survive restarts. To change a conflicting port, set `WORLDBUILDER_PORT` in Aina's `.env` and restart. Close an older separately launched WorldBuilder before the first integrated start. Embedding is allowed only from Aina's exact local origin; both servers bind to loopback.
+
+Python is required for WorldBuilder. On a missing environment Aina creates its local virtual environment and installs its locked Python dependencies. A missing frontend build is installed and built automatically (internet access is required for missing dependencies). The current installation has been repaired and rebuilt. The original transferred npm lock is retained as `package-lock.before-aina.json`.
+
+Local verification: `node scripts/check-worldbuilder-integration.js` launches an isolated database, backend and headless browser to check managed startup/shutdown, setup, named accounts, login/logout, session persistence, account isolation and an unsaved editor across tab changes. It does not contact Discord or change the existing campaign database. Full WorldBuilder backups include accounts and media; Aina's JSON workspace backup does not include the WorldBuilder database.
+
+On Windows, restored WorldBuilder folders inherit the installation folder permissions. This lets the normal Windows user create/read the local `.secret-key` and save to the recovered database. The managed parent watcher uses unbuffered OS pipe reads so a startup error exits without a Python buffered-stdin shutdown crash.

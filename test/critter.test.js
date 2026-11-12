@@ -13,7 +13,13 @@ function temporary(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aina-critter-test-'));
   t.after(() => {
     // Only files created in this test directory are removed, with no recursive operations.
-    for (const f of fs.readdirSync(dir)) fs.unlinkSync(path.join(dir, f));
+    for (const f of fs.readdirSync(dir)) {
+      const entry=path.join(dir,f);
+      if(f==='siege-backups'&&fs.lstatSync(entry).isDirectory()){
+        for(const backup of fs.readdirSync(entry))fs.unlinkSync(path.join(entry,backup));
+        fs.rmdirSync(entry);
+      }else fs.unlinkSync(entry);
+    }
     fs.rmdirSync(dir);
   });
   return dir;

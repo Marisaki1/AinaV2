@@ -1,0 +1,527 @@
+{
+  "reviewedOn": "2026-10-28",
+  "sources": [
+    {
+      "id": "S01",
+      "title": "Pricing and current tiers",
+      "url": "https://www.worldanvil.com/pricing",
+      "notes": "Cross-check current tier boundaries; limits are not WorldBuilder quotas.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S02",
+      "title": "Features by Guild level",
+      "url": "https://www.worldanvil.com/learn/account/list-features",
+      "notes": "Broad feature discovery, including professional, privacy, API and legacy tier details.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S03",
+      "title": "Learning center",
+      "url": "https://www.worldanvil.com/learn",
+      "notes": "Documentation topic index; guide counts do not equal feature or template counts.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S04",
+      "title": "Article template guides",
+      "url": "https://www.worldanvil.com/learn/article-templates",
+      "notes": "Template families and domain distinctions.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S05",
+      "title": "Articles and World Manager",
+      "url": "https://www.worldanvil.com/learn/article-guides/athena",
+      "notes": "Tree/list organization, article states, inline reference editing and reader preview.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S06",
+      "title": "Visual editor",
+      "url": "https://www.worldanvil.com/learn/interface/visual-text-editor",
+      "notes": "Blocks, mentions, placeholder creation, embeds and dice controls.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S07",
+      "title": "BBCode formatting",
+      "url": "https://www.worldanvil.com/learn/bbcode-tutorials/basic-bbcode",
+      "notes": "Markup categories; exact import tag compatibility still needs a tag-by-tag fixture suite.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S08",
+      "title": "Automatic article linking",
+      "url": "https://www.worldanvil.com/features/article-automatic-linking",
+      "notes": "Automatic and reviewed cross-link suggestions.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S09",
+      "title": "Categories",
+      "url": "https://www.worldanvil.com/learn/categories/categories-guide",
+      "notes": "Nested organization and category presentation.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S10",
+      "title": "Tags",
+      "url": "https://www.worldanvil.com/learn/tags/tags",
+      "notes": "Cross-resource tags and automatically populated lists.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S11",
+      "title": "Search and exploration",
+      "url": "https://www.worldanvil.com/features/search-explore",
+      "notes": "World-wide resource search, cross-references and quick creation.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S12",
+      "title": "Images",
+      "url": "https://www.worldanvil.com/learn/images/images",
+      "notes": "Folders, galleries, replacement, credits, private images and batch editing.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S13",
+      "title": "Interactive maps",
+      "url": "https://www.worldanvil.com/learn/map-making/maps",
+      "notes": "Uploaded image annotations, layers, marker types and visibility; map artwork creation is separate.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S14",
+      "title": "Timelines",
+      "url": "https://www.worldanvil.com/learn/timelines/timelines",
+      "notes": "Events, eras, lanes, list/timescale views and event visibility.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S15",
+      "title": "Chronicles",
+      "url": "https://www.worldanvil.com/learn/chronicles/chronicles",
+      "notes": "Linked map/time exploration, evolving maps, calendar and timeline configuration.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S16",
+      "title": "Calendars",
+      "url": "https://www.worldanvil.com/learn/calendars/calendars",
+      "notes": "Custom recurring calendar structure and celestial cycles; distinct from historical timelines.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S17",
+      "title": "Family trees and bloodlines",
+      "url": "https://www.worldanvil.com/learn/family-trees/family-trees-guide",
+      "notes": "Kinship, descendants and extended character relationships.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S18",
+      "title": "Diplomacy webs",
+      "url": "https://www.worldanvil.com/learn/diplomacy-webs/diplomacy-webs",
+      "notes": "Directional relationship scores and official diplomatic labels.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S19",
+      "title": "Content trees",
+      "url": "https://www.worldanvil.com/learn/content-trees/content-trees",
+      "notes": "Interactive/static/text hierarchy views, tagged population and item access.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S20",
+      "title": "Whiteboards",
+      "url": "https://www.worldanvil.com/learn/whiteboards/whiteboards-guide",
+      "notes": "Free-form shapes, text, connectors and world-resource cards.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S21",
+      "title": "Interactive tables",
+      "url": "https://www.worldanvil.com/learn/interactive-tables/interactive-tables",
+      "notes": "Typed columns, weighted rolls, dice buttons, CSV and embeds.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S22",
+      "title": "Random generators",
+      "url": "https://www.worldanvil.com/learn/random-generators/random-generators",
+      "notes": "Weighted inputs, composed outputs, variables, conditional routers and article creation.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S23",
+      "title": "Variables",
+      "url": "https://www.worldanvil.com/learn/variables/variables",
+      "notes": "Reusable content and tooltips; JSON Array type is explicitly unimplemented in this guide.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S24",
+      "title": "Notebook",
+      "url": "https://www.worldanvil.com/learn/notebook/notebook",
+      "notes": "Account-private notebooks, sections, notes, metadata and note templates.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S25",
+      "title": "To-do list",
+      "url": "https://www.worldanvil.com/learn/todo-list/todo-list",
+      "notes": "Priorities and work states linked to article creation/progress; tier text conflicts with S02.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S26",
+      "title": "World meta",
+      "url": "https://www.worldanvil.com/learn/meta/meta",
+      "notes": "Creative goals, scope, themes, setting principles and inspiration.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S27",
+      "title": "Campaign manager",
+      "url": "https://www.worldanvil.com/learn/rpg/campaign-manager",
+      "notes": "World campaigns, cast, parties, quests, equipment, plots, sessions and primer.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S28",
+      "title": "Digital storyteller screen",
+      "url": "https://www.worldanvil.com/learn/rpg/dsts",
+      "notes": "Party/dice stream, reference library, session plan, handouts and media; music is not broadcast to players.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S29",
+      "title": "Player character manager",
+      "url": "https://www.worldanvil.com/learn/player/character-manager",
+      "notes": "Profiles, character posts, sheets, equipment, scrapbook, galleries, journals and history.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S30",
+      "title": "Statblocks",
+      "url": "https://www.worldanvil.com/learn/rpg/statblocks",
+      "notes": "System-specific sheets, collections, article embeds and community library.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S31",
+      "title": "Custom statblock templates",
+      "url": "https://www.worldanvil.com/learn/rpg/custom-blocks",
+      "notes": "Field configuration and custom presentation; WA uses HTML/CSS/Twig, with YAML field import.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S32",
+      "title": "Subscribers and access groups",
+      "url": "https://www.worldanvil.com/learn/access-rights/subscribers",
+      "notes": "Group access, item/section restrictions, defaults and optional self-enrolment.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S33",
+      "title": "Co-authors",
+      "url": "https://www.worldanvil.com/learn/access-rights/co-authors",
+      "notes": "Different authoring roles; guide says Manuscripts do not support co-writing.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S34",
+      "title": "Secrets",
+      "url": "https://www.worldanvil.com/learn/secrets/secrets",
+      "notes": "Reusable restricted snippets, reveal actions and separately private GM notes.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S35",
+      "title": "Discussion boards",
+      "url": "https://www.worldanvil.com/learn/discussion-boards/discussion-boards",
+      "notes": "Boards/threads, moderation, posting as characters and play-by-post dice fields.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S36",
+      "title": "Manuscripts",
+      "url": "https://www.worldanvil.com/learn/manuscripts-guides/manuscripts",
+      "notes": "Scene/chapter structure, writing/review/corkboard/read modes, goals, versions and publishing.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S37",
+      "title": "Publication",
+      "url": "https://www.worldanvil.com/features/publication",
+      "notes": "Reader interface, serialized releases, engagement and supporter/store links.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S38",
+      "title": "Creative Studio",
+      "url": "https://www.worldanvil.com/features/creative-studio",
+      "notes": "Custom pins, custom article/sheet tooling; not an image-generation feature.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S39",
+      "title": "CSS and styling",
+      "url": "https://www.worldanvil.com/learn/styling/css-basics",
+      "notes": "Scoped styling and presentation controls.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S40",
+      "title": "World export",
+      "url": "https://www.worldanvil.com/learn/world/export",
+      "notes": "Printable export and advanced JSON/basic-HTML archive; exact resource completeness needs sample exports.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S41",
+      "title": "API access",
+      "url": "https://www.worldanvil.com/learn/account/get-api-key",
+      "notes": "Distinguishes user tokens from application keys.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S42",
+      "title": "API reference",
+      "url": "https://www.worldanvil.com/api/aragorn/documentation",
+      "notes": "Published v1 contract and pagination; not evidence every UI feature is exposed.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S43",
+      "title": "Foundry integration",
+      "url": "https://www.worldanvil.com/learn/rpg/foundry-integration",
+      "notes": "External module imports/reads lore; not a built-in full VTT.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S44",
+      "title": "D&D Beyond import",
+      "url": "https://www.worldanvil.com/learn/rpg/dndbeyond-importer",
+      "notes": "Documented importer is for 2014 5e characters; it replaces sheet contents.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S45",
+      "title": "Community",
+      "url": "https://www.worldanvil.com/learn/community/community-guide",
+      "notes": "Community activities, discovery and challenges; a network cannot be reproduced by code alone.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S46",
+      "title": "Supporter batch import",
+      "url": "https://www.worldanvil.com/learn/access-rights/import-subscribers",
+      "notes": "Email-list membership import, not proof of automatic payment synchronisation.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S47",
+      "title": "Custom domains",
+      "url": "https://www.worldanvil.com/learn/world/custom-domain",
+      "notes": "Domain configuration; public guide documents restrictions on logged-in features.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "S48",
+      "title": "Product FAQ",
+      "url": "https://www.worldanvil.com/faq",
+      "notes": "Advertises sheets for over a hundred systems; individual system/template availability still needs enumeration.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "World Anvil"
+    },
+    {
+      "id": "T01",
+      "title": "Django database support",
+      "url": "https://docs.djangoproject.com/en/5.2/ref/databases/",
+      "notes": "SQLite and PostgreSQL support, with backend differences.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "Official project"
+    },
+    {
+      "id": "T02",
+      "title": "Django object permissions",
+      "url": "https://docs.djangoproject.com/en/5.2/topics/auth/customizing/#handling-object-permissions",
+      "notes": "Object-level enforcement is not automatically supplied by Django core.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "Official project"
+    },
+    {
+      "id": "T03",
+      "title": "Waitress",
+      "url": "https://docs.pylonsproject.org/projects/waitress/en/latest/",
+      "notes": "Native Windows-compatible WSGI serving.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "Official project"
+    },
+    {
+      "id": "T04",
+      "title": "SQLite FTS5",
+      "url": "https://www.sqlite.org/fts5.html",
+      "notes": "Local search indexing and tokenizer capabilities.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "Official project"
+    },
+    {
+      "id": "T05",
+      "title": "SQLite backup API",
+      "url": "https://docs.python.org/3/library/sqlite3.html#sqlite3.Connection.backup",
+      "notes": "Consistent database snapshot capability; media consistency must also be handled.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "Official project"
+    },
+    {
+      "id": "T06",
+      "title": "Leaflet image coordinates",
+      "url": "https://leafletjs.com/examples/crs-simple/crs-simple.html",
+      "notes": "Non-geographical image-coordinate maps.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "Official project"
+    },
+    {
+      "id": "T07",
+      "title": "Tiptap core license",
+      "url": "https://github.com/ueberdosis/tiptap/blob/main/LICENSE.md",
+      "notes": "MIT-licensed core; paid services/extensions are not assumed free.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "Official project"
+    },
+    {
+      "id": "T08",
+      "title": "React Flow",
+      "url": "https://reactflow.dev/learn",
+      "notes": "Graph editor library; MIT license link confirmed on official documentation.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "Official project"
+    },
+    {
+      "id": "T09",
+      "title": "Excalidraw license",
+      "url": "https://github.com/excalidraw/excalidraw/blob/master/LICENSE",
+      "notes": "MIT-licensed whiteboard core; hosted collaboration is a separate integration task.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "Official project"
+    },
+    {
+      "id": "T10",
+      "title": "PostgreSQL JSON",
+      "url": "https://www.postgresql.org/docs/current/datatype-json.html",
+      "notes": "Optional future server database, not required for the Windows-only first deployment.",
+      "reviewedOn": "2026-10-28",
+      "review": "public documentation",
+      "publisher": "Official project"
+    }
+  ]
+}

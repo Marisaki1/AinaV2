@@ -1,0 +1,2139 @@
+{
+  "schemaVersion": 1,
+  "reviewedOn": "2026-10-28",
+  "deploymentPreference": "local/offline Windows owner now; optional online self-hosting with player accounts and selective lore/relationship sharing later (P5)",
+  "status": "local-authoring-release-0.22.0",
+  "evidenceLegend": {
+    "D": "publicly documented capability; not live verified",
+    "U": "unresolved details or compatibility",
+    "E": "proposed enhancement",
+    "X": "external network or service boundary"
+  },
+  "phaseCounts": {
+    "P1": 30,
+    "P2": 26,
+    "P3": 16,
+    "P4": 21,
+    "P5": 34,
+    "P6": 12
+  },
+  "features": [
+    {
+      "id": "W-01",
+      "area": "Worlds and organization",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Multiple worlds and campaigns",
+      "implementation": "Separate world IDs and a fast world switcher.",
+      "acceptance": "Changing world never mixes data.",
+      "sources": [
+        "S01",
+        "S27"
+      ],
+      "status": "partial",
+      "deliveryNotes": "World create/switch and owner/world isolation; multi-campaign records. Broad switch stress testing remains.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "W-02",
+      "area": "Worlds and organization",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "World dashboard and navigation",
+      "implementation": "Configurable dashboard widgets, menus and quick creation.",
+      "acceptance": "Reordered widgets persist after restart.",
+      "sources": [
+        "S05",
+        "S11"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Working overview, real counts, activity and navigation; dashboard widget reordering is absent.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "W-03",
+      "area": "Worlds and organization",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Nested categories and article parents",
+      "implementation": "Ordered trees with cycle prevention and saved list views.",
+      "acceptance": "Move a subtree without breaking links.",
+      "sources": [
+        "S05",
+        "S09"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Nested collection tree, breadcrumbs, recursive browsing, keyboard move dialog, bulk/subtree moves, drag/drop and persisted ordering/view preferences. Final-graph validation prevents cycles; moved subtrees retain IDs and links.",
+      "verification": "validation-0.2.md"
+    },
+    {
+      "id": "W-04",
+      "area": "Worlds and organization",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Tags and generated collections",
+      "implementation": "One tagging model for articles, maps and assets.",
+      "acceptance": "A tagged collection updates after a tag edit.",
+      "sources": [
+        "S10"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Entry and media tags share normalization and saved filters. Filters support all/any tags, content types, templates, work states and text; membership updates after edits without moving originals.",
+      "verification": "validation-0.2.md"
+    },
+    {
+      "id": "W-05",
+      "area": "Worlds and organization",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "World meta and creative prompts",
+      "implementation": "Editable scope, tone, setting rules and inspiration sections.",
+      "acceptance": "Meta exports alongside the world.",
+      "sources": [
+        "S26"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Editable scope, themes, rules and inspiration; exports include world data. Expanded prompts remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "W-06",
+      "area": "Worlds and organization",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Draft, published, WIP and completed states",
+      "implementation": "Store publication and work status independently.",
+      "acceptance": "Draft changes do not publish accidentally.",
+      "sources": [
+        "S05"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Independent work state and immutable reader snapshots; draft edits do not alter the snapshot.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "W-07",
+      "area": "Worlds and organization",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "World branding, announcements and credits",
+      "implementation": "Configurable homepage, notices, copyright and navigation blocks.",
+      "acceptance": "Preview matches the published presentation.",
+      "sources": [
+        "S02",
+        "S39"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "W-08",
+      "area": "Worlds and organization",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "World and article URLs",
+      "implementation": "Stable IDs with editable slugs, aliases and redirect records.",
+      "acceptance": "Old links still resolve after a rename.",
+      "sources": [
+        "S02",
+        "S47"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Stable UUID hash routes survive renames; custom slugs and redirects remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "W-09",
+      "area": "Worlds and organization",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "World statistics and feeds",
+      "implementation": "Permission-filtered counts and an optional RSS feed.",
+      "acceptance": "Private updates never enter a public feed.",
+      "sources": [
+        "S02"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Local owner counts and activity feed; public feeds and advanced statistics remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "K-01",
+      "area": "Articles and knowledge editing",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Built-in article families",
+      "implementation": "Original schemas for the documented template families; see template catalogue.",
+      "acceptance": "Each family can save its structured fields.",
+      "sources": [
+        "S04"
+      ],
+      "status": "partial",
+      "deliveryNotes": "30 field sets include four campaign planning templates alongside the 26 existing families. Planning metadata preserves rich original notes. Character/location guides connect fields to records and maps; comprehensive family-specific layouts remain.",
+      "verification": "validation-0.19.md"
+    },
+    {
+      "id": "K-02",
+      "area": "Articles and knowledge editing",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Custom article templates",
+      "implementation": "Versioned field schemas with reusable sections and validation.",
+      "acceptance": "Schema changes preserve existing article values.",
+      "sources": [
+        "S01",
+        "S38"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Custom text/long-text/number fields and required checks before reader publication; versioned schemas and advanced types remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "K-03",
+      "area": "Articles and knowledge editing",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Visual block editor",
+      "implementation": "Tiptap core with headings, lists, tables, quotes and slash commands.",
+      "acceptance": "Pasted and edited content survives reload.",
+      "sources": [
+        "S06"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Rich text, images, tables and stable reference/variable clipboard parsing work. Structured references take priority over generic pasted links; broader document/paste fidelity remains.",
+      "verification": "validation-0.2.md"
+    },
+    {
+      "id": "K-04",
+      "area": "Articles and knowledge editing",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Mentions and placeholder articles",
+      "implementation": "Insert ID-based links and create unresolved topics inline.",
+      "acceptance": "Rename a target without breaking its mentions.",
+      "sources": [
+        "S06",
+        "S11"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Searchable reference picker creates private sources while preserving the paragraph; explicit references retain UUIDs through renames/paste. Automatic prose-reading hyperlinks match unambiguous world entry titles/aliases, preserve original wording and open source previews. Read/write modes and a world opt-out are tested. Automatic name matches are derived at reading time; explicit references remain the stable association option.",
+      "verification": "validation-0.14.md"
+    },
+    {
+      "id": "K-05",
+      "area": "Articles and knowledge editing",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Automatic cross-link suggestions",
+      "implementation": "Match aliases; preview and accept suggestions before committing.",
+      "acceptance": "Ambiguous names require a chosen target.",
+      "sources": [
+        "S08"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "K-06",
+      "area": "Articles and knowledge editing",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Backlinks, tooltips and quick preview",
+      "implementation": "Index references and open linked records beside the editor.",
+      "acceptance": "Link edits update the backlink list.",
+      "sources": [
+        "S02",
+        "S05"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Backlinks update after link edits; owner hover cards and in-place previews refresh after target renames. Foreign/unavailable targets are excluded, and reader snapshot surfaces retain their visibility filtering.",
+      "verification": "validation-0.2.md"
+    },
+    {
+      "id": "K-07",
+      "area": "Articles and knowledge editing",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Structured fields and sidebars",
+      "implementation": "Typed field values alongside free prose and relationship pickers.",
+      "acceptance": "A selected location resolves to one location record.",
+      "sources": [
+        "S04",
+        "S06"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Editable fields and an authoring sidebar; repeaters/layout configuration remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "K-08",
+      "area": "Articles and knowledge editing",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Reusable variables and rich snippets",
+      "implementation": "ID-based terms, tooltips, numeric values, links and fragments.",
+      "acceptance": "Edit one variable and refresh every reference.",
+      "sources": [
+        "S23"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Reusable terms display current values, including zero, in authoring and published values in reader snapshots; inspectable through previews. Rich snippet collections remain.",
+      "verification": "validation-0.2.md"
+    },
+    {
+      "id": "K-09",
+      "area": "Articles and knowledge editing",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Language dictionaries",
+      "implementation": "Language-linked word entries with lookup and embeddable lists.",
+      "acceptance": "Search and export preserve spelling and Unicode.",
+      "sources": [
+        "S02",
+        "S04"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "K-10",
+      "area": "Articles and knowledge editing",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Focus writing and keyboard commands",
+      "implementation": "Distraction-free editor and accessible command palette.",
+      "acceptance": "Writing and navigation work from the keyboard.",
+      "sources": [
+        "S05",
+        "S06"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Focus mode, Ctrl+K search and editor undo; broader commands/preferences remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "K-11",
+      "area": "Articles and knowledge editing",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Rich embeds and page layouts",
+      "implementation": "Reusable components for media, graphs, tables and read-aloud blocks.",
+      "acceptance": "A component renders only permitted referenced data.",
+      "sources": [
+        "S06",
+        "S07"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Images/tables, local map/timeline views and saved graph reader entries are rendered. Portable offline graph HTML and SVG are available; general configurable layouts and external embed policies remain.",
+      "verification": "validation-0.6.md"
+    },
+    {
+      "id": "K-12",
+      "area": "Articles and knowledge editing",
+      "evidence": "U",
+      "phase": "P5",
+      "capability": "Advanced markup compatibility",
+      "implementation": "Parse imported BBCode into the internal document model; preserve unknown tags.",
+      "acceptance": "Every supported tag has an import/render fixture.",
+      "sources": [
+        "S07"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "K-13",
+      "area": "Articles and knowledge editing",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Article and category presentation",
+      "implementation": "Headers, footers, tables of contents and book-style category cards.",
+      "acceptance": "Nested navigation matches the configured order.",
+      "sources": [
+        "S02",
+        "S09"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Usable article cards, editor and saved reader preview; category presentation themes remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "K-14",
+      "area": "Articles and knowledge editing",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Move content between worlds",
+      "implementation": "Transactional transfer with reference and access remapping.",
+      "acceptance": "Transfer report identifies external references.",
+      "sources": [
+        "S02"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "K-15",
+      "area": "Articles and knowledge editing",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Article scrapbook and private comments",
+      "implementation": "Private editorial notes separated from published content.",
+      "acceptance": "A reader export contains no editorial notes.",
+      "sources": [
+        "S02"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Private GM notes; scrapbook and per-article discussion remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "A-01",
+      "area": "Accounts, privacy and authoring rights",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Private worlds and resources",
+      "implementation": "One policy service for world, object and asset access.",
+      "acceptance": "Direct URLs enforce the same rule as navigation.",
+      "sources": [
+        "S32",
+        "S34"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Authenticated data and media APIs, direct URL ownership checks, private initial records; no anonymous reader hosting.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "A-02",
+      "area": "Accounts, privacy and authoring rights",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Co-author roles",
+      "implementation": "Owner, co-owner, editor, own-content writer and draft-only writer roles.",
+      "acceptance": "Each role passes create/edit/publish tests.",
+      "sources": [
+        "S33"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "A-03",
+      "area": "Accounts, privacy and authoring rights",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Reader groups and memberships",
+      "implementation": "Resource grants, defaults and explicitly opt-in self-enrolment.",
+      "acceptance": "Revoking membership removes access immediately.",
+      "sources": [
+        "S32"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Confirmed later P5 requirement: separate player accounts, per-world memberships, individual/group lore grants and immediate revocation. Not implemented by local reader previews.",
+      "verification": "project-tracker.md"
+    },
+    {
+      "id": "A-04",
+      "area": "Accounts, privacy and authoring rights",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Private sections within public pages",
+      "implementation": "Store restricted blocks separately and filter on the server.",
+      "acceptance": "Restricted text is absent from HTML and JSON.",
+      "sources": [
+        "S32"
+      ],
+      "status": "verified",
+      "deliveryNotes": "GM notes/private blocks are excluded from reader HTML and JSON. Private reference labels are redacted.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "A-05",
+      "area": "Accounts, privacy and authoring rights",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Reusable secrets and controlled reveals",
+      "implementation": "Secret records with independent audience and GM-only notes.",
+      "acceptance": "Revealing a secret never reveals its GM notes.",
+      "sources": [
+        "S34"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "A-06",
+      "area": "Accounts, privacy and authoring rights",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Visibility of markers, events and graph items",
+      "implementation": "Apply the same policy to child objects and their media.",
+      "acceptance": "Hidden titles never leak through a tooltip.",
+      "sources": [
+        "S13",
+        "S14",
+        "S19"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Server filtering covers map states, timeline lanes, graph endpoints, saved roots and hierarchy parents. Removed/private connections and their notes/history are excluded from reader surfaces; reader connection detail applies the same projection. Independent player/group grants remain later P5.",
+      "verification": "validation-0.10.md"
+    },
+    {
+      "id": "A-07",
+      "area": "Accounts, privacy and authoring rights",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "View as reader or group",
+      "implementation": "Evaluate the real read policy in a marked preview session.",
+      "acceptance": "Preview and actual reader responses agree.",
+      "sources": [
+        "S05",
+        "S32"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Saved reader preview; distinct audience-group simulation remains.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "A-08",
+      "area": "Accounts, privacy and authoring rights",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Passwords and access codes",
+      "implementation": "Hashed article passwords and revocable, scoped access grants.",
+      "acceptance": "Expired or revoked codes cannot open content.",
+      "sources": [
+        "S01",
+        "S02"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Local owner password; per-resource passwords/access codes remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "A-09",
+      "area": "Accounts, privacy and authoring rights",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Access-denied and restricted link presentation",
+      "implementation": "Configurable denial pages without leaking private metadata.",
+      "acceptance": "Unknown and private objects reveal no extra detail.",
+      "sources": [
+        "S02"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Unavailable resource placeholders and foreign-object 404s; shared reader access presentation remains.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "A-10",
+      "area": "Accounts, privacy and authoring rights",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Content warnings and social controls",
+      "implementation": "Resource warnings and optional comments, follows and sharing controls.",
+      "acceptance": "Disabled controls stop the associated API actions.",
+      "sources": [
+        "S02",
+        "S45"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "A-11",
+      "area": "Accounts, privacy and authoring rights",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Author credits and ownership management",
+      "implementation": "Authorship attribution separated from permission and ownership.",
+      "acceptance": "Changing a byline does not change access.",
+      "sources": [
+        "S02",
+        "S33"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "M-01",
+      "area": "Interactive maps",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Map image upload and navigation",
+      "implementation": "Leaflet image coordinates with pan, zoom and image bounds.",
+      "acceptance": "Markers remain aligned at all zoom levels.",
+      "sources": [
+        "S13"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Validated local images, zoom/pan and normalized markers; zoom/replacement acceptance needs broader geometry testing.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "M-02",
+      "area": "Interactive maps",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Pins, labels and invisible hotspots",
+      "implementation": "Typed markers with icons, styling and linked content.",
+      "acceptance": "Each marker opens its configured target.",
+      "sources": [
+        "S13"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Pins, labels and owner-editable invisible reader hotspots have linked popups and focused map guides. Inspectors open original location guides, including same-route return without a stuck modal. Broader nested-navigation acceptance remains.",
+      "verification": "validation-0.17.md"
+    },
+    {
+      "id": "M-03",
+      "area": "Interactive maps",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Routes, circles and polygons",
+      "implementation": "Persist editable geometry and display order.",
+      "acceptance": "Reload preserves vertices and style values.",
+      "sources": [
+        "S13"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Line, polygon and circle drawing, numeric vertex/radius editing, color and normalized geometry validation. Browser reopen and portable archive tests preserve geometry and style.",
+      "verification": "validation-0.3.md"
+    },
+    {
+      "id": "M-04",
+      "area": "Interactive maps",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Image layers and marker groups",
+      "implementation": "Named overlays with toggles and independent permissions.",
+      "acceptance": "A hidden layer is not downloaded by readers.",
+      "sources": [
+        "S13"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Marker groups with visible/private controls, layer images, opacity and reordering. Private groups/layers are absent from reader map data. Separate player media grants remain future work.",
+      "verification": "validation-0.3.md"
+    },
+    {
+      "id": "M-05",
+      "area": "Interactive maps",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Custom and HTML marker appearance",
+      "implementation": "Custom image pins and sanitized marker layouts.",
+      "acceptance": "A marker cannot execute injected script.",
+      "sources": [
+        "S13",
+        "S38"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Twelve fixed colorable SVG symbols and local raster marker images with 16-64 pixel sizes, retained in dated scenes, reader snapshots and archives. Arbitrary custom HTML remains unsupported.",
+      "verification": "validation-0.7.md"
+    },
+    {
+      "id": "M-06",
+      "area": "Interactive maps",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "Player-draggable markers",
+      "implementation": "Separate marker-move permission and persisted positions.",
+      "acceptance": "Moving a token cannot edit the map itself.",
+      "sources": [
+        "S13"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "M-07",
+      "area": "Interactive maps",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Linked maps and linked articles",
+      "implementation": "Navigate world to region to settlement with stable references.",
+      "acceptance": "Returning preserves the previous map viewport.",
+      "sources": [
+        "S13",
+        "S11"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Marker links can target maps or articles; richer nested-map navigation remains.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "M-08",
+      "area": "Interactive maps",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Popups, default views and map controls",
+      "implementation": "Editable descriptions, bounds, zoom, compass and startup view.",
+      "acceptance": "Settings survive closing and reopening the map.",
+      "sources": [
+        "S13"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Popups, fit, zoom and saved normalized default center/relative zoom. Saved zoom survives a browser reload and restores after fitting/reopening the map.",
+      "verification": "validation-0.3.md"
+    },
+    {
+      "id": "M-09",
+      "area": "Interactive maps",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Embedded and standalone map views",
+      "implementation": "Reuse one map renderer in articles and map pages.",
+      "acceptance": "Both views resolve the same marker data.",
+      "sources": [
+        "S13"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Local editor, Chronicle maps and saved reader previews now share a map/location guide with filtered character/record context. Owner editor can open Explore map guide; campaign Maps selects linked maps without stale pin requests. Standalone online publication/embeds remain later work.",
+      "verification": "validation-0.14.md"
+    },
+    {
+      "id": "M-10",
+      "area": "Interactive maps",
+      "evidence": "E",
+      "phase": "P2",
+      "capability": "Image replacement alignment",
+      "implementation": "Keep normalized coordinates and preview aspect-ratio changes.",
+      "acceptance": "Replacement offers a visible remapping preview.",
+      "sources": [
+        "S13"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Normalized coordinates and independent historical image/geometry versions preserve prior states. A visible image-remapping preview remains unfinished.",
+      "verification": "validation-0.4.md"
+    },
+    {
+      "id": "T-01",
+      "area": "Calendars, timelines and Chronicles",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Custom weekdays, months and year layouts",
+      "implementation": "A calendar definition model independent of Gregorian dates.",
+      "acceptance": "An invented calendar converts dates consistently.",
+      "sources": [
+        "S16"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Custom months/weekdays, weekday offsets/reset modes, offset leap rules and inverse signed-year conversion. Up to 24 stable-ID special periods sit before, between or after months; annual/periodic exception rules and optional weekday participation preserve regular month numbers. Alternate year-zero and relative era-year numbering remain.",
+      "verification": "validation-0.11.md"
+    },
+    {
+      "id": "T-02",
+      "area": "Calendars, timelines and Chronicles",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Celestial cycles and recurring events",
+      "implementation": "Cycle periods, phase offsets, festivals and repeat rules.",
+      "acceptance": "A known date produces the expected moon phases.",
+      "sources": [
+        "S16"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Up to eight celestial cycles plus daily/weekly/monthly/yearly recurrence, intervals, final years, missing-day skip/clamp and fixed-duration ends. Special days advance moon phases and elapsed repeats; yearly special festivals skip inactive years. Monthly repeats require ordinary months. One-off exceptions, nth-weekday and moon-triggered recurrence remain outside local acceptance.",
+      "verification": "validation-0.11.md"
+    },
+    {
+      "id": "T-03",
+      "area": "Calendars, timelines and Chronicles",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Calendar sharing and definition import/export",
+      "implementation": "Versioned calendar files and embeddable calendar views.",
+      "acceptance": "Export/import preserves all calendar settings.",
+      "sources": [
+        "S16"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Standalone calendar JSON imports/exports preserve settings including stable special-period IDs, ordering and rules. Saved reader previews and exports use published definitions and exclude private metadata. Online sharing remains later P5.",
+      "verification": "validation-0.11.md"
+    },
+    {
+      "id": "T-04",
+      "area": "Calendars, timelines and Chronicles",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Historical events and eras",
+      "implementation": "Typed events with ranges, precision and open-ended eras.",
+      "acceptance": "Negative and uncertain dates sort correctly.",
+      "sources": [
+        "S14"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Independent eras with optional ends, calendar-matched links/containment, day/month/year precision, circa labels and signed sorting. Special-period dates use actual ordinals; whole-year precision includes boundary specials. Removed/inactive periods retain recorded data with warnings. Relative era-year numbering and quantified confidence margins remain.",
+      "verification": "validation-0.11.md"
+    },
+    {
+      "id": "T-05",
+      "area": "Calendars, timelines and Chronicles",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Parallel timeline lanes",
+      "implementation": "Event placements reference shared events rather than copying them.",
+      "acceptance": "One event edit updates every timeline placement.",
+      "sources": [
+        "S14"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Named timelines reference shared event IDs, with parallel visual lanes and same-date alignment. An event edit updates both timeline placements; private lanes are excluded from saved reader embeds.",
+      "verification": "validation-0.3.md"
+    },
+    {
+      "id": "T-06",
+      "area": "Calendars, timelines and Chronicles",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Timescale, list, filters and navigation",
+      "implementation": "Timeline canvas, condensed lists, search and overview navigation.",
+      "acceptance": "A large time gap remains navigable.",
+      "sources": [
+        "S14"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Zoomable time axis with era/uncertainty bands, list/search/tag/manual filters, calendar isolation and bounded repeating-date windows. Occurrences have independent selection keys while retaining source entry identity. Arbitrary range controls for one-time records and expanded era filters remain.",
+      "verification": "validation-0.9.md"
+    },
+    {
+      "id": "T-07",
+      "area": "Calendars, timelines and Chronicles",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Event and era presentation",
+      "implementation": "Importance, type, images, linked articles and visibility.",
+      "acceptance": "Public and author views use the correct event set.",
+      "sources": [
+        "S14"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Event details show era links, precision and recorded-date/era warnings; saved reader timelines show filtered era bands and uncertainty intervals. Rich importance/type/era styling remains.",
+      "verification": "validation-0.8.md"
+    },
+    {
+      "id": "T-08",
+      "area": "Calendars, timelines and Chronicles",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Chronicle map/event synchronization",
+      "implementation": "Connect timeline selection and map markers in both directions.",
+      "acceptance": "Selecting either reveals the matching event/location.",
+      "sources": [
+        "S15"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Chronicle event selection, playback and scrubbing focus the dated map location; selecting an associated map marker selects its matching event. Browser checks covered both directions and restoration of earlier images/overlays.",
+      "verification": "validation-0.4.md"
+    },
+    {
+      "id": "T-09",
+      "area": "Calendars, timelines and Chronicles",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Evolving historical maps",
+      "implementation": "Map versions and territory states activated by historical intervals.",
+      "acceptance": "Scrubbing time selects the expected map version.",
+      "sources": [
+        "S15"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Dated independent map scenes retain images, geometry, groups, overlays and views. Chronicle scrubbing and recurring occurrences select the latest eligible scene, including special-period dates; base applies before first scene and reader snapshots exclude private/unavailable scenes. Capture/edit controls and map-state ordering are tested.",
+      "verification": "validation-0.11.md"
+    },
+    {
+      "id": "T-10",
+      "area": "Calendars, timelines and Chronicles",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Chronicle calendar and track configuration",
+      "implementation": "Share the calendar engine while allowing per-view tracks and settings.",
+      "acceptance": "A leap day works in both calendar and Chronicle.",
+      "sources": [
+        "S15"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Calendar/track configuration, leap, special-period and precision arithmetic drive dated maps. Repeated Chronicle stops use validated occurrence dates/IDs. Reader windows, rules and calendar names use published snapshots. Unavailable dates retain warnings. Broader Chronicle configuration remains.",
+      "verification": "validation-0.11.md"
+    },
+    {
+      "id": "R-01",
+      "area": "Relationships and visual planning",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Family trees and extended relationships",
+      "implementation": "Typed kinship and social edges referencing character records.",
+      "acceptance": "Complex families render without duplicated people.",
+      "sources": [
+        "S17"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Typed family/social edges support diagrams and shared ancestry. Affinity charts add portrait/initial nodes, labelled directional lines, colour cues, inspection, editing and linked notes over the same connection IDs/history. Existing family/couple/adoption queries remain available.",
+      "verification": "validation-0.13.md"
+    },
+    {
+      "id": "R-02",
+      "area": "Relationships and visual planning",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Bloodlines and descendant views",
+      "implementation": "Ancestor/descendant queries with root and couple selection.",
+      "acceptance": "A bloodline excludes unrelated branches.",
+      "sources": [
+        "S17"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Root ancestors/descendants and couple shared-descendant queries exclude unrelated branches. Adoption is explicit, depth is configurable, and private endpoints/edges are removed before reader traversal. Shared ancestry and couple filters passed backend and browser checks.",
+      "verification": "validation-0.5.md"
+    },
+    {
+      "id": "R-03",
+      "area": "Relationships and visual planning",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Directional diplomacy",
+      "implementation": "Separate A-to-B and B-to-A scores, labels and notes.",
+      "acceptance": "Asymmetric relations keep their two values.",
+      "sources": [
+        "S18"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Separate directional diplomacy values, labels and private notes can be edited without changing the reverse edge. Immutable revisions, restore, recoverable removal and live reader visibility are verified. Player/group grants remain later P5.",
+      "verification": "validation-0.10.md"
+    },
+    {
+      "id": "R-04",
+      "area": "Relationships and visual planning",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Filtered relationship webs",
+      "implementation": "React Flow views over selected records and tags.",
+      "acceptance": "Changing a tag updates the eligible graph nodes.",
+      "sources": [
+        "S18"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Saved family/network/diplomacy definitions follow source filters and revisions. Campaign/world affinity webs add persistent draggable positions, pan/zoom, one-hop focus, name/type filters, portraits and side-by-side entry/relationship notes. Campaign membership follows party and linked lore; reader layouts use published definitions and filtered nodes/edges.",
+      "verification": "validation-0.13.md"
+    },
+    {
+      "id": "R-05",
+      "area": "Relationships and visual planning",
+      "evidence": "D",
+      "phase": "P2",
+      "capability": "Content hierarchies",
+      "implementation": "Ordered, cycle-checked trees with manual and tag-selected items.",
+      "acceptance": "Reparenting preserves all descendants.",
+      "sources": [
+        "S19"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Independent ordered content hierarchies combine manual and normalized tag selection. Parent moves preserve descendant links without changing library parents; cycle-safe controls, sibling ordering, reader list/diagram and archive remapping are verified. Legacy trees retain collection-derived parent display until explicit parent links are saved.",
+      "verification": "validation-0.5.md"
+    },
+    {
+      "id": "R-06",
+      "area": "Relationships and visual planning",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Interactive, static and textual graph embeds",
+      "implementation": "Render the same authorized graph into each format.",
+      "acceptance": "Exports and accessible lists contain the same nodes.",
+      "sources": [
+        "S17",
+        "S19"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Saved graphs offer interactive diagrams, affinity exploration and full-name lists. SVG, JSON and offline HTML exports use the authorized server projection; existing SVG/offline visual layout remains the standard diagram rather than the affinity portrait layout. Position data is retained in graph JSON and portable worlds. Protected online embeds remain later work.",
+      "verification": "validation-0.13.md"
+    },
+    {
+      "id": "R-07",
+      "area": "Relationships and visual planning",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Whiteboards and linked resource cards",
+      "implementation": "Excalidraw core plus application-owned resource references.",
+      "acceptance": "Reopening preserves layout and working resource links.",
+      "sources": [
+        "S20"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Local draggable note/resource cards and connectors; freehand drawing, shape tools and portable board formats remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "C-01",
+      "area": "Campaigns and the GM screen",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "Campaign setup and invitations",
+      "implementation": "World-linked campaigns with system selection, cast and membership.",
+      "acceptance": "A campaign remains attached to the correct world.",
+      "sources": [
+        "S27"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Campaign workspace groups sessions, daily journal, notes/tasks, progression, characters/places and maps. Records use explicit campaign membership with legacy parent fallback. Separate invited player accounts and selective lore grants remain later P5.",
+      "verification": "validation-0.12.md"
+    },
+    {
+      "id": "C-02",
+      "area": "Campaigns and the GM screen",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "PC and NPC campaign participation",
+      "implementation": "Link character entities to cast and party roles.",
+      "acceptance": "Promoting an NPC does not duplicate its lore.",
+      "sources": [
+        "S27"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Campaign profiles distinguish PCs, NPCs, companions and inactive characters, retaining original UUIDs/lore. Promotion updates active party membership without duplicating resources. Profiles record current location/goals/conditions; character progression journals link abilities, milestones and personal developments to original characters/sessions. Local promotion acceptance passes; online account permissions remain P5.",
+      "verification": "validation-0.20.md"
+    },
+    {
+      "id": "C-03",
+      "area": "Campaigns and the GM screen",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "Parties, quests and shared equipment",
+      "implementation": "Party records, quest status/importance and inventory ownership.",
+      "acceptance": "Party changes appear consistently on GM and player views.",
+      "sources": [
+        "S27",
+        "S28"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Party dashboard/current situation, quest/objective/scene dependency graph, tracked equipment holdings, character/location storage transfers, loot distribution and stock adjustment history are delivered. Stock and movement records commit atomically with revision checks; replayed rewards/transfers reject. Existing shared equipment converts without losing its original values/history. Original GM screen displays the same party and balances. Player account/grant acceptance remains P5.",
+      "verification": "validation-0.20.md"
+    },
+    {
+      "id": "C-04",
+      "area": "Campaigns and the GM screen",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "Plot preparation and campaign primer",
+      "implementation": "Link plot articles and player-safe introduction material.",
+      "acceptance": "Session prep can open every referenced resource.",
+      "sources": [
+        "S27"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Adventures/scenes and session agendas now connect to a saved quest/objective/scene dependency graph with original-note inspection. Consequence notes retain affected characters/places and unresolved follow-ups. Journey routes and location discoveries/threats/control/business form linked campaign preparation. Dependencies are advisory; dedicated player primer remains.",
+      "verification": "validation-0.20.md"
+    },
+    {
+      "id": "C-05",
+      "area": "Campaigns and the GM screen",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "Session scheduling and reports",
+      "implementation": "Real-world session times, session state and linked reports.",
+      "acceptance": "Session time remains distinct from fictional dates.",
+      "sources": [
+        "S27"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Session-scoped progression, relationship events, consequences, journeys, ownership movements and media collections now feed a unified five-section wrap-up. It stores reviewed source UUID/revision pairs, preserves prior sessions and can explicitly complete the active agenda item/session. Editable recap and next-session handoff remain integrated. Invitations/calendar subscriptions remain.",
+      "verification": "validation-0.20.md"
+    },
+    {
+      "id": "C-06",
+      "area": "Campaigns and the GM screen",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "Digital GM workspace",
+      "implementation": "Resizable panels for library, current plot, party and references.",
+      "acceptance": "Saved workspace layout restores on restart.",
+      "sources": [
+        "S28"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Existing GM desks, campaign/session/character/location/map guides and affinity webs now connect to party/continuity views. Relationship developments can update an edge and write its source event atomically; the affinity inspector exposes that history. Cross-editor references and saved scene/quest layouts remain. Arbitrary pane types/free resizing and unified equipment/dice widgets remain.",
+      "verification": "validation-0.20.md"
+    },
+    {
+      "id": "C-07",
+      "area": "Campaigns and the GM screen",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "Dice and campaign activity stream",
+      "implementation": "Validated dice grammar and stored roll/message events.",
+      "acceptance": "A roll retains its formula, result and visibility.",
+      "sources": [
+        "S28"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Bounded logged dice with retained formula/result; multiplayer visibility policies remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "C-08",
+      "area": "Campaigns and the GM screen",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "Handout presentation",
+      "implementation": "Dedicated reader-safe image window and reveal state.",
+      "acceptance": "A GM-only image cannot be sent accidentally.",
+      "sources": [
+        "S28"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Player handout selection, safe preview and standalone HTML export use published source snapshots and explicitly selected owner-approved images. Private/unpublished sources and GM fields/blocks are excluded; selection does not publish or open networking. Distinct online player sessions/reveal policy remain later P5.",
+      "verification": "validation-0.19.md"
+    },
+    {
+      "id": "C-09",
+      "area": "Campaigns and the GM screen",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "Session media collection",
+      "implementation": "Persistent external embeds and local audio/image references.",
+      "acceptance": "Unavailable online media fails without blocking the session.",
+      "sources": [
+        "S28"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Versioned session media collections retain ordered original portrait/map/illustration/handout references, captions and categories. Thumbnails and source links use the same assets; handout previews retain published-source filtering. Original images/maps remain available without copies. Audio playback, external embeds and remote-media failure policies remain unfinished.",
+      "verification": "validation-0.20.md"
+    },
+    {
+      "id": "C-10",
+      "area": "Campaigns and the GM screen",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "GM-only campaign and quest notes",
+      "implementation": "Private text linked to shared campaign objects.",
+      "acceptance": "Player payloads contain none of the private notes.",
+      "sources": [
+        "S28"
+      ],
+      "status": "partial",
+      "deliveryNotes": "New campaign records start private. Session GM fields are removed from reader responses using the published content type, including after a draft changes type. Session guide excludes private records, cast identities and pins. Player accounts/grants remain later P5.",
+      "verification": "validation-0.16.md"
+    },
+    {
+      "id": "S-01",
+      "area": "Player characters and RPG systems",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "Player profiles and character ownership",
+      "implementation": "Profiles connected to lore, campaign membership and user ownership.",
+      "acceptance": "An owner can edit only their permitted characters.",
+      "sources": [
+        "S29"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "S-02",
+      "area": "Player characters and RPG systems",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "Character journals, history and posts",
+      "implementation": "Typed character entries with real and fictional dates.",
+      "acceptance": "An entry appears in the intended character history.",
+      "sources": [
+        "S29"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Character dossiers connect original lore/history, private journals/milestones, session appearances, relationship notes and a visual progression timeline. Reader projections exclude private records and GM planning. Independent player-owned journals/posts remain later work.",
+      "verification": "validation-0.15.md"
+    },
+    {
+      "id": "S-03",
+      "area": "Player characters and RPG systems",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "Equipment, scrapbook and galleries",
+      "implementation": "Character-owned collections and permitted shared assets.",
+      "acceptance": "Moving equipment updates its owner consistently.",
+      "sources": [
+        "S29"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Rich character images and campaign equipment; owned character scrapbook/gallery workflows remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "S-04",
+      "area": "Player characters and RPG systems",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "System-specific sheets and statblocks",
+      "implementation": "A registry of versioned system packs, fields and calculations.",
+      "acceptance": "Every installed pack passes its own sheet fixtures.",
+      "sources": [
+        "S30",
+        "S48"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "S-05",
+      "area": "Player characters and RPG systems",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Custom sheet and statblock designer",
+      "implementation": "Typed field schemas, repeaters and a bounded expression engine.",
+      "acceptance": "Homebrew sheets save, render and calculate deterministically.",
+      "sources": [
+        "S31"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Editable homebrew numeric fields and bounded formulas; visual sheet/layout designer remains.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "S-06",
+      "area": "Player characters and RPG systems",
+      "evidence": "D",
+      "phase": "P3",
+      "capability": "Statblock embedding and collections",
+      "implementation": "Reference one statblock from articles, characters and GM panels.",
+      "acceptance": "Editing a block updates all referenced views.",
+      "sources": [
+        "S30"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "S-07",
+      "area": "Player characters and RPG systems",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Shared sheet/template catalogue",
+      "implementation": "Import/export packages with authorship and dependency metadata.",
+      "acceptance": "An installed package records its source and version.",
+      "sources": [
+        "S30",
+        "S31"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "S-08",
+      "area": "Player characters and RPG systems",
+      "evidence": "U",
+      "phase": "P6",
+      "capability": "Full World Anvil system catalogue coverage",
+      "implementation": "Enumerate actual systems and block types before producing compatible packs.",
+      "acceptance": "A named pack counts only after concrete fixtures pass.",
+      "sources": [
+        "S30",
+        "S48"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "N-01",
+      "area": "Notes, tasks and personal organization",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Personal notebooks, sections and notes",
+      "implementation": "Account-owned notebooks with fast capture and ordered sections.",
+      "acceptance": "Personal notes never enter public world output.",
+      "sources": [
+        "S24"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Per-world owner notebooks now have ordered nested sections, an unfiled inbox, private quick capture and in-place rich writing with side-by-side original previews. Filing stores original UUID references, supports multiple sections/notebooks and never duplicates lore. Sections, boards and templates retain history/Trash/archive recovery. Cross-world account-owned notebooks remain unfinished; broader row stays partial.",
+      "verification": "validation-0.21.md"
+    },
+    {
+      "id": "N-02",
+      "area": "Notes, tasks and personal organization",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Notebook tags, metadata and templates",
+      "implementation": "Reusable typed metadata keys, starred notes and note presets.",
+      "acceptance": "Search can find notes by metadata and tags.",
+      "sources": [
+        "S24"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Reusable rich-document templates and six starter presets, editable template defaults, favorites, typed text/number/checkbox fields, tag and metadata filtering, matching body/metadata excerpts and bulk tag/favorite actions pass local acceptance. Templates copy content independently while retaining source provenance; metadata edits preserve original rich prose.",
+      "verification": "validation-0.21.md"
+    },
+    {
+      "id": "N-03",
+      "area": "Notes, tasks and personal organization",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Article-linked to-do items",
+      "implementation": "Priorities and workflow states linked to article progress.",
+      "acceptance": "Creating the target article updates the task.",
+      "sources": [
+        "S25"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Campaign tasks and quests have objective lists, outcomes, independent status, story arcs and linked update capture. Original editor fields and visual board remain consistent; stale saves preserve current data. Automatic task-to-new-article workflow and complete entry-sidebar management remain.",
+      "verification": "validation-0.18.md"
+    },
+    {
+      "id": "N-04",
+      "area": "Notes, tasks and personal organization",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Pinned notes and overlays",
+      "implementation": "Reference notes while editing without losing cursor state.",
+      "acceptance": "Opening a note preserves the unsaved draft.",
+      "sources": [
+        "S05",
+        "S24"
+      ],
+      "status": "verified",
+      "deliveryNotes": "Persistent owner reference tray pins source UUIDs while the editor stays mounted. Folding restores draft focus/cursor; typing continues at the original position. Note content and saved desk references remain source-based. Tray IDs/selection are per-world browser preferences, not portable world data; 12 tray references maximum.",
+      "verification": "validation-0.19.md"
+    },
+    {
+      "id": "N-05",
+      "area": "Notes, tasks and personal organization",
+      "evidence": "E",
+      "phase": "P4",
+      "capability": "Convert notes into world content",
+      "implementation": "Preview conversion to an article while keeping provenance.",
+      "acceptance": "Conversion neither deletes nor silently publishes the note.",
+      "sources": [],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "G-01",
+      "area": "Tables, dice, generators and reusable content",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Typed interactive tables",
+      "implementation": "Text, numbers, checks, images, links, articles and nested table references.",
+      "acceptance": "Column types validate edited and imported values.",
+      "sources": [
+        "S21"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Text/number/checkbox/entry/dice table columns; advanced views and validation/presentation remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "G-02",
+      "area": "Tables, dice, generators and reusable content",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Weighted table rolls and dice buttons",
+      "implementation": "Validated weights and bounded formula evaluation.",
+      "acceptance": "Zero-weight rows are never selected.",
+      "sources": [
+        "S21"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Weighted selection, dice columns and logging; full embedded dice controls remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "G-03",
+      "area": "Tables, dice, generators and reusable content",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "CSV table import and editing",
+      "implementation": "Previewed CSV mapping, sorting, resizing and row/column ordering.",
+      "acceptance": "Import errors report precise rows without partial overwrite.",
+      "sources": [
+        "S21"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Quoted CSV preview and confirmed replacement with saved history; broader CSV edge cases remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "G-04",
+      "area": "Tables, dice, generators and reusable content",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Weighted and range generators",
+      "implementation": "Versioned generator definitions for strings, numbers and resource picks.",
+      "acceptance": "A fixed test seed gives repeatable output.",
+      "sources": [
+        "S22"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Weighted generators work; range-driven generator definitions remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "G-05",
+      "area": "Tables, dice, generators and reusable content",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Composed generators and conditional routers",
+      "implementation": "Reference variables and bounded, typed branch expressions.",
+      "acceptance": "Cycles or excessive recursion stop with a useful error.",
+      "sources": [
+        "S22"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "G-06",
+      "area": "Tables, dice, generators and reusable content",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Generated article creation",
+      "implementation": "Preview generated fields and persist as an ordinary editable article.",
+      "acceptance": "The saved result no longer changes when rerolled.",
+      "sources": [
+        "S22"
+      ],
+      "status": "partial",
+      "deliveryNotes": "A rolled result can be copied into a new article; broader composed-result coverage remains.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "G-07",
+      "area": "Tables, dice, generators and reusable content",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Embedded generators and table views",
+      "implementation": "Use the normal editor component registry for generator controls.",
+      "acceptance": "Embedded output respects permissions on referenced records.",
+      "sources": [
+        "S21",
+        "S22"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "G-08",
+      "area": "Tables, dice, generators and reusable content",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Variable collections and CSV import",
+      "implementation": "Named collections and stable variable IDs with editable aliases.",
+      "acceptance": "Renaming a collection does not break its embeds.",
+      "sources": [
+        "S23"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Reusable term collection field; bulk CSV variable import remains.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "B-01",
+      "area": "Manuscripts and long-form writing",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Books, chapters, scenes and research folders",
+      "implementation": "Ordered writing hierarchy separate from reference lore.",
+      "acceptance": "Only selected publication nodes appear in the reader.",
+      "sources": [
+        "S36"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Manuscript/chapter/scene parents and scene list; research folders and nested manuscript tree remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "B-02",
+      "area": "Manuscripts and long-form writing",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Write, review, read and corkboard modes",
+      "implementation": "Different views over the same scene records and order.",
+      "acceptance": "Reordering on the corkboard updates chapter order.",
+      "sources": [
+        "S36"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Scene writing and corkboard; dedicated review/read modes remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "B-03",
+      "area": "Manuscripts and long-form writing",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Writing goals, labels and statistics",
+      "implementation": "Word targets, progress, scene labels and daily counts.",
+      "acceptance": "Counts update consistently after moving a scene.",
+      "sources": [
+        "S36"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Word goals, stage labels and aggregate word counts; writing history/statistical views remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "B-04",
+      "area": "Manuscripts and long-form writing",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "World reference and manuscript search",
+      "implementation": "Read linked lore beside text; preview search/replace operations.",
+      "acceptance": "Reference lookup does not discard scene edits.",
+      "sources": [
+        "S36"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Global search and stable world links in scene editor; dedicated docked manuscript reference pane remains.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "B-05",
+      "area": "Manuscripts and long-form writing",
+      "evidence": "D",
+      "phase": "P4",
+      "capability": "Draft versions, notes and recovery",
+      "implementation": "Named snapshots, editorial notes and a recoverable bin.",
+      "acceptance": "Restore an earlier draft with its structure intact.",
+      "sources": [
+        "S36"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Shared revision history, GM notes and draft recovery; named manuscript draft sets remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "B-06",
+      "area": "Manuscripts and long-form writing",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Chapter publication and restricted releases",
+      "implementation": "Publish explicit revisions with public or group access.",
+      "acceptance": "Later draft edits cannot alter the published revision.",
+      "sources": [
+        "S36",
+        "S37"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Individual entries have reader snapshots; scheduled/restricted chapter release remains.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "B-07",
+      "area": "Manuscripts and long-form writing",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Covers, metadata, multimedia and export",
+      "implementation": "Book presentation, local media, HTML/print and structured export.",
+      "acceptance": "A complete exported book opens without the application.",
+      "sources": [
+        "S36",
+        "S37"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Metadata, images and whole-world HTML/archive export; book-specific compilation/cover/export formats remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "P-01",
+      "area": "Presentation, publication and community tools",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "World and article themes",
+      "implementation": "Design tokens, original themes, layout sections and preview.",
+      "acceptance": "Theme changes preserve article meaning and navigation.",
+      "sources": [
+        "S39"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "P-02",
+      "area": "Presentation, publication and community tools",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Advanced per-world and per-article styles",
+      "implementation": "Scoped CSS and reusable presentation components.",
+      "acceptance": "A theme cannot style the private management interface.",
+      "sources": [
+        "S39",
+        "S07"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "P-03",
+      "area": "Presentation, publication and community tools",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "White label and custom domains",
+      "implementation": "Application-owned branding and optional configured host names.",
+      "acceptance": "Configured hosts can serve the authorized published view.",
+      "sources": [
+        "S01",
+        "S47"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "P-04",
+      "area": "Presentation, publication and community tools",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Search metadata and optional analytics",
+      "implementation": "Explicit public descriptions, canonical URLs and optional analytics adapters.",
+      "acceptance": "Private resources are absent from sitemaps and public metadata.",
+      "sources": [
+        "S02"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "P-05",
+      "area": "Presentation, publication and community tools",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Comments, follows and notifications",
+      "implementation": "World-local engagement events with per-resource permissions.",
+      "acceptance": "Revoked readers cannot receive new private notifications.",
+      "sources": [
+        "S02",
+        "S37"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "P-06",
+      "area": "Presentation, publication and community tools",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Discussion boards and moderation",
+      "implementation": "Nested boards, threads and separate read/write/moderate rights.",
+      "acceptance": "Moderation actions are logged and access checked.",
+      "sources": [
+        "S35"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "P-07",
+      "area": "Presentation, publication and community tools",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Play-by-post and character identities",
+      "implementation": "Character-authored posts, OOC notes, GM instructions and rolls.",
+      "acceptance": "Only permitted identities can be used for a post.",
+      "sources": [
+        "S35"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "P-08",
+      "area": "Presentation, publication and community tools",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Reader/supporter groups and batch import",
+      "implementation": "Preview email/CSV membership import and grant revocation.",
+      "acceptance": "Replacement import shows exactly which grants change.",
+      "sources": [
+        "S32",
+        "S46"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "P-09",
+      "area": "Presentation, publication and community tools",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Supporter/store links and access offers",
+      "implementation": "Marketing blocks and revocable access entitlements.",
+      "acceptance": "Store links never imply payment has been verified.",
+      "sources": [
+        "S37",
+        "S46"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "P-10",
+      "area": "Presentation, publication and community tools",
+      "evidence": "D",
+      "phase": "P6",
+      "capability": "Instance discovery and creative challenges",
+      "implementation": "Local showcase, prompts, submissions, deadlines and optional voting.",
+      "acceptance": "Only published, permitted submissions enter the showcase.",
+      "sources": [
+        "S45"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "P-11",
+      "area": "Presentation, publication and community tools",
+      "evidence": "D",
+      "phase": "P6",
+      "capability": "User profiles and instance activity feed",
+      "implementation": "Instance-local profiles and permission-filtered activity aggregation.",
+      "acceptance": "Private activity never appears on a public profile or feed.",
+      "sources": [
+        "S02",
+        "S45"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "P-12",
+      "area": "Presentation, publication and community tools",
+      "evidence": "D",
+      "phase": "P6",
+      "capability": "Feature suggestions and voting",
+      "implementation": "An optional local feedback board with suggestions, votes and moderation.",
+      "acceptance": "A user cannot duplicate a vote or edit another user's suggestion.",
+      "sources": [
+        "S02"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "P-13",
+      "area": "Presentation, publication and community tools",
+      "evidence": "D",
+      "phase": "P6",
+      "capability": "Community reward accounting",
+      "implementation": "Optional instance-local contribution points; separate from World Anvil currency.",
+      "acceptance": "Points cannot change content ownership or authoring permissions.",
+      "sources": [
+        "S02"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "I-01",
+      "area": "Import, export and integrations",
+      "evidence": "D",
+      "phase": "P1",
+      "capability": "Human-readable world export",
+      "implementation": "Export HTML plus versioned structured data and an asset manifest.",
+      "acceptance": "An exported article can be read outside WorldBuilder.",
+      "sources": [
+        "S40"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Portable world HTML/archive exports and self-contained graph HTML, SVG and JSON are available. Reader graph artifacts exclude private endpoints and GM/article bodies; specialized full-world module renderers remain.",
+      "verification": "validation-0.6.md"
+    },
+    {
+      "id": "I-02",
+      "area": "Import, export and integrations",
+      "evidence": "U",
+      "phase": "P6",
+      "capability": "World Anvil archive importer",
+      "implementation": "Build adapters from real JSON/HTML export fixtures and preserve source IDs.",
+      "acceptance": "Every unsupported object appears in the migration report.",
+      "sources": [
+        "S40",
+        "S42"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "I-03",
+      "area": "Import, export and integrations",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Documented application API",
+      "implementation": "Versioned endpoints with scoped, revocable local tokens.",
+      "acceptance": "A read-only token cannot perform a mutation.",
+      "sources": [
+        "S41",
+        "S42"
+      ],
+      "status": "partial",
+      "deliveryNotes": "Authenticated local API includes saved relationship projections and audience-filtered SVG/HTML/JSON graph exports alongside organization/maps/history. External tokens and third-party adapters remain.",
+      "verification": "validation-0.6.md"
+    },
+    {
+      "id": "I-04",
+      "area": "Import, export and integrations",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Foundry adapter",
+      "implementation": "Separate module to read selected lore through WorldBuilder's API.",
+      "acceptance": "A supported Foundry release can import and refresh a journal.",
+      "sources": [
+        "S43"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "I-05",
+      "area": "Import, export and integrations",
+      "evidence": "D",
+      "phase": "P6",
+      "capability": "D&D Beyond 2014 import equivalent",
+      "implementation": "Preview a supplied or permitted public character export before replacement.",
+      "acceptance": "A supported fixture maps values without silent loss.",
+      "sources": [
+        "S44"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "I-06",
+      "area": "Import, export and integrations",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Webhook and external communication adapters",
+      "implementation": "User-configured delivery with retries, logs and explicit event selection.",
+      "acceptance": "Retrying a delivery does not duplicate its application action.",
+      "sources": [
+        "S02"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "I-07",
+      "area": "Import, export and integrations",
+      "evidence": "D",
+      "phase": "P5",
+      "capability": "Calendar and table interchange",
+      "implementation": "Schema-versioned JSON and CSV adapters with visible mapping.",
+      "acceptance": "Round-trip fixtures retain fields and record references.",
+      "sources": [
+        "S16",
+        "S21"
+      ],
+      "status": "partial",
+      "deliveryNotes": "CSV tables and whole-world calendar data; standalone calendar definitions remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "I-08",
+      "area": "Import, export and integrations",
+      "evidence": "U",
+      "phase": "P6",
+      "capability": "Full advanced markup import",
+      "implementation": "Keep raw originals and report unsupported BBCode/layout constructs.",
+      "acceptance": "No unsupported tag is silently discarded.",
+      "sources": [
+        "S07"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "O-01",
+      "area": "Local operation and data ownership",
+      "evidence": "E",
+      "phase": "P1",
+      "capability": "Native Windows launcher",
+      "implementation": "Start a loopback-only Django/Waitress process and open the browser.",
+      "acceptance": "Restart on Windows retains all saved content.",
+      "sources": [],
+      "status": "verified",
+      "deliveryNotes": "Native Windows Waitress launcher, repeated open handling and restart persistence have been exercised.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "O-02",
+      "area": "Local operation and data ownership",
+      "evidence": "E",
+      "phase": "P1",
+      "capability": "SQLite database and local media",
+      "implementation": "App-owned data directory with no hosted-service dependency.",
+      "acceptance": "Core create/edit/search works with the network disconnected.",
+      "sources": [],
+      "status": "partial",
+      "deliveryNotes": "SQLite/local media and no remote runtime assets; physical network-disconnection testing and packaged portability remain.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "O-03",
+      "area": "Local operation and data ownership",
+      "evidence": "E",
+      "phase": "P1",
+      "capability": "Consistent backup and tested restore",
+      "implementation": "Snapshot the database and referenced immutable media as one archive.",
+      "acceptance": "Restore into an empty instance and verify every asset hash.",
+      "sources": [],
+      "status": "verified",
+      "deliveryNotes": "Consistent SQLite snapshot, checksums and restoration into a new directory; database counts and all asset hashes verified.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "O-04",
+      "area": "Local operation and data ownership",
+      "evidence": "E",
+      "phase": "P1",
+      "capability": "Existing TouhouDND content import",
+      "implementation": "Read-only scan, format preview and copy-import with source paths/hashes.",
+      "acceptance": "Original file bytes remain unchanged after import.",
+      "sources": [],
+      "status": "verified",
+      "deliveryNotes": "Preview/hash-checked copy-import; original bytes preserved in synthetic tests and real campaign UI import.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "O-05",
+      "area": "Local operation and data ownership",
+      "evidence": "E",
+      "phase": "P1",
+      "capability": "Atomic changes and recovery history",
+      "implementation": "Transactions, optimistic revision checks and a recoverable trash.",
+      "acceptance": "A stale browser tab cannot overwrite newer content silently.",
+      "sources": [],
+      "status": "verified",
+      "deliveryNotes": "Revision-checked atomic resource writes, batch rollback, subtree cycles, restore and Trash. Parent/adoptive cycle checks run inside SQLite IMMEDIATE transactions without the old 200-generation cap. Concurrent opposite-parent and stale hierarchy edits were exercised.",
+      "verification": "validation-0.5.md"
+    },
+    {
+      "id": "O-06",
+      "area": "Local operation and data ownership",
+      "evidence": "E",
+      "phase": "P5",
+      "capability": "Future server deployment",
+      "implementation": "Optional PostgreSQL/server profile with explicit database migration.",
+      "acceptance": "A verified migration retains IDs, links, grants and files.",
+      "sources": [],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "E-01",
+      "area": "Specific improvement targets",
+      "evidence": "E",
+      "phase": "P1",
+      "capability": "Unified search across all resources",
+      "implementation": "One permission-aware search index with aliases and Unicode normalization.",
+      "acceptance": "A secret cannot leak through search snippets or counts.",
+      "sources": [],
+      "status": "partial",
+      "deliveryNotes": "Search covers entry bodies/aliases/tags/structured data; global image search covers names, credits and tags. Dedicated graph-edge and future discussion discovery remain.",
+      "verification": "validation-0.2.md"
+    },
+    {
+      "id": "E-02",
+      "area": "Specific improvement targets",
+      "evidence": "E",
+      "phase": "P1",
+      "capability": "Single source of truth",
+      "implementation": "Typed relationships and references instead of duplicated profile/map data.",
+      "acceptance": "Rename one NPC and every linked view resolves it.",
+      "sources": [],
+      "status": "partial",
+      "deliveryNotes": "Shared UUID resource registry, graph references and linked editor mentions; all secondary view labels need complete audit.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "E-03",
+      "area": "Specific improvement targets",
+      "evidence": "E",
+      "phase": "P2",
+      "capability": "One fictional-date engine",
+      "implementation": "Integer-based ordering, precision and calendar conversion for all time tools.",
+      "acceptance": "Identical dates compare equally across all modules.",
+      "sources": [],
+      "status": "partial",
+      "deliveryNotes": "Shared forward/inverse fictional-date arithmetic supports signed years, year zero, leap days and timeline positions. Unrelated calendars are kept separate; uncertainty, era records and explicit cross-calendar epochs remain.",
+      "verification": "validation-0.3.md"
+    },
+    {
+      "id": "E-04",
+      "area": "Specific improvement targets",
+      "evidence": "E",
+      "phase": "P2",
+      "capability": "Shared media across tools",
+      "implementation": "One asset library for maps, Chronicles, articles and handouts.",
+      "acceptance": "The same source file needs no duplicate upload.",
+      "sources": [],
+      "status": "verified",
+      "deliveryNotes": "World-level media is reused by maps, documents and handouts; identical uploads deduplicate by hash.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "E-05",
+      "area": "Specific improvement targets",
+      "evidence": "E",
+      "phase": "P1",
+      "capability": "Reliable autosave and tab conflict handling",
+      "implementation": "Clear save state, revision IDs and recovery snapshots.",
+      "acceptance": "Simulated interruption loses no acknowledged save.",
+      "sources": [],
+      "status": "partial",
+      "deliveryNotes": "Autosave/local drafts/conflict recovery work; interruption coverage remains narrower than full durability certification.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "E-06",
+      "area": "Specific improvement targets",
+      "evidence": "E",
+      "phase": "P1",
+      "capability": "Readable, accessible editing",
+      "implementation": "Legible density, adjustable panels, keyboard control and accessible names.",
+      "acceptance": "The core editing workflow passes keyboard-only review.",
+      "sources": [],
+      "status": "partial",
+      "deliveryNotes": "Responsive tree/list layouts, keyboard move/reorder controls, modal focus and entry previews; formal accessibility/assistive-tech testing remains.",
+      "verification": "validation-0.2.md"
+    },
+    {
+      "id": "E-07",
+      "area": "Specific improvement targets",
+      "evidence": "E",
+      "phase": "P5",
+      "capability": "Optional simultaneous editing",
+      "implementation": "Isolated collaborative documents per authorized scope; own hosted transport.",
+      "acceptance": "An unauthorized editor receives no restricted document data.",
+      "sources": [],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "E-08",
+      "area": "Specific improvement targets",
+      "evidence": "E",
+      "phase": "P1",
+      "capability": "No subscription feature gates",
+      "implementation": "All installed modules usable locally; configurable resource limits only.",
+      "acceptance": "No feature requires a billing account to activate.",
+      "sources": [],
+      "status": "verified",
+      "deliveryNotes": "No billing account or subscription gates in the delivered local application.",
+      "verification": "validation.md"
+    },
+    {
+      "id": "X-01",
+      "area": "Service boundaries and external dependencies",
+      "evidence": "X",
+      "phase": "P6",
+      "capability": "World Anvil's existing audience and discovery network",
+      "implementation": "Provide local community software; growing a community remains separate work.",
+      "acceptance": "Never describe an empty showcase as the existing WA network.",
+      "sources": [
+        "S45"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "X-02",
+      "area": "Service boundaries and external dependencies",
+      "evidence": "X",
+      "phase": "P6",
+      "capability": "Professional seminars, promotion and freelancer network",
+      "implementation": "Offer links or independent community equivalents where wanted.",
+      "acceptance": "No promise to reproduce World Anvil's staff or services.",
+      "sources": [
+        "S01",
+        "S02"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "X-03",
+      "area": "Service boundaries and external dependencies",
+      "evidence": "U",
+      "phase": "P6",
+      "capability": "Proprietary RPG and community content libraries",
+      "implementation": "Track named system packs, permitted sources and individual availability.",
+      "acceptance": "No unimplemented or unavailable pack is marked supported.",
+      "sources": [
+        "S30",
+        "S48"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    },
+    {
+      "id": "X-04",
+      "area": "Service boundaries and external dependencies",
+      "evidence": "U",
+      "phase": "P6",
+      "capability": "Payment-provider automation and external service access",
+      "implementation": "Provider-specific adapters only after actual API and account testing.",
+      "acceptance": "An adapter stays unverified until a real integration test passes.",
+      "sources": [
+        "S46"
+      ],
+      "status": "planned",
+      "deliveryNotes": "Not delivered in 0.1.0; retained in the full scope."
+    }
+  ],
+  "implementationReviewedOn": "2026-11-12",
+  "verificationRecord": "validation-0.22.md",
+  "statusLegend": {
+    "planned": "No delivered workflow claimed.",
+    "partial": "Useful code exists, but the complete row or its acceptance remains unfinished.",
+    "verified": "The stated acceptance has passed for the single-owner local deployment; see the per-feature verification record."
+  },
+  "implementationCounts": {
+    "partial": 66,
+    "verified": 30,
+    "planned": 43
+  },
+  "userRequirements": [
+    {
+      "id": "USER-01",
+      "requestedOn": "2026-11-05",
+      "capability": "Every application dropdown has a filterable text field",
+      "status": "verified",
+      "deliveryNotes": "All 97 select code locations use SearchableSelect, including notebook sections, templates, categories, campaigns, metadata types, filters and board sources. Focus/filter/bounds checks pass at 390/1024/1440 pixels; AST check/build guards future code.",
+      "verification": "validation-0.21.md"
+    },
+    {
+      "id": "USER-02",
+      "requestedOn": "2026-11-05",
+      "capability": "Prioritize visual campaign guides and notes, including affinity-style relationship webs",
+      "status": "partial",
+      "deliveryNotes": "The approved fourteen-part party/equipment/consequence batch now connects the existing visual guides with original character progression, objective nodes, relationship event history, drawn journeys, location situations, ordered session media and unified wrap-up/continuity views. Broader visual workflows remain partial; online accounts/sharing remain later P5. Release 0.21 adds source-linked visual notebook cards and labeled connections alongside practical note capture, nested organization, templates and side-by-side writing/reference workflows.",
+      "verification": "validation-0.21.md"
+    },
+    {
+      "id": "USER-03",
+      "requestedOn": "2026-11-05",
+      "capability": "Automatically hyperlink matching words to their source entries",
+      "status": "verified",
+      "deliveryNotes": "Prose reading views automatically link unambiguous titles/aliases to world-scoped source UUIDs, preserve text/formatting, and use published visible names for reader views. Existing links, code, URLs and ambiguous names are skipped. Read/write toggles, source previews, opt-out and recovery are tested. Matching is per text span; it does not rewrite documents or create stored backlinks. Explicit references remain available for stable associations through renames.",
+      "verification": "validation-0.14.md"
+    },
+    {
+      "id": "USER-04",
+      "requestedOn": "2026-11-12",
+      "capability": "Natural graph mouse gestures and relevant right-click menus",
+      "status": "verified",
+      "deliveryNotes": "Affinity and shared relationship/family/hierarchy diagrams provide wheel zoom at the pointer, middle-button pan, contextual source/edge/camera actions and keyboard menus. Original left/keyboard arrangement persists. Actual browser gestures and edge-of-screen menu checks pass.",
+      "verification": "validation-0.22.md"
+    },
+    {
+      "id": "USER-05",
+      "requestedOn": "2026-11-12",
+      "capability": "Working Markdown image links and external portrait URLs",
+      "status": "verified",
+      "deliveryNotes": "Markdown insert/paste previews and converts into original rich documents, with draft guards. Direct image and portrait URLs validate, render and persist across guides/cards/boards. Reader snapshots exclude unpublished portrait edits. Linked images require their host; canonical storage remains rich JSON, not Markdown source.",
+      "verification": "validation-0.22.md"
+    },
+    {
+      "id": "USER-06",
+      "requestedOn": "2026-11-12",
+      "capability": "Transfer the application and database/media to another bot or machine",
+      "status": "verified",
+      "deliveryNotes": "Transfer launcher packages allowlisted source/build/setup files and a verified complete backup with checksums, destination instructions and protected new-folder restore. Clean restoration passes; environment recreation is required. External image URLs and browser-only preference boundaries are documented.",
+      "verification": "validation-0.22.md"
+    }
+  ]
+}

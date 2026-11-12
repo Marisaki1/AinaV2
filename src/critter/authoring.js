@@ -15,12 +15,14 @@ function build(input) {
   if (input.damageTiming !== undefined && !['beforeSave', 'afterSave'].includes(input.damageTiming)) throw new Error('Choose damage before or after the save.');
   if (input.scaling?.enabled && !['attack', 'save', 'damage'].includes(input.kind)) throw new Error('Damage/DC scaling is available for attacks, damage and saving-throw abilities.');
   const followup = Tools.validateFollowup(input.followup), usage = Tools.validateUsage(input.usage);
+  const recharge = input.recharge?.enabled ? Number(integer(input.recharge.threshold, 'Recharge success minimum', 1, 6)) : null;
+  if (recharge && ['description', 'roll'].includes(input.kind)) throw new Error('Recharge requires an activated ability.');
   const finish = (entry, automation) => {
     const notes = [followup.enabled ? 'Follow-up: ' + followup.operation + '. ' + followup.rules + ' Resolve after the triggering roll; no interception or automatic rollback.' : '', usage.enabled ? 'Resource: ' + usage.name + ', base cost ' + usage.cost + '. Track remaining uses manually.' : ''].filter(Boolean).join('\n');
     if (notes) entry.description += '<p>' + html(notes).replace(/\n/g, '<br>') + '</p>';
     const definition = {};
     for (const key of ['name', 'kind', 'rules', 'criton', 'target', 'attackBonus', 'reach', 'range', 'attackRoll', 'saveStat', 'dc', 'half', 'rollDice', 'damages', 'damageChoices', 'effect', 'effects', 'damageTiming', 'scaling', 'resolutionTiming']) if (input[key] !== undefined) definition[key] = C.clone(input[key]);
-    definition.followup = followup; definition.usage = usage;
+    definition.followup = followup; definition.usage = usage; if (recharge) definition.recharge = { enabled: true, threshold: recharge };
     const body = entry.description.trim(), metadata = encodeURIComponent(JSON.stringify({ definition, fingerprint: A.fingerprint(body) }));
     if (metadata.length > 150000) throw new Error('Ability recipe is too large. Reduce the configuration.');
     entry.description = '<!-- AINA_ABILITY:v1:' + metadata + ' -->\n' + body;
@@ -86,6 +88,10 @@ function build(input) {
   }
   if (choosing) effects = [{ type: 'condition', condition: choices.map(t => 'choice == ' + JSON.stringify(t)).join(' or '), onTrue: effects, onFalse: [{ type: 'text', text: 'Choose a damage type with -choice: ' + choices.join(', ') }], errorBehaviour: 'raise' }];
   automation.push({ type: 'target', target: input.target, effects });
+  if (recharge) {
+    const rechargeEffect = { type: 'ieffect2', name: 'Recharging: ' + name, duration: -1, stacking: false, desc: 'Roll recharge at the start of this creature\'s turn.', buttons: [{ label: 'Roll Recharge', automation: [{ type: 'roll', dice: '1d6', name: 'rechargeRoll', displayName: 'Recharge Roll' }, { type: 'condition', condition: 'rechargeRoll >= ' + recharge, onTrue: [{ type: 'remove_ieffect' }, { type: 'text', text: name + ' has recharged.' }], onFalse: [{ type: 'text', text: name + ' has not recharged.' }] }] }] };
+    automation.push({ type: 'target', target: 'self', effects: choosing ? [{ type: 'condition', condition: choices.map(t => 'choice == ' + JSON.stringify(t)).join(' or '), onTrue: [rechargeEffect], onFalse: [] }] : [rechargeEffect] });
+  }
   const generated = scaling ? choiceGuard(scaling.maximum, [...(scaling.count ? [{type:'variable',name:'ainaExtraDice',value:scaling.count+'*ainaSteps'}] : []), ...automation]) : automation;
   const tree = { _v: 2, name, automation: generated };
   if (input.kind === 'attack' && input.criton !== undefined && input.criton !== '') tree.criton = Number(integer(input.criton, 'Critical minimum', 1, 20));
@@ -95,6 +101,6 @@ function build(input) {
     ...builtEffects.map(e => 'Effect: ' + e.name + '; ' + (e.duration ? e.duration + ' rounds' : 'indefinite') + '. ' + e.desc),
     scaling ? 'Upcast: 0 to ' + scaling.maximum + ' extra steps; track the resource cost manually.' : '',
   ].filter(Boolean).join('\n');
-  return finish({ name, description: (choosing ? '<!-- AINA_DAMAGE_CHOICES:v1:' + choices.join(',') + ' -->\n' : '') + '<p>' + html(rules).replace(/\n/g, '<br>') + '</p><p>' + html(summary).replace(/\n/g, '<br>') + '</p>\n<avrae hidden>\n' + YAML.stringify(tree, { lineWidth: 0 }) + '</avrae>' }, tree);
+  return finish({ name: recharge && !/\brecharge\b/i.test(name) ? name + ' (Recharge ' + (recharge === 6 ? '6' : recharge + '–6') + ')' : name, description: (choosing ? '<!-- AINA_DAMAGE_CHOICES:v1:' + choices.join(',') + ' -->\n' : '') + '<p>' + html(rules).replace(/\n/g, '<br>') + '</p><p>' + html(summary).replace(/\n/g, '<br>') + '</p>\n<avrae hidden>\n' + YAML.stringify(tree, { lineWidth: 0 }) + '</avrae>' }, tree);
 }
 module.exports = { build };

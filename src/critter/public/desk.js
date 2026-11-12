@@ -20,7 +20,8 @@ function source() { const key = ui.tab === 'combat' ? selectedRoster()?.sourceKe
 function options() {
   const map = ui.tab === 'combat' ? ui.perRoster : ui.perCreature, key = ui.tab === 'combat' ? ui.rosterKey : ui.selectedKey;
   const defaults = { category: 'actions', ability: '', targets: '', roll: 'normal', repeat: '1', check: '', critical: 'normal', attackBonus: '', damageBonus: '', actionMode: 'aoo' };
-  map[key] ||= {}; for (const [field, value] of Object.entries(defaults)) if (map[key][field] === undefined) map[key][field] = value;
+  map[key] ||= {}; for (const [field, value] of Object.entries(defaults)) if (map[key][field] == null) map[key][field] = value;
+  if (!['aoo', 'ma'].includes(map[key].actionMode)) map[key].actionMode = defaults.actionMode;
   return map[key];
 }
 function plain(html) { const area = document.createElement('textarea'); area.innerHTML = String(html || '').replace(/<script\b[^>]*>[\s\S]*?<\/script>|<style\b[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<br\s*\/?\s*>|<\/(?:p|div|li)>/gi, '\n').replace(/<[^>]*>/g, ''); return area.value.trim(); }
@@ -51,12 +52,14 @@ function download(name, data) { const url = URL.createObjectURL(new Blob([JSON.s
 async function copy(value) { try { await navigator.clipboard.writeText(value); message('Copied.'); } catch { $('#copy-text').value = value; $('#copy-dialog').showModal(); $('#copy-text').select(); } }
 async function exportSource(full, clipboard = false) { const ref = source(); if (!ref) throw new Error('Choose a creature.'); const value = full ? M.bestiary(workspace, ref.key) : C.clone(ref.data); if (clipboard) await copy(JSON.stringify(value, null, 2)); else download(value.name + (full ? '_Bestiary_CritterDB.json' : '_CritterDB.json'), value); }
 function setTab(tab, persistChoice = true) {
+  $('#aina-menu')?.removeAttribute('open');
   TraitsUI.resetConditions();
-  ui.tab = ['combat', 'initiative', 'library', 'sender'].includes(tab) ? tab : tab === 'mirror' ? 'initiative' : tab === 'actions' ? 'library' : 'combat';
+  ui.tab = ['combat', 'initiative', 'library', 'sender', 'siege', 'roleplay', 'worldbuilder'].includes(tab) ? tab : tab === 'mirror' ? 'initiative' : tab === 'actions' ? 'library' : 'combat';
   if (persistChoice) { history.pushState(null, '', '#' + ui.tab); remember(); }
   renderWorkspace().catch(e => message(e.message, true));
 }
 function renderSelection() {
+  if (ui.tab === 'siege' || ui.tab === 'roleplay' || ui.tab === 'worldbuilder') return;
   if (ui.tab === 'initiative') { renderAddForm(); return; }
   if (ui.tab === 'combat') {
     const rows = M.expand(M.ordered(workspace.currentEncounter.entries));
@@ -110,12 +113,17 @@ async function renderCreature(token) {
   $('#ability-list').innerHTML = '<div id="combat-ability-board"></div><div id="selected-ability-detail"></div>';
   const sectionNames = { actions: 'Actions', reactions: 'Reactions', legendaryActions: 'Legendary actions', additionalAbilities: 'Traits' };
   CreaturePanels.render($('#combat-ability-board'), Object.entries(sectionNames).map(([key, label]) => ({ key, label, rows: board.filter(a => a.section === key).map(a => ({ id: a.key, title: a.title + (a.names.length > 1 ? ' / ' + a.name : ''), summary: plain(a.readable) })) })), opts.ability, id => {
-    const row = board.find(a => a.key === id); opts.category = row.section; opts.ability = id; opts.damageChoice = ''; opts.scalingSteps = '0'; remember(); renderWorkspace().catch(e => message(e.message, true));
+    const row = board.find(a => a.key === id); opts.category = row.section; opts.ability = id; opts.damageChoice = ''; opts.scalingSteps = '0'; remember();
+    document.querySelectorAll('#combat-ability-board [data-pane-entry]').forEach(button => button.classList.toggle('selected', button.dataset.paneEntry === id));
+    showSelectedAbility(); renderCommand();
   });
+  function showSelectedAbility() {
   const selected = board.find(a => a.key === opts.ability && a.section === opts.category);
   $('#selected-ability-detail').innerHTML = selected ? '<article class="selected-ability"><div class="section-heading"><h3>' + escape(selected.title) + '</h3><div class="toolbar"><button id="selected-ability-tools" class="small">Follow-up / uses</button><button id="selected-ability-edit" class="small">Edit</button></div></div><div class="ability-body">' + escape(plain(selected.readable)) + '</div>' + (selected.name !== selected.title ? '<p class="hint">Command: ' + escape(selected.name) + '</p>' : '') + '</article>' : '<p class="hint">Choose an entry above to read it and prepare its command.</p>';
   bind('selected-ability-tools', () => AbilityToolsUI.open(ref.key, selected.section, selected.index));
-  bind('selected-ability-edit', () => EditorUI.open(ref.key, selected.section, selected.index)); renderCommand();
+  bind('selected-ability-edit', () => EditorUI.open(ref.key, selected.section, selected.index));
+  }
+  showSelectedAbility(); renderCommand();
 }
 
 function makeCommands() {
@@ -173,7 +181,7 @@ function damageChoices() { const ref = source(), o = options(), part = o.ability
 function targetHTML(opts) {
   const names = [...new Set(M.expand(M.ordered(workspace.currentEncounter.entries)).filter(e => !e.unresolved).map(e => e.name))];
   const selected = selectedTargets(opts);
-  return '<fieldset id="targets"><legend>Targets - initiative order</legend><div class="target-list">' + names.map(n => '<label class="check-row"><input data-combat-target type="checkbox" value="' + escape(n) + '" ' + (selected.includes(n) ? 'checked' : '') + '>' + escape(n) + '</label>').join('') + '</div>' + (!names.length ? '<p class="hint">Add creatures or select players in Initiative to target them here.</p><button id="add-targets">Add combatants</button>' : '') + (selected.some(n => !names.includes(n)) ? '<p class="hint">Previously selected targets are absent from this roster. Select targets again.</p>' : '') + '</fieldset>';
+  return '<fieldset id="targets"><legend>Targets - initiative order</legend><div class="target-toolbar"><input id="target-filter" type="search" placeholder="Search targets" aria-label="Search targets"><button type="button" id="targets-all">All</button><button type="button" id="targets-none">Clear</button></div><div class="target-list">' + names.map(n => '<label class="check-row"><input data-combat-target type="checkbox" value="' + escape(n) + '" ' + (selected.includes(n) ? 'checked' : '') + '><span>' + escape(n) + '</span></label>').join('') + '</div>' + (!names.length ? '<p class="hint">Add creatures or select players in Initiative to target them here.</p><button id="add-targets">Add combatants</button>' : '') + (selected.some(n => !names.includes(n)) ? '<p class="hint">Previously selected targets are absent from this roster. Select targets again.</p>' : '') + '</fieldset>';
 }
 function commandLinesHTML(lines, empty = '') {
   const notes=[...new Set(lines.map(commandExplanation).filter(Boolean))];
@@ -181,15 +189,17 @@ function commandLinesHTML(lines, empty = '') {
 }
 function bindCommandCopies(){document.querySelectorAll('[data-copy-command]').forEach(b=>b.onclick=()=>run(()=>copy(commands[Number(b.dataset.copyCommand)])));}
 function renderCommand() {
-  if (ui.tab === 'sender') return;
+  if (ui.tab === 'sender' || ui.tab === 'siege' || ui.tab === 'roleplay' || ui.tab === 'worldbuilder') return;
   commands=[];let problem='';try{commands=makeCommands();if(commands.length>50)throw new Error('This batch exceeds 50 commands.');}catch(e){commands=[];problem=e.message;}
   const ref=source(),opts=ui.tab!=='initiative'&&(ref||selectedRoster()?.kind==='player')?options():null,scaling=opts?abilityScaling():null;
   const empty=problem||(opts&&reminderOnly()?'Reminder only. Use the individual attack or ability.':opts&&criticalPassive()?'Passive critical range applies to attack commands.':opts&&abilityRecipe()?.kind==='description'&&abilityRecipe()?.followup?.enabled?'Use Follow-up / uses for this ability.':ui.tab==='initiative'?'Add combatants or choose a setup command.':'Select an action, save or check.');
-  const actionControls = !['saves','checks'].includes(opts?.category);
+  const actionControls = Boolean(opts) && !['saves','checks'].includes(opts.category);
   const actionMode = actionControls && ui.tab === 'combat' ? '<fieldset class="action-mode"><legend>Action source</legend>' + CreatureFields.radios('action-mode', [['aoo', 'Encounter action'], ['ma', 'Monster action']], opts.actionMode || 'aoo') + '<small>Monster action uses the source creature name and does not use encounter effects.</small></fieldset>' : '';
   const controls=opts&&opts.category!=='combatTraits'&&!criticalPassive()&&!reminderOnly()?`<div class="command-options">${actionMode}${['saves','checks'].includes(opts.category)&&ui.tab==='combat'&&ref?'<label>Roll as<select id="roll-context"><option value="live">Live combatant</option><option value="lookup">Source lookup</option></select></label>':''}${actionControls?targetHTML(opts):''}${CombatControls.radios(opts)}${ref&&opts.rollContext!=='lookup'?TraitsUI.conditionalHTML(ref,opts):''}${actionControls?`${scaling?`<div class="upcast-control">${scaling.mode==='levels'?AuthoringUI.select('scaling-level','Upcast &middot; spell level',Array.from({length:Number(scaling.maximum)+1},(_,i)=>[String(Number(scaling.baseLevel||1)+i),'Level '+(Number(scaling.baseLevel||1)+i)]),String(Number(scaling.baseLevel||1)+Number(opts.scalingSteps||0))):`<label>Upcast &middot; extra points<input id="scaling-steps" type="number" min="0" max="${escape(scaling.maximum)}" value="${escape(opts.scalingSteps||0)}"></label>`}<span>${scaling.mode==='levels'?'Slots: manual':'0&ndash;'+escape(scaling.maximum)+' extra'}</span></div>`:''}${damageChoices().length?AuthoringUI.select('damage-choice','Damage type',[['','Choose a type'],...damageChoices()],opts.damageChoice):''}${AttackModifiers.html(opts)}<details class="compact-repetitions"><summary>Repeat &times;${escape(opts.repeat)}</summary><input id="repeat" aria-label="Repetitions" type="number" min="1" max="100" value="${escape(opts.repeat)}"></details>`:''}</div>`:'';
-  $('#command-panel').innerHTML=`<div class="command-main"><div class="eyebrow">REVIEW & SEND</div><h2>${commands.length>1?commands.length+' commands':'Command preview'}</h2><div id="command-lines" class="${commands.length>1?'batch-commands':''}">${commandLinesHTML(commands,empty)}</div>${controls}</div><div class="command-actions"><button id="send" class="primary full" ${!commands.length||!connected||!channels.some(c=>c.id===ui.channelId)||sending?'disabled':''}>${sending?'Sending?':'Post as Aina'}</button><button id="copy-command" class="full" ${!commands.length?'disabled':''}>${commands.length>1?'Copy all':'Copy command'}</button><p id="send-result" class="hint" role="status"></p><small>Send the copied command to Avrae. Confirm / Reaction / Cancel in Discord.</small><details><summary>Prefix</summary><input id="prefix" aria-label="Avrae prefix" value="${escape(ui.prefix)}"></details></div>`;
+  $('#command-panel').innerHTML=`<div class="command-main"><div class="eyebrow">REVIEW & SEND</div><h2>${commands.length>1?commands.length+' commands':'Command preview'}</h2><div id="command-lines" class="${commands.length>1?'batch-commands':''}">${commandLinesHTML(commands,empty)}</div><div class="command-actions"><button id="send" class="primary full" ${!commands.length||!connected||!channels.some(c=>c.id===ui.channelId)||sending?'disabled':''}>${sending?'Sending?':'Post as Aina'}</button><button id="copy-command" class="full" ${!commands.length?'disabled':''}>${commands.length>1?'Copy all':'Copy command'}</button><p id="send-result" class="hint" role="status"></p><small>Send the copied command to Avrae. Confirm / Reaction / Cancel in Discord.</small><details><summary>Prefix</summary><input id="prefix" aria-label="Avrae prefix" value="${escape(ui.prefix)}"></details></div>${controls}</div>`;
   document.querySelectorAll('[data-combat-target]').forEach(n=>n.onchange=()=>{opts.targetNames=[...document.querySelectorAll('[data-combat-target]:checked')].map(n=>n.value);opts.targets=opts.targetNames.join(',');remember();updatePreviewOnly();});
+  bind('target-filter', e=>{const q=e.target.value.trim().toLocaleLowerCase();document.querySelectorAll('[data-combat-target]').forEach(n=>{n.closest('label').hidden=!n.value.toLocaleLowerCase().includes(q);});},'input');
+  for (const [id,checked] of [['targets-all',true],['targets-none',false]]) bind(id,()=>{document.querySelectorAll('[data-combat-target]').forEach(n=>{n.checked=checked;});opts.targetNames=[...document.querySelectorAll('[data-combat-target]:checked')].map(n=>n.value);opts.targets=opts.targetNames.join(',');remember();updatePreviewOnly();});
   if(opts){CombatControls.bindRoll(opts);bind('repeat',e=>{opts.repeat=e.target.value;remember();updatePreviewOnly();},'input');}
   document.querySelectorAll('[name="action-mode"]').forEach(n=>n.onchange=()=>{opts.actionMode=n.value;remember();updatePreviewOnly();});
   bind('scaling-level',e=>{opts.scalingSteps=String(Number(e.target.value)-Number(scaling.baseLevel||1));remember();updatePreviewOnly();},'change');
@@ -216,10 +226,15 @@ async function sendCommands() {
   finally { TraitsUI.resetConditions(); sending = false; $('#workspace').inert = false; renderCommand(); }
 }
 async function renderWorkspace() {
-  if (!['combat', 'initiative', 'library', 'sender'].includes(ui.tab)) ui.tab = 'initiative';
+  if (!['combat', 'initiative', 'library', 'sender', 'siege', 'roleplay', 'worldbuilder'].includes(ui.tab)) ui.tab = 'initiative';
+  document.body.dataset.activeTool=ui.tab;
   const token = ++renderToken; $('#workspace').dataset.view = ui.tab; document.documentElement.dataset.theme = ui.theme; $('#theme').textContent = ui.theme === 'dark' ? 'Light mode' : 'Dark mode';
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === ui.tab)); renderSelection();
+  document.querySelector('#worldbuilder-panel')?.toggleAttribute('hidden',ui.tab!=='worldbuilder');
   if (ui.tab === 'sender') { await SenderUI.render(); return; }
+  if (ui.tab === 'siege') { await SiegeUI.render(); return; }
+  if (ui.tab === 'worldbuilder') { await WorldBuilderUI.render(); return; }
+  if (ui.tab === 'roleplay') { await RoleplayUI.render(); return; }
   if (ui.tab === 'initiative') renderInitiative(); else await renderCreature(token); renderCommand();
 }
 function renderAddForm() {
@@ -284,9 +299,9 @@ function setupBrowserImport() {
 }
 async function start() {
   const result = await api('workspace'); workspace = result.workspace; revision = result.revision; const previous = workspace.preferences.desk || {};
-  ui = { ...previous, version: 3, tab: previous.version === 3 ? previous.tab : workspace.currentEncounter.entries.length ? 'combat' : 'library', selectedKey: previous.selectedKey || C.creatures(workspace)[0]?.key || '', rosterKey: previous.rosterKey || '', prefix: workspace.preferences.prefix, channelId: workspace.preferences.channelId || workspace.sender?.channelId || '', guildId: previous.guildId || '', theme: previous.theme || 'light', perCreature: previous.version === 3 ? previous.perCreature || {} : {}, perRoster: previous.perRoster || {}, init: { intent: 'setup', includeBegin: false, presetName: '', ...(previous.init || {}), form: { sourceKey: previous.selectedKey || C.creatures(workspace)[0]?.key || '', name: '', quantity: '1', method: 'roll', bonus: '', fixed: '', hp: '', ac: '', controller: '', ...(previous.init?.form || {}) } } };
+  ui = { ...previous, version: 3, tab: previous.version === 3 ? previous.tab : 'worldbuilder', selectedKey: previous.selectedKey || C.creatures(workspace)[0]?.key || '', rosterKey: previous.rosterKey || '', prefix: workspace.preferences.prefix, channelId: workspace.preferences.channelId || workspace.sender?.channelId || '', guildId: previous.guildId || '', theme: previous.theme || 'light', perCreature: previous.version === 3 ? previous.perCreature || {} : {}, perRoster: previous.perRoster || {}, init: { intent: 'setup', includeBegin: false, presetName: '', ...(previous.init || {}), form: { sourceKey: previous.selectedKey || C.creatures(workspace)[0]?.key || '', name: '', quantity: '1', method: 'roll', bonus: '', fixed: '', hp: '', ac: '', controller: '', ...(previous.init?.form || {}) } } };
   try { const recovery = JSON.parse(localStorage.getItem(recoveryKey) || 'null'); if (recovery?.ui?.version === 3) { ui = recovery.ui; pending = true; message('Recovered your recent controls from this browser.'); } } catch {}
-  ui.tab = ['combat', 'initiative', 'library', 'sender'].includes(location.hash.slice(1)) ? location.hash.slice(1) : location.hash === '#mirror' || ui.tab === 'mirror' ? 'initiative' : ui.tab; if (location.hash === '#mirror') history.replaceState(null, '', '#initiative');
+  ui.tab = ['combat', 'initiative', 'library', 'sender', 'siege', 'roleplay', 'worldbuilder'].includes(location.hash.slice(1)) ? location.hash.slice(1) : location.hash === '#mirror' || ui.tab === 'mirror' ? 'initiative' : ui.tab; if (location.hash === '#mirror') history.replaceState(null, '', '#initiative');
   document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => setTab(b.dataset.tab)); window.addEventListener('popstate', () => setTab(location.hash.slice(1), false));
   bind('theme', () => { ui.theme = ui.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = ui.theme; $('#theme').textContent = ui.theme === 'dark' ? 'Light mode' : 'Dark mode'; remember(); });
   bind('channel', e => { ui.channelId = e.target.value; ui.guildId = channels.find(c => c.id === ui.channelId)?.guildId || ''; remember(); renderCommand(); SenderUI.decorate(); }, 'change');
@@ -297,7 +312,7 @@ async function start() {
   bind('remove-avrae', () => { ui.init.intent = 'remove'; $('#remove-dialog').close(); remember(); renderCommand(); });
   bind('remove-local', async () => { await mutate(w => { w.currentEncounter.entries = []; }); $('#remove-dialog').close(); ui.rosterKey = ''; ui.init.intent = 'setup'; remember(); await renderWorkspace(); });
   window.addEventListener('beforeunload', e => { if (pending || sending || EditorUI.dirty() || TraitsUI.dirty()) { e.preventDefault(); e.returnValue = ''; } });
-  setupBrowserImport(); await SenderUI.start(); await renderWorkspace(); await refreshStatus(); if (pending) remember(); const creatureURL = new URL(location.href).searchParams.get('critter'); if (creatureURL) await DirectUI.open('', creatureURL);
+  WorldBuilderUI.init();setupBrowserImport(); await SenderUI.start(); await renderWorkspace(); await refreshStatus(); if (pending) remember(); const creatureURL = new URL(location.href).searchParams.get('critter'); if (creatureURL) await DirectUI.open('', creatureURL);
 }
 $('#refresh').onclick = () => { if (!workspace) location.reload(); };
 start().catch(e => { $('#online-state').textContent = 'Connection unavailable'; message(e.message, true); });

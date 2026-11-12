@@ -59,9 +59,9 @@ test('guild registration never silently falls back to global and missing AI cred
 test('all real commands load without network calls and every help page fits Discord limits', async () => {
   const bot = client();
   await loadCogs(bot);
-  assert.deepEqual([...bot.commands.keys()].sort(), ['alarm', 'chat', 'critter', 'dungeon', 'emoji', 'endchat', 'fab', 'help', 'ping', 'time', 'ttv']);
+  assert.deepEqual([...bot.commands.keys()].sort(), ['alarm', 'chat', 'critter', 'dungeon', 'emoji', 'endchat', 'fab', 'help', 'ping', 'time', 'transcript', 'ttv']);
   const help = bot.commands.get('help');
-  for (const category of [null, 'alarms', 'dungeon', 'emoji', 'ai', 'ttv', 'fabula', 'utility', 'critter']) {
+  for (const category of [null, 'alarms', 'dungeon', 'emoji', 'ai', 'ttv', 'fabula', 'utility', 'critter', 'transcript']) {
     for (let page = 1; page <= 12; page++) {
       let payload;
       await help.execute({ client: bot, options: { getString: () => category, getInteger: () => page }, async reply(value) { payload = value; } });

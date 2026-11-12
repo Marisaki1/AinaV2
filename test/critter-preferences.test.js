@@ -8,7 +8,17 @@ const { creature } = require('./critter-fixture');
 test('remembering choices merges into the latest library and persists across a new store instance', async t => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'aina-choice-test-'));
   const service = createService({ directory, port: 0 }); await service.start();
-  t.after(async () => { await service.close(); for (const file of fs.readdirSync(directory)) fs.unlinkSync(path.join(directory, file)); fs.rmdirSync(directory); });
+  t.after(async () => {
+    await service.close();
+    for (const file of fs.readdirSync(directory)) {
+      const entry=path.join(directory,file);
+      if(file==='siege-backups'&&fs.lstatSync(entry).isDirectory()){
+        for(const backup of fs.readdirSync(entry))fs.unlinkSync(path.join(entry,backup));
+        fs.rmdirSync(entry);
+      }else fs.unlinkSync(entry);
+    }
+    fs.rmdirSync(directory);
+  });
   const first = service.importJSON(creature(), 'first.json');
   const key = first.workspace.documents[0].keys[0];
   const stale = service.store.read();
