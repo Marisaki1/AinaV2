@@ -793,8 +793,9 @@ def search_resources(world, query, reader=False, trash=False):
     return [serialize(r, False) for r in qs]
 
 
-def store_asset(world, upload, credit="", tags=None):
+def store_asset(world, upload, credit="", tags=None, *, save_original=None):
     tags = strings(tags if tags is not None else [], "Media tags")
+    credit = short(credit, "Credit", 300)
     contents = upload.read(25 * 1024 * 1024 + 1)
     if not contents or len(contents) > 25 * 1024 * 1024:
         raise Limit("Choose an image no larger than 25 MB.")
@@ -809,6 +810,8 @@ def store_asset(world, upload, credit="", tags=None):
             image.verify()
     except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as e:
         raise ValueError("That file is not a supported, valid image.") from e
+    if save_original is not None:
+        save_original(upload.name, contents, fmt)
     digest = hashlib.sha256(contents).hexdigest()
     existing = Asset.objects.filter(world=world, digest=digest).first()
     if existing:
@@ -828,7 +831,7 @@ def store_asset(world, upload, credit="", tags=None):
             size=len(contents),
             width=width,
             height=height,
-            credit=short(credit, "Credit", 300),
+            credit=credit,
             tags=tags,
         )
     except Exception:

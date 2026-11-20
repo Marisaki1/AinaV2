@@ -13,6 +13,79 @@ import { Empty, ErrorBox, Field, Modal, TagField } from "./ui";
 import { PageHeading } from "./Pages";
 import { tagKey } from "./Collections";
 
+const artworkLabels = { repository: "Repository artwork", private: "Private artwork" };
+type ArtworkSource = keyof typeof artworkLabels;
+type ArtworkImport = { imported: number; existing: number; skipped: number; errors: string[] };
+
+function SharedArtworkPicker({ ctx, source, files, close }: {
+  ctx: AppContext;
+  source: ArtworkSource;
+  files: string[];
+  close: () => void;
+}) {
+  const [folder, setFolder] = useState("*");
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const path = "/worlds/" + ctx.world.id + "/assets/sync-local?source=" + source;
+  const parent = (file: string) => file.split("/").slice(0, -1).join("/");
+  const folders = [...new Set(files.map(parent))].sort();
+  const visible = files.filter(file => (folder === "*" || parent(file) === folder)
+    && file.toLowerCase().includes(query.trim().toLowerCase()));
+  async function importImages() {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await post<ArtworkImport>(path, { files: selected });
+      await ctx.refresh();
+      const summary = `${result.imported} added · ${result.existing} already in this world`;
+      if (result.skipped) setError(`${summary}. ${result.skipped} skipped. ${result.errors.join(" ")}`);
+      else {
+        ctx.notify(summary);
+        close();
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Modal title={artworkLabels[source]} wide onClose={close}>
+      <div className="library-toolbar">
+        <Field label="Search artwork" value={query} onChange={setQuery} />
+        <SearchableSelect aria-label="Artwork folder" value={folder} onChange={e => setFolder(e.target.value)}>
+          <option value="*">All folders</option>
+          {folders.map(name => <option value={name} key={name}>{name || "Top level"}</option>)}
+        </SearchableSelect>
+      </div>
+      <div className="media-grid shared-artwork-grid">
+        {visible.map(file => {
+          const checked = selected.includes(file);
+          return (
+            <button className="media-card" key={file} type="button" title={file} aria-pressed={checked}
+              disabled={busy || (!checked && selected.length >= 100)}
+              onClick={() => setSelected(current => checked ? current.filter(key => key !== file) : [...current, file])}>
+              <div><img src={"/api" + path + "&image=" + encodeURIComponent(file)} alt="" loading="lazy" /></div>
+              <strong>{file.split("/").at(-1)}</strong>
+              {parent(file) && <span>{parent(file)}</span>}
+            </button>
+          );
+        })}
+      </div>
+      {!visible.length && <p className="muted">No images match.</p>}
+      {error && <ErrorBox message={error} />}
+      <div className="modal-actions">
+        <button className="button secondary" disabled={busy} onClick={close}>Close</button>
+        <button className="button primary" disabled={busy || !selected.length} onClick={() => void importImages()}>
+          {busy ? "Adding…" : `Add to this world (${selected.length})`}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 function ImageDetails({
   asset,
   ctx,
@@ -125,6 +198,11 @@ export function MediaLibrary({ ctx }: { ctx: AppContext }) {
     [uploadTags, setUploadTags] = useState<string[]>([]),
     [query, setQuery] = useState(""),
     [tag, setTag] = useState("");
+  const [storage, setStorage] = useState<ArtworkSource | "">("");
+  const [folder, setFolder] = useState("");
+  const [artwork, setArtwork] = useState<{ source: ArtworkSource; files: string[] } | null>(null);
+  const sources = ctx.world.shared_artwork_sources ?? [];
+  const destination = storage && sources.includes(storage) ? storage : "";
   const input = useRef<HTMLInputElement>(null);
   const selectedId = location.hash.slice(2).split("/")[1];
   const selected = ctx.assets.find((a) => a.id === selectedId);
@@ -148,6 +226,10 @@ export function MediaLibrary({ ctx }: { ctx: AppContext }) {
         form.append("file", file);
         form.append("credit", credit);
         form.append("tags", JSON.stringify(uploadTags));
+        if (destination) {
+          form.append("artwork_source", destination);
+          form.append("artwork_folder", folder);
+        }
         await api("/worlds/" + ctx.world.id + "/assets", {
           method: "POST",
           body: form,
@@ -155,7 +237,8 @@ export function MediaLibrary({ ctx }: { ctx: AppContext }) {
         completed++;
       }
       ctx.notify(
-        "Media library updated. Identical images reuse the existing upload.",
+        destination ? `Saved to ${artworkLabels[destination]} and added to this world.`
+          : "Media library updated. Identical images reuse the existing upload.",
       );
     } catch (e: any) {
       ctx.notify(
@@ -168,10 +251,21 @@ export function MediaLibrary({ ctx }: { ctx: AppContext }) {
       if (input.current) input.current.value = "";
     }
   };
+  const browseArtwork = async (source: ArtworkSource) => {
+    setScanning(true);
+    try {
+      const { files } = await api<{ files: string[] }>("/worlds/" + ctx.world.id + "/assets/sync-local?source=" + source);
+      setArtwork({ source, files });
+    } catch (error) {
+      ctx.notify((error as Error).message, true);
+    } finally {
+      setScanning(false);
+    }
+  };
   const refreshLocalImages = async () => {
     setScanning(true);
     try {
-      const result = await post<{ imported: number; skipped: number; errors: string[] }>(
+      const result = await post<ArtworkImport>(
         "/worlds/" + ctx.world.id + "/assets/sync-local",
       );
       await ctx.refresh();
@@ -216,10 +310,21 @@ export function MediaLibrary({ ctx }: { ctx: AppContext }) {
           </button>
         </div>
       )}
+      {sources.length > 0 && (
+        <div className="library-toolbar" aria-label="Import shared artwork">
+          {sources.map(source => (
+            <button key={source} className="button secondary" disabled={scanning || busy}
+              onClick={() => void browseArtwork(source)}>
+              Browse {artworkLabels[source].toLowerCase()}
+            </button>
+          ))}
+        </div>
+      )}
+      {artwork && <SharedArtworkPicker ctx={ctx} {...artwork} close={() => setArtwork(null)} />}
       <input
         ref={input}
         type="file"
-        accept="image/png,image/jpeg,image/webp,image/gif"
+        accept={"image/png,image/jpeg,image/webp" + (destination ? "" : ",image/gif")}
         multiple
         hidden
         onChange={(e) => {
@@ -239,10 +344,20 @@ export function MediaLibrary({ ctx }: { ctx: AppContext }) {
           <ImageIcon size={26} />
           <p>
             <strong>Drop images here</strong>
-            <span>PNG, JPEG, WebP or GIF · up to 25 MB each</span>
+            <span>{destination ? "PNG, JPEG or WebP · up to 8 MB each" : "PNG, JPEG, WebP or GIF · up to 25 MB each"}</span>
           </p>
         </div>
         <div className="upload-metadata">
+          {sources.length > 0 && (
+            <label>
+              <span>Upload to</span>
+              <SearchableSelect aria-label="Upload to" value={destination} onChange={event => setStorage(event.target.value as ArtworkSource | "")} disabled={busy}>
+                <option value="">This world only</option>
+                {sources.map(source => <option key={source} value={source}>{artworkLabels[source]}</option>)}
+              </SearchableSelect>
+            </label>
+          )}
+          {destination && <Field label="Artwork subfolder" value={folder} onChange={setFolder} placeholder="Optional · e.g. TouhouDND/Portraits" />}
           <Field
             label="Artist / source credit for new uploads"
             value={credit}

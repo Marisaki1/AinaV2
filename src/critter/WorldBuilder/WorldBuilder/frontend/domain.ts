@@ -56,6 +56,7 @@ export type World = {
   counts?: Record<string, number>;
   asset_count?: number;
   local_image_folder?: boolean;
+  shared_artwork_sources?: ("repository" | "private")[];
   activities?: any[];
 };
 export type Asset = {

@@ -8,6 +8,7 @@ assets/images/alarms/
 assets/audio/
 assets/critter/npcs/*
 !assets/critter/npcs/.gitkeep
+assets/critter/artwork-private/
 .npm-cache/
 .tts/
 .test-artifacts/

@@ -7,6 +7,7 @@ const ROOT=path.join(__dirname,'WorldBuilder','WorldBuilder');
 class WorldBuilder {
   constructor(options={}){
     this.root=options.root||ROOT;const savedFile=path.join(this.root,'aina-data.json');const saved=fs.existsSync(savedFile)?JSON.parse(fs.readFileSync(savedFile,'utf8')):{};
+    this.artworkDirectories=options.artworkDirectories||{};
     this.data=path.resolve(options.data||process.env.WORLDBUILDER_DATA||path.join(this.root,saved.dataDirectory||'data'));
     this.port=Number(options.port||process.env.WORLDBUILDER_PORT||8777);
     this.enabled=options.enabled!==false;this.phase=this.enabled?'stopped':'disabled';this.error='';this.child=null;this.starting=null;this.closing=false;
@@ -43,7 +44,7 @@ class WorldBuilder {
       if(existing.aina_parent!==parent)throw new Error('Close the separately running WorldBuilder, then restart Aina so it can manage the integrated app.');
       this.phase='ready';return;
     }
-    const child=spawn(this.python(),['scripts/aina_host.py','--port',String(this.port),'--no-browser'],{cwd:this.root,windowsHide:true,env:{...process.env,WORLDBUILDER_DATA:this.data,AINA_WORLDBUILDER_PARENT:parent},stdio:['pipe','pipe','pipe']});this.child=child;
+    const child=spawn(this.python(),['scripts/aina_host.py','--port',String(this.port),'--no-browser'],{cwd:this.root,windowsHide:true,env:{...process.env,WORLDBUILDER_DATA:this.data,AINA_WORLDBUILDER_PARENT:parent,AINA_ARTWORK_DIRECTORIES:JSON.stringify(this.artworkDirectories)},stdio:['pipe','pipe','pipe']});this.child=child;
     let tail='';for(const stream of [child.stdout,child.stderr])stream.on('data',b=>{tail=(tail+b.toString()).slice(-2000);});
     let failure;child.once('error',e=>{failure=e.message;});child.once('exit',code=>{if(this.child===child)this.child=null;if(!this.closing){this.phase='failed';this.error=failure||`WorldBuilder stopped (${code}). ${tail.trim()}`;}});
     for(let i=0;i<120;i++){

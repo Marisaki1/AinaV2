@@ -2723,6 +2723,15 @@ textarea::placeholder {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
 }
+.shared-artwork-grid {
+  max-height: 42vh;
+  overflow: auto;
+  padding: 4px;
+}
+.shared-artwork-grid .media-card[aria-pressed="true"] {
+  outline: 2px solid #51773e;
+  outline-offset: 1px;
+}
 .media-card {
   background: #fffef8;
   border: 1px solid #e1e8d5;

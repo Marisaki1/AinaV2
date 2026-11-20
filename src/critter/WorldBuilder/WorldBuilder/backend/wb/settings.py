@@ -1,5 +1,6 @@
 import os
 import hashlib
+import json
 import secrets
 from pathlib import Path
 
@@ -73,3 +74,4 @@ LOGGING = {
 
 # Only Aina's configured local origin may embed the managed application.
 AINA_PARENT = os.environ.get("AINA_WORLDBUILDER_PARENT", "")
+AINA_ARTWORK_DIRECTORIES = json.loads(os.environ.get("AINA_ARTWORK_DIRECTORIES", "{}"))

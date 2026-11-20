@@ -285,7 +285,7 @@ def worlds(request):
 
 @endpoint(["GET", "PATCH"])
 def world_detail(request, world_id):
-    from .local_images import configured_folder
+    from .local_images import configured_folder, shared_folders
 
     world = owned_world(request.user, world_id)
     if request.method == "PATCH":
@@ -341,6 +341,7 @@ def world_detail(request, world_id):
             "activities": activities,
             "asset_count": world.assets.count(),
             "local_image_folder": configured_folder(world) is not None,
+            "shared_artwork_sources": list(shared_folders(world)),
         }
     )
 
@@ -1145,6 +1146,8 @@ def graph_export(request, resource_id):
 
 @endpoint(["GET", "POST"])
 def assets(request, world_id):
+    from .local_images import SHARED_LABELS, save_shared_image, shared_folders
+
     world = owned_world(request.user, world_id)
     if request.method == "GET":
         return JsonResponse(
@@ -1157,25 +1160,65 @@ def assets(request, world_id):
         tags = json.loads(request.POST.get("tags", "[]"))
     except json.JSONDecodeError as error:
         raise ValueError("Media tags must be a list.") from error
-    asset = store_asset(world, upload, request.POST.get("credit", ""), tags)
+    source = request.POST.get("artwork_source")
+    save_original = None
+    if source:
+        root = shared_folders(world).get(source)
+        if root is None:
+            raise ValueError("That shared artwork location is unavailable for this world.")
+        if not isinstance(tags, list):
+            raise ValueError("Media tags must be a list.")
+        folder = request.POST.get("artwork_folder", "").strip()
+        tags = strings(tags, "Media tags")
+        if SHARED_LABELS[source] not in tags:
+            tags.append(SHARED_LABELS[source])
+
+        def save_original(name, contents, image_format):
+            save_shared_image(root, folder, name, contents, image_format)
+
+    asset = store_asset(world, upload, request.POST.get("credit", ""), tags, save_original=save_original)
     return JsonResponse(asset_json(asset), status=201)
 
 
-@endpoint(["POST"])
+@endpoint(["GET", "POST"])
 def sync_local_images(request, world_id):
-    from .local_images import configured_folder, is_link, sync
+    from .local_images import configured_folder, is_link, shared_catalog, shared_folders, shared_image, sync
 
     world = owned_world(request.user, world_id)
-    root = configured_folder(world)
+    source = request.GET.get("source")
+    if request.method == "GET" and not source:
+        raise Http404()
+    root = shared_folders(world).get(source) if source else configured_folder(world)
     if root is None:
         raise Http404()
     try:
+        if source and not root.exists() and not root.is_symlink():
+            if request.method == "GET":
+                if "image" in request.GET:
+                    raise Http404()
+                return JsonResponse({"files": []})
+            return JsonResponse({"imported": 0, "existing": 0, "skipped": 0, "errors": []})
         available = root.is_dir() and not is_link(root.lstat())
     except OSError:
         available = False
     if not available:
         raise ValueError("The local campaign image folder is unavailable.")
-    return JsonResponse(sync(world, root))
+    if request.method == "GET":
+        if "image" not in request.GET:
+            return JsonResponse({"files": shared_catalog(root)})
+        try:
+            response = FileResponse(shared_image(root, request.GET["image"]).open("rb"))
+        except OSError as error:
+            raise Http404() from error
+        response["Cache-Control"] = "private, no-store"
+        return response
+    selection = payload(request).get("files") if source else None
+    if source and (
+        not isinstance(selection, list) or not 1 <= len(selection) <= 100
+        or any(not isinstance(key, str) or not 1 <= len(key) <= 400 for key in selection)
+    ):
+        raise ValueError("Select between 1 and 100 shared images.")
+    return JsonResponse(sync(world, root, source, selection))
 
 
 @endpoint(["GET", "PATCH"])

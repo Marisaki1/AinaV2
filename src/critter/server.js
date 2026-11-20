@@ -17,18 +17,18 @@ const { calculate } = require('./creature-calculations');
 const { EncounterMirror } = require('./mirror');
 const { CommandSender } = require('./command-sender');
 const { Siege } = require('./siege');
-const { Roleplay } = require('./roleplay');
+const { Roleplay, sharedArtworkDirectories } = require('./roleplay');
 const { WorldBuilder } = require('./worldbuilder');
 
-function createService({ client = null, directory, ownerId, port = Number(process.env.CRITTER_PORT || 4317), remoteTransport, mirrorVerifier, roleplayAssetDirectory, worldbuilderOptions } = {}) {
+function createService({ client = null, directory, ownerId, port = Number(process.env.CRITTER_PORT || 4317), remoteTransport, mirrorVerifier, roleplayAssetDirectory, artworkDirectories = directory || roleplayAssetDirectory ? {} : sharedArtworkDirectories, worldbuilderOptions } = {}) {
   const store = new WorkspaceStore(directory);
   const bridge = new DiscordBridge(client, store.directory, ownerId);
   const mirror = new EncounterMirror(store, bridge, { verifier: mirrorVerifier });
   const remote = new RemoteEdits(store, { transport: remoteTransport });
   const sender = new CommandSender(store, bridge);
   const siege = new Siege(store, bridge);
-  const roleplay = new Roleplay(store, bridge, roleplayAssetDirectory);
-  const worldbuilder = new WorldBuilder({enabled:!directory,...worldbuilderOptions});
+  const roleplay = new Roleplay(store, bridge, roleplayAssetDirectory, artworkDirectories);
+  const worldbuilder = new WorldBuilder({enabled:!directory,artworkDirectories,...worldbuilderOptions});
   let origin = '';
   function json(response, status, data) {
     response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });

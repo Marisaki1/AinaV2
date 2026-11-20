@@ -5,6 +5,12 @@ const {randomUUID,createHash}=require('crypto');
 const {WebhookClient}=require('discord.js');
 const { convert, upgradeSettings, validateSettings } = require('./languages');
 const extensions={'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp'};
+const sharedArtworkDirectories = {
+  repository: path.resolve(__dirname, '../../assets/critter/artwork'),
+  private: path.resolve(__dirname, '../../assets/critter/artwork-private'),
+};
+const artworkFolders = { repository: 'Repository artwork:', private: 'Private artwork:' };
+function isLinked(file) { return fs.lstatSync(file, { throwIfNoEntry: false })?.isSymbolicLink(); }
 function validImage(buffer,mime){return mime==='image/png'?buffer.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')):mime==='image/jpeg'?buffer[0]===255&&buffer[1]===216&&buffer[2]===255:mime==='image/webp'?buffer.toString('ascii',0,4)==='RIFF'&&buffer.toString('ascii',8,12)==='WEBP':false;}
 function formatDialogue(name,text,voice='normal'){const prefix=voice==='whisper'?'-# ':voice==='shout'?'# ':'';return text.replace(/\r\n?/g,'\n').split('\n').map(line=>`${prefix}> ${name}: ${line}`).join('\n');}
 function webhookCreateError(error,parent,thread){
@@ -16,13 +22,22 @@ function webhookCreateError(error,parent,thread){
   return new Error(`Discord could not create a webhook in ${where}${error?.code?` (error ${String(error.code).replace(/[^0-9]/g,'')})`:''}. Check the channel permissions and try again.`);
 }
 class Roleplay {
-  constructor(store,bridge,assetDirectory){this.store=store;this.bridge=bridge;this.directory=assetDirectory||path.resolve(__dirname,'../../assets/critter/npcs');fs.mkdirSync(this.directory,{recursive:true});this.secretFile=path.join(store.directory,'roleplay-webhooks.json');this.secrets=fs.existsSync(this.secretFile)?JSON.parse(fs.readFileSync(this.secretFile,'utf8')):{};this.lock=false;this.inflight=new Set();if(this.store.read().workspace.roleplay.recent.some(x=>x.delivery==='sending'))this.change(r=>{for(const item of r.recent)if(item.delivery==='sending')item.delivery='uncertain';});}
+  constructor(store,bridge,assetDirectory, artworkDirectories = assetDirectory ? {} : sharedArtworkDirectories){this.store=store;this.bridge=bridge;this.directory=path.resolve(assetDirectory||path.resolve(__dirname,'../../assets/critter/npcs'));this.artworkDirectories=artworkDirectories;fs.mkdirSync(this.directory,{recursive:true});this.secretFile=path.join(store.directory,'roleplay-webhooks.json');this.secrets=fs.existsSync(this.secretFile)?JSON.parse(fs.readFileSync(this.secretFile,'utf8')):{};this.lock=false;this.inflight=new Set();if(this.store.read().workspace.roleplay.recent.some(x=>x.delivery==='sending'))this.change(r=>{for(const item of r.recent)if(item.delivery==='sending')item.delivery='uncertain';});}
   change(fn){const current=this.store.read();const result=fn(current.workspace.roleplay);this.store.save(current.workspace,current.revision);return result;}
   assetPath(name,folder=false){
-    if(typeof name!=='string'||(!name&&!folder)||name.length>400||name.includes('\\')||/[\x00-\x1f<>:"|?*]/.test(name)||name.split('/').some(p=>p==='.'||p==='..'||(!p&&name!=='')))throw new Error('Choose a valid asset folder or image.');
-    const root=path.resolve(this.directory),file=path.resolve(root,...name.split('/'));
+    if(typeof name!=='string')throw new Error('Choose a valid asset folder or image.');
+    const source=Object.keys(this.artworkDirectories).find(key=>name===artworkFolders[key]||name.startsWith(artworkFolders[key]+'/'));
+    const root=path.resolve(source?this.artworkDirectories[source]:this.directory);
+    const relative=source?name.slice(artworkFolders[source].length+1):name;
+    const segments=relative?relative.split('/'):[];
+    const invalid=segments.some(part=>!part||/[\x00-\x1f<>:"|?*\\]/.test(part)||/[ .]$/.test(part)||
+      /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(part));
+    if((!relative&&!folder)||relative.length>400||invalid)throw new Error('Choose a valid asset folder or image.');
+    const file=path.resolve(root,...segments);
     if(file!==root&&!file.startsWith(root+path.sep))throw new Error('Asset must stay in the asset folder.');
-    let current=root;for(const part of name.split('/').filter(Boolean)){current=path.join(current,part);if(fs.existsSync(current)&&fs.lstatSync(current).isSymbolicLink())throw new Error('Linked asset folders are not supported.');}
+    let current=root;
+    if(isLinked(current))throw new Error('Linked asset folders are not supported.');
+    for(const part of segments){current=path.join(current,part);if(isLinked(current))throw new Error('Linked asset folders are not supported.');}
     return file;
   }
   catalog(){
@@ -31,7 +46,14 @@ class Roleplay {
       if(e.isSymbolicLink())continue;const name=prefix+e.name;
       if(e.isDirectory()){folders.push(name);walk(path.join(directory,e.name),name+'/');}
       else if(e.isFile()&&extensions[path.extname(e.name).toLowerCase()])assets.push({name,label:path.parse(e.name).name,folder:prefix.replace(/\/$/,''),url:'/npc-assets/'+name.split('/').map(encodeURIComponent).join('/')});
-    }};walk(this.directory);assets.sort((a,b)=>a.name.localeCompare(b.name));folders.sort();return {assets,folders};
+    }};
+    walk(this.directory);
+    for(const [source,directory] of Object.entries(this.artworkDirectories)){
+      const prefix=artworkFolders[source];
+      folders.push(prefix);
+      if(!isLinked(directory)&&fs.existsSync(directory))walk(directory,prefix+'/');
+    }
+    assets.sort((a,b)=>a.name.localeCompare(b.name));folders.sort();return {assets,folders};
   }
   assets(){return this.catalog().assets;}
   createFolder(name){const file=this.assetPath(name,true);fs.mkdirSync(file,{recursive:true});return {folder:name};}
@@ -45,6 +67,7 @@ class Roleplay {
       recent: state.recent.map(({ languageSnapshot, ...item }) => item),
       ...this.catalog(),
       assetDirectory: this.directory,
+      artworkFolders: Object.fromEntries(Object.keys(this.artworkDirectories).map(source=>[source,artworkFolders[source]])),
       connected: Boolean(this.bridge.client?.isReady()),
     };
   }
@@ -147,4 +170,4 @@ class Roleplay {
     }catch(error){if(sending){try{this.change(v=>{const x=v.recent.find(y=>y.requestId===requestId);if(x&&x.delivery==='sending')x.delivery='uncertain';});}catch{}throw new Error('Delivery could not be confirmed. Check Discord before sending again.');}throw error;}finally{this.lock=false;this.inflight.delete(requestId);}
   }
 }
-module.exports={Roleplay,formatDialogue};
+module.exports={Roleplay,formatDialogue,sharedArtworkDirectories};

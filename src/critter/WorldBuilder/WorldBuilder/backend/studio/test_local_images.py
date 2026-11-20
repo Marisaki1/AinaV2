@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from PIL import Image
 
@@ -84,3 +85,40 @@ class LocalImageTests(TestCase):
         result = self.client.post(self.path)
         self.assertEqual(result.status_code, 400)
         self.assertIn("unavailable", result.json()["error"])
+
+    def test_shared_artwork_upload_browse_and_selective_import(self):
+        data = self.source.parent
+        repository = data / "artwork"
+        private = data / "artwork-private"
+        private.mkdir()
+        sample = self.image("Izumi.png").read_bytes()
+        (private / "Reveal.png").write_bytes(sample)
+        with override_settings(AINA_ARTWORK_DIRECTORIES={"repository": str(repository), "private": str(private)}):
+            repo_url = self.path + "?source=repository"
+            self.assertEqual(self.client.get(repo_url).json(), {"files": []})
+            upload_url = f"/api/worlds/{self.world.id}/assets"
+            response = self.client.post(upload_url, {
+                "file": SimpleUploadedFile("Izumi.png", sample, "image/png"),
+                "artwork_source": "repository",
+                "artwork_folder": "TouhouDND/Portraits",
+                "credit": "Original artist",
+            })
+            self.assertEqual(response.status_code, 201, response.content)
+            key = "TouhouDND/Portraits/Izumi.png"
+            self.assertEqual((repository / key).read_bytes(), sample)
+            self.assertEqual(response.json()["credit"], "Original artist")
+            (repository / "Other.png").write_bytes(sample)
+            self.assertEqual(self.client.get(repo_url).json()["files"], ["Other.png", key])
+            preview = self.client.get(repo_url, {"source": "repository", "image": key})
+            self.assertEqual(b"".join(preview.streaming_content), sample)
+            result = self.client.post(repo_url, {"files": [key]}, content_type="application/json")
+            self.assertEqual(result.json()["existing"], 1)
+            other_url = f"/api/worlds/{self.unconfigured.id}/assets/sync-local"
+            result = self.client.post(other_url + "?source=repository", {"files": [key]}, content_type="application/json")
+            self.assertEqual(result.json()["imported"], 1)
+            self.assertEqual(self.unconfigured.assets.get().tags, ["Repository artwork", "TouhouDND", "Portraits"])
+            self.assertEqual(self.client.get(other_url + "?source=private").status_code, 404)
+            self.assertEqual(self.client.get(self.path + "?source=private").json()["files"], ["Reveal.png"])
+            self.assertEqual(self.client.get(repo_url, {"source": "repository", "image": "../Izumi.png"}).status_code, 400)
+            self.client.force_login(self.other)
+            self.assertEqual(self.client.get(repo_url).status_code, 404)

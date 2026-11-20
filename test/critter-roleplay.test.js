@@ -23,6 +23,25 @@ test('voice styles prefix every line and leave normal speech unchanged',()=>{
   assert.equal(formatDialogue('Sagume','Hello\nAgain','shout'),'# > Sagume: Hello\n# > Sagume: Again');
   assert.equal(formatDialogue('Sagume','Hello'),' > Sagume: Hello'.trimStart());
 });
+test('shared artwork uses portable paths alongside existing NPC images', t=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aina-shared-artwork-'));
+  t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+  const roots={repository:path.join(dir,'artwork'),private:path.join(dir,'artwork-private')};
+  const rp=new Roleplay(new WorkspaceStore(dir),{},path.join(dir,'legacy'),roots);
+  const image='data:image/png;base64,'+png.toString('base64');
+  const {repository,private:local}=rp.view().artworkFolders;
+  rp.upload({name:'Old.png',image});
+  const publicImage=rp.upload({name:'Izumi.png',folder:repository+'/TouhouDND/Portraits',image});
+  const privateImage=rp.upload({name:'Izumi.png',folder:local,image});
+  assert.deepEqual(fs.readFileSync(path.join(roots.repository,'TouhouDND','Portraits','Izumi.png')),png);
+  assert.deepEqual(fs.readFileSync(path.join(roots.private,'Izumi.png')),png);
+  assert.deepEqual(rp.assets().map(asset=>asset.name).sort(), ['Old.png',privateImage.name,publicImage.name].sort());
+  const npc=rp.save({name:'Izumi',image:publicImage.name});
+  assert.equal(npc.image,repository+'/TouhouDND/Portraits/Izumi.png');
+  assert.deepEqual(rp.image(npc.image).buffer,png);
+  assert.throws(()=>rp.image(repository+'/../Old.png'));
+  assert.throws(()=>rp.upload({name:'Other.png',folder:local+'/../artwork',image}));
+});
 test('NPC assets, edits, remembered channels and webhook delivery remain local and confirmed',async()=>{
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aina-rp-')),store=new WorkspaceStore(dir),sent=[],edits=[];
   const webhook={id:'111',token:'not-a-real-secret',edit:async x=>edits.push(x),send:async x=>{sent.push(x);return {id:'555'};}};
