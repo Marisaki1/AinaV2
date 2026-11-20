@@ -227,7 +227,11 @@ type FamilyData = {
   choices: GraphNode[];
   warnings: string[];
 };
-export function FamilyExplorer({ ctx }: { ctx: AppContext }) {
+export function FamilyExplorer({ ctx, campaignId = "", floor = "all" }: {
+  ctx: AppContext;
+  campaignId?: string;
+  floor?: string;
+}) {
   const [root, setRoot] = useState(""),
     [partner, setPartner] = useState(""),
     [direction, setDirection] = useState("family"),
@@ -244,6 +248,8 @@ export function FamilyExplorer({ ctx }: { ctx: AppContext }) {
     );
   const token = JSON.stringify([
     ctx.world.id,
+    campaignId,
+    floor,
     root,
     partner,
     direction,
@@ -261,6 +267,10 @@ export function FamilyExplorer({ ctx }: { ctx: AppContext }) {
       adoptive: adoptive ? "1" : "0",
     });
     if (reader) query.set("audience", "reader");
+    if (campaignId) {
+      query.set("campaign", campaignId);
+      query.set("floor", floor);
+    }
     api<FamilyData>("/worlds/" + ctx.world.id + "/family?" + query)
       .then((data) => {
         if (alive) {

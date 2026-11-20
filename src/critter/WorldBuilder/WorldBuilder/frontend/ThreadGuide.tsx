@@ -1,3 +1,4 @@
+import { QuestNotice } from "./QuestDraft";
 import React, { useEffect, useState } from "react";
 import DOMPurify from "dompurify";
 import { AppContext, Entry, api, patch, saveBeforeNavigate } from "./domain";
@@ -140,6 +141,7 @@ export function ThreadGuide({
               <p className="campaign-record-excerpt">{thread.private_notes}</p>
             </details>
           )}
+          {!reader && thread.kind === "quest" && <QuestNotice ctx={ctx} quest={thread} />}
           <h2>Connected lore</h2>
           {value.related.map((e) =>
             reader ? (

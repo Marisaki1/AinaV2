@@ -1,12 +1,12 @@
 # Architecture: current release and full-scope target
 
-Status: 0.22.0 local release, 12 November 2026. React/TypeScript, Tiptap, Leaflet, Django 5.2 LTS, Waitress, SQLite/FTS5 and local immutable media are implemented. The detailed full-platform models and policies below remain the target, not a description of every current table. See [implementation status](implementation-status.md).
+Status: current local architecture reviewed 13 November 2026; application milestone 1.0.0. Detailed target models below are not all current database tables. See implementation-status.md and status-audit.md for separated delivery/test coverage.
 
 ## Deployment decision
 
-The user selected **only me on this Windows PC**. The first release therefore runs natively on Windows, serves the browser on `127.0.0.1`, and stores its database and media locally. Core authoring and reading work without internet access. No Docker, external database server, subscription, CDN, or cloud account is required for everyday use. Initial dependency installation and subsequent updates may require internet access unless distributed as a bundled installer.
+The user selected **only me on this Windows PC**. The first release therefore runs natively on Windows, serves the browser on `127.0.0.1`, and stores its database and media locally. The runtime is designed to use local assets without a cloud dependency. Physical network-disconnected create/edit/search has not been verified; external image URLs need their hosts. No Docker, external database server, subscription, CDN, or cloud account is required for everyday use. Initial dependency installation and subsequent updates may require internet access unless distributed as a bundled installer.
 
-The Windows launcher starts the application, opens the browser, and provides a clear shutdown action. First-run setup creates an owner account; a persistent local session avoids repeated logins. Network sharing remains disabled unless deliberately configured in a later deployment profile. Adding publication and collaboration does not make existing private content public automatically.
+Normal integrated use starts with npm start in Aina; the managed host does not open a new browser. The optional standalone launcher may open one when the user explicitly runs it. First-run setup creates an owner account; a persistent local session avoids repeated logins. Network sharing remains disabled unless deliberately configured in a later deployment profile. Adding publication and collaboration does not make existing private content public automatically.
 
 ## Components
 

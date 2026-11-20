@@ -1,5 +1,5 @@
 window.SenderUI = (() => {
-  let status = null, timer, busy = false, draft = '', messageDraft = '', filter = '', lastRecent = '';
+  let status = null, timer, busy = false, messageDraft = '', filter = '', lastRecent = '';
   let ttsEnabled = false, voiceId = '', voiceInfo = null, voiceFor = '', voiceLoading = false, voiceRequest = 0;
   let speechProvider = 'groq', speechVoice = 'autumn', messageVersion = 0, voiceProvider = '';
   const pending = new Map();
@@ -37,7 +37,6 @@ window.SenderUI = (() => {
   }
   function paintState() {
     if ($('#sender-state')) { $('#sender-state').textContent = status?.ready ? 'Aina online' : 'Aina offline'; $('#sender-state').dataset.ready = String(Boolean(status?.ready)); }
-    if ($('#sender-custom-send')) $('#sender-custom-send').disabled = !status?.ready || !channels.some(c => c.id === ui.channelId) || busy;
     if ($('#sender-message-send')) $('#sender-message-send').disabled = !messageDraft.trim() || !status?.ready || !channels.some(c => c.id === ui.channelId) || busy || (ttsEnabled && (voiceLoading || voiceFor !== ui.channelId || !speechReady() || !voiceInfo?.channels?.some(c => c.id === voiceId)));
     if ($('#sender-message-clear')) $('#sender-message-clear').disabled = !messageDraft;
     document.querySelectorAll('[data-sender-button]').forEach(b => { b.disabled = !status?.ready || !channels.some(c => c.id === ui.channelId) || busy; });
@@ -155,11 +154,10 @@ window.SenderUI = (() => {
   }
   async function render() {
     if (!active()) return;
-    if ($('#sender-custom')) draft = $('#sender-custom').value;
     if ($('#sender-message')) messageDraft = $('#sender-message').value;
     if (!status) await refresh();
     $('#selection-panel').innerHTML = '';
-    $('#content-panel').innerHTML = '<div class="sender-page-heading"><div><div class="eyebrow">DISCORD COMMANDS</div><h1>Post as Aina</h1><p id="sender-destination" class="muted"></p></div><span id="sender-state" class="sender-state" role="status"></span></div><form id="sender-compose-form" class="sender-compose-card"><label for="sender-custom">Custom command</label><div class="sender-compose"><input id="sender-custom" maxlength="1700" autocomplete="off" placeholder="' + escape(status.prefix) + 'bestiary update"><button id="sender-custom-send" class="primary">Post as Aina</button></div><p class="hint">Posts a copyable command. Paste it yourself in Discord to run it with Avrae.</p></form><div class="section-heading sender-saved-heading"><h2>Saved commands <span class="count">' + status.config.buttons.length + '</span></h2><button id="sender-add" class="small">+ Add shortcut</button></div><input id="sender-search" type="search" placeholder="Filter saved commands" aria-label="Filter saved commands"><div id="sender-buttons"></div>';
+    $('#content-panel').innerHTML = '<div class="sender-page-heading"><div><div class="eyebrow">DISCORD COMMANDS</div><h1>Post as Aina</h1><p id="sender-destination" class="muted"></p></div><span id="sender-state" class="sender-state" role="status"></span></div><div id="language-converter"></div><div class="section-heading sender-saved-heading"><h2>Saved commands <span class="count">' + status.config.buttons.length + '</span></h2><button id="sender-add" class="small">+ Add shortcut</button></div><input id="sender-search" type="search" placeholder="Filter saved commands" aria-label="Filter saved commands"><div id="sender-buttons"></div>';
     $('#content-panel').innerHTML += '<form id="sender-message-form" class="sender-compose-card sender-message-card"><div class="sender-message-heading"><label for="sender-message">Plain message</label><label class="sender-tts-toggle"><input id="sender-tts" type="checkbox"> Enable TTS</label></div><textarea id="sender-message" rows="3" maxlength="2000" placeholder="Type your message" spellcheck="false"></textarea><div id="sender-voice-panel" hidden><div class="sender-speech-options"><label for="sender-speech-provider">Speech provider<select id="sender-speech-provider"></select></label><label for="sender-speech-voice">Voice<select id="sender-speech-voice"></select></label></div><label for="sender-voice-channel">Voice channel (same server)</label><select id="sender-voice-channel"></select><p id="sender-speech-details" class="hint"></p><a id="sender-speech-help" class="hint" target="_blank" rel="noopener noreferrer">Provider setup documentation</a><div class="sender-voice-actions"><button type="button" id="sender-voice-reload">Reload voices</button><button type="button" id="sender-voice-join">Join voice</button><button type="button" id="sender-voice-stop">Stop speech</button><button type="button" id="sender-voice-leave">Leave voice</button></div><p id="sender-voice-status" class="hint" role="status"></p><p class="hint">Send message joins the selected voice channel automatically. Join it yourself first, or use Move Members permission. Quote markers (&gt;) are skipped in speech; posted text stays unchanged.</p></div><div class="sender-message-footer"><span class="hint">Sends exact text; clears after Discord confirms delivery.</span><div class="sender-message-actions"><button type="button" id="sender-message-clear">Clear</button><button id="sender-message-send" class="primary">Send message</button></div></div></form>';
     $('#sender-tts').checked = ttsEnabled;
     $('#sender-tts').onchange = async e => { ttsEnabled = e.target.checked; paintVoice(); paintState(); if (ttsEnabled) await refreshVoice(); };
@@ -175,8 +173,6 @@ window.SenderUI = (() => {
     $('#sender-message').oninput = e => { messageDraft = e.target.value; messageVersion++; paintState(); };
     $('#sender-message-clear').onclick = clearMessage;
     $('#sender-message-form').onsubmit = e => { e.preventDefault(); void send($('#sender-message').value, 'message'); };
-    $('#sender-custom').value = draft;
-    $('#sender-compose-form').onsubmit = e => { e.preventDefault(); void send($('#sender-custom').value.trim()); };
     $('#sender-search').value = filter;
     $('#sender-search').oninput = e => { filter = e.target.value; paintButtons(); };
     $('#sender-add').onclick = () => editor();
@@ -184,6 +180,7 @@ window.SenderUI = (() => {
     $('#sender-refresh').onclick = () => operation(refresh);
     $('#sender-cancel').onclick = () => operation(async () => { await call('cancel', 'POST', {}); await refresh(); });
     paintButtons(); lastRecent = ''; paintRecent(); paintState();
+    void window.LanguageUI.render($('#language-converter'));
   }
   function decorate() {
     if (active()) { paintState(); return; }

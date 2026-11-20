@@ -90,6 +90,12 @@ def validate_data(
     if not isinstance(data, dict):
         raise ValueError("Entry details must be an object.")
     check_json(data)
+    from .manuscripts import validate as validate_manuscript
+    validate_manuscript(kind, data, world)
+    if 'reusable_snippet' in data:
+        if kind!='article' or type(data['reusable_snippet']) is not bool:
+            raise ValueError('Reusable snippets must be article entries.')
+        short(data.get('snippet_collection',''),'Snippet collection',120)
     from .campaigns import validate_campaign_record
 
     validate_campaign_record(kind, data, world, historical_snapshot, previous_data)
@@ -128,20 +134,8 @@ def validate_data(
     ):
         raise ValueError("Fields must be an object.")
     if kind == "template":
-        names = set()
-        for field in data.get("fields", []):
-            if not isinstance(field, dict):
-                raise ValueError("Invalid template field.")
-            name = short(field.get("name"), "Field name", 100, False)
-            if name in names or field.get("type", "text") not in (
-                "text",
-                "long",
-                "number",
-            ):
-                raise ValueError(
-                    "Template fields need unique names and supported types."
-                )
-            names.add(name)
+        from .structured import definitions
+        definitions(data.get('fields',[]))
     if kind == "campaign":
         for member in data.get("party", []):
             if not Resource.objects.filter(id=member, world=world).exists():
@@ -203,45 +197,8 @@ def validate_data(
         else:
             validate_timeline(data, world)
     if kind in ("table", "generator"):
-        columns = data.get("columns", [])
-        if len(columns) > 40:
-            raise ValueError("Use up to 40 table columns.")
-        column_ids = set()
-        for col in columns:
-            if (
-                not isinstance(col, dict)
-                or not isinstance(col.get("id"), str)
-                or col["id"] in column_ids
-                or col.get("type", "text")
-                not in ("text", "number", "checkbox", "article", "dice")
-            ):
-                raise ValueError("Each column needs a unique ID and supported type.")
-            column_ids.add(col["id"])
-            short(col.get("label", ""), "Column label", 100)
-        rows = data.get("rows", [])
-        if not isinstance(rows, list) or len(rows) > 5000:
-            raise ValueError("Use up to 5,000 rows.")
-        for row in rows:
-            if not isinstance(row, dict):
-                raise ValueError("Invalid table row.")
-            if not isinstance(row.get("cells", {}), dict):
-                raise ValueError("Row cells must be an object.")
-            for col in columns:
-                val = row.get("cells", {}).get(col["id"])
-                if (
-                    col.get("type") == "article"
-                    and val
-                    and not Resource.objects.filter(id=val, world=world).exists()
-                ):
-                    raise ValueError("Linked table entries must belong to this world.")
-            weight = row.get("weight", 1)
-            if (
-                isinstance(weight, bool)
-                or not isinstance(weight, (int, float))
-                or not math.isfinite(weight)
-                or not 0 <= weight <= 1e9
-            ):
-                raise ValueError("Weights must be non-negative finite numbers.")
+        from .rolltables import validate as validate_table
+        validate_table(data, world, historical_snapshot)
     if kind == "statblock":
         values = data.get("fields", {})
         for formula in data.get("formulas", []):
@@ -285,7 +242,7 @@ def validate_data(
     return copy.deepcopy(data)
 
 
-def fields_for(payload, world, current=None, historical_snapshot=False):
+def fields_for(payload, world, current=None, historical_snapshot=False, schema_update=False):
     allowed = {
         "title",
         "summary",
@@ -363,6 +320,8 @@ def fields_for(payload, world, current=None, historical_snapshot=False):
         historical_snapshot = historical_snapshot or all(
             base["data"].get(key) == current.data.get(key) for key in date_keys
         )
+    from .structured import prepare
+    field_data=prepare(kind,base['template'],base['data'],world,current,historical_snapshot,schema_update) if isinstance(base['data'],dict) else base['data']
     result = {
         "kind": kind,
         "title": short(base["title"], "Title", 180, False),
@@ -374,7 +333,7 @@ def fields_for(payload, world, current=None, historical_snapshot=False):
         "aliases": strings(base["aliases"], "Aliases"),
         "data": validate_data(
             kind,
-            base["data"],
+            field_data,
             world,
             historical_snapshot,
             current.data if current else None,
@@ -396,6 +355,12 @@ def fields_for(payload, world, current=None, historical_snapshot=False):
     if base["status"] not in ("draft", "wip", "done"):
         raise ValueError("Choose a valid work state.")
     result.update(visibility=base["visibility"], status=base["status"])
+    from .annotations import validate as validate_annotation
+    validate_annotation(kind, result['data'], world, result['visibility'], current.id if current else None)
+    if current and current.data.get('annotation_source_id'):
+        protected = ('annotation_source_id', 'annotation_source_revision', 'annotation_key', 'annotation_fingerprint')
+        if any(result['data'].get(key) != current.data.get(key) for key in protected):
+            raise ValueError('Keep the research note source and capture identity. Copy its prose into a separate article to publish or reattribute it.')
     parent = base["parent"]
     if parent:
         try:
@@ -419,6 +384,8 @@ def fields_for(payload, world, current=None, historical_snapshot=False):
         result["parent_id"] = str(parent_obj.id)
     else:
         result["parent_id"] = None
+    from .liveblocks import validate_document_blocks
+    validate_document_blocks(result['document'], world)
     for ref in reference_ids(result["document"]):
         try:
             valid = Resource.objects.filter(id=ref, world=world).exists()
@@ -506,9 +473,18 @@ def index_resource(resource):
             )
 
 
-def save_resource(world, payload, current=None, restore=False):
+def save_resource(world, payload, current=None, restore=False, schema_update=False):
     with transaction.atomic():
-        fields = fields_for(payload, world, current, historical_snapshot=restore)
+        fields = fields_for(payload, world, current, historical_snapshot=restore, schema_update=schema_update)
+        data = fields["data"]
+        if fields["kind"] == "note" and data.get("record_type") == "campaign-floor":
+            floors = world.resources.filter(kind="note", deleted_at=None,
+                data__record_type="campaign-floor", data__campaign_id=data["campaign_id"],
+                data__floor_number=data["floor_number"])
+            if current:
+                floors = floors.exclude(id=current.id)
+            if floors.exists():
+                raise Conflict("This campaign already has that floor number.")
         if restore and current and current.data.get("continuity_type") == "item":
             # Restoring prose must not silently reverse later stock transactions.
             fields["data"]["holdings"] = copy.deepcopy(current.data.get("holdings", []))
@@ -556,14 +532,17 @@ def public_references(world):
             "title": r.published.get("title", r.title),
             "aliases": r.published.get("aliases", []),
             "data": r.published.get("data", {}),
+            'document': r.published.get('document') if r.published.get('data',{}).get('reusable_snippet') else None,
         }
         for r in Resource.objects.filter(
             world=world, deleted_at=None, visibility="public", published__isnull=False
-        )
+        ) if not r.data.get('annotation_source_id') and not r.published.get('data', {}).get('annotation_source_id')
     }
 
 
 def serialize(resource, full=True, reader=False, references=None):
+    if reader and (resource.data.get('annotation_source_id') or (resource.published or {}).get('data', {}).get('annotation_source_id')):
+        return None
     value = snapshot(resource)
     if reader:
         if (
@@ -582,6 +561,26 @@ def serialize(resource, full=True, reader=False, references=None):
         from .notebooks import reader_data as reader_notebook_data
 
         value["data"] = reader_notebook_data(value["data"])
+        # Named draft sets and research notes are owner work, even when a book
+        # snapshot was published before this integration was installed.
+        value['data'] = {key: item for key, item in value['data'].items() if key not in ('writing_checkpoints', 'writing_research')}
+        if value['kind'] in ('table', 'generator'):
+            # Linked generation is owner-only; do not publish private step labels/IDs.
+            value['data'].pop('generator_steps', None)
+            if references is None:
+                references = public_references(resource.world)
+            link_columns = [c['id'] for c in value['data'].get('columns', []) if c.get('type') == 'article']
+            for row in value['data'].get('rows', []):
+                for key in link_columns:
+                    if row.get('cells', {}).get(key) not in references:
+                        row.setdefault('cells', {})[key] = ''
+        if value['kind'] in ('manuscript', 'chapter', 'scene'):
+            if references is None:
+                references = public_references(resource.world)
+            if 'writing_include' in value['data']:
+                value['data']['writing_include'] = [identity for identity in value['data']['writing_include'] if identity in references]
+            if value.get('parent') not in references:
+                value['parent'] = None
         if (
             value["kind"] in ("campaign", "session", "note", "task", "quest")
             or value["data"].get("planning_type")
@@ -618,6 +617,10 @@ def serialize(resource, full=True, reader=False, references=None):
                 value["parent"] = None
         value["data"].pop("provenance", None)
         value["data"].pop("gm_notes", None)
+        if value['template'].startswith('custom:') and value['data'].get('structured_schema'):
+            from .structured import project
+            if references is None:references=public_references(resource.world)
+            project(value['data'],references,True)
     value.update(
         id=str(resource.id),
         world_id=str(resource.world_id),
@@ -629,7 +632,7 @@ def serialize(resource, full=True, reader=False, references=None):
         created_at=resource.created_at.isoformat(),
         deleted_at=resource.deleted_at.isoformat() if resource.deleted_at else None,
     )
-    if resource.parent_id and resource.parent and resource.parent.deleted_at:
+    if not (reader and value['kind'] in ('manuscript', 'chapter', 'scene')) and resource.parent_id and resource.parent and resource.parent.deleted_at:
         value["parent"] = None
     if full:
         if references is None:
@@ -644,11 +647,13 @@ def serialize(resource, full=True, reader=False, references=None):
                     if reader
                     else r.title,
                     "data": (r.published or {}).get("data", {}) if reader else r.data,
+                    'document': ((r.published or {}).get('document') if reader else r.document) if ((r.published or {}).get('data',{}) if reader else r.data).get('reusable_snippet') else None,
                     "aliases": (r.published or {}).get("aliases", [])
                     if reader
                     else r.aliases,
                 }
                 for r in refs
+                if not reader or (not r.data.get('annotation_source_id') and not (r.published or {}).get('data', {}).get('annotation_source_id'))
             }
 
         if resource.kind in ("event", "era"):
@@ -678,8 +683,11 @@ def serialize(resource, full=True, reader=False, references=None):
                 if warning:
                     value["date_context"]["era_warning"] = warning
 
+        if value['template'].startswith('custom:'):
+            from .structured import project
+            project(value['data'],references,reader)
         def labels(node):
-            if node.get("type") in ("resourceLink", "variable"):
+            if node.get("type") in ("resourceLink", "variable", "snippet", "sourceBlock"):
                 ref = references.get(str(node.get("attrs", {}).get("id")))
                 if ref:
                     node.setdefault("attrs", {})["label"] = (
@@ -701,6 +709,9 @@ def serialize(resource, full=True, reader=False, references=None):
             exclude=str(resource.id),
         )
         value["word_count"] = len(plain_text(value["document"], reader).split())
+        if value['template'].startswith('custom:'):
+            from .structured import render_fields
+            value['structured_html']=render_fields(value['data'],references,reader)
         try:
             if resource.kind == "statblock":
                 value["computed"] = {
@@ -1014,7 +1025,9 @@ def world_archive(world):
                     + escape(r.data["asset_id"], quote=True)
                     + '">'
                 )
-            if isinstance(r.data.get("fields"), dict):
+            if r.data.get('structured_schema'):
+                html += serialize(r).get('structured_html','')
+            elif isinstance(r.data.get("fields"), dict):
                 html += (
                     "<dl>"
                     + "".join(
@@ -1086,7 +1099,7 @@ def make_backup():
     }
 
 
-def import_world_archive(user, contents):
+def import_world_archive(user, contents, *, destination=None, finalize=None, created_files_out=None):
     archive, manifest = checked_archive(contents, "worldbuilder-world-v1")
     try:
         payload = json.loads(archive.read("world.json"))
@@ -1129,13 +1142,16 @@ def import_world_archive(user, contents):
             if not isinstance(meta.get("data", {}), dict):
                 raise ValueError("World settings must be an object.")
             check_json(meta.get("data", {}))
-            world = World.objects.create(
+            if destination is not None and destination.owner_id != user.id:
+                raise ValueError('Choose an owned destination world.')
+            world = destination or World.objects.create(
                 owner=user,
                 name=name + " (restored)" if len(name) < 109 else name,
                 tagline=short(meta.get("tagline", ""), "Tagline", 240),
                 description=short(meta.get("description", ""), "Description", 100000),
                 data=meta.get("data", {}),
             )
+            existing_assets = set(world.assets.values_list('id', flat=True))
             for item in payload.get("assets", []):
                 source_name = item["storage_name"]
                 if not re.fullmatch(r"[a-f0-9]{32}\.(png|jpg|webp|gif)", source_name):
@@ -1146,7 +1162,10 @@ def import_world_archive(user, contents):
                     world, stream, item.get("credit", ""), item.get("tags", [])
                 )
                 mapping[item["id"]] = str(asset.id)
-                created_files.append(asset.storage_name)
+                if asset.id not in existing_assets and asset.storage_name not in created_files:
+                    created_files.append(asset.storage_name)
+                    if created_files_out is not None:
+                        created_files_out.append(asset.storage_name)
 
             def remap(node):
                 if isinstance(node, str):
@@ -1226,6 +1245,39 @@ def import_world_archive(user, contents):
                     r.deleted_at = timezone.now()
                     r.save(update_fields=["deleted_at"])
                     index_resource(r)
+            # Explorer shelves retain original order and point to imported UUIDs.
+            if destination is None and 'explorer' in world.data:
+                from .explorer import current as explorer_settings
+                world.data = {**world.data, 'explorer': remap(world.data['explorer'])}
+                shelves = explorer_settings(world)
+                available = {str(v) for v in world.resources.values_list('id', flat=True)}
+                if any(v not in available for row in shelves['shelves'] for v in row['entries']):
+                    raise ValueError('An explorer shelf reference is missing from the archive.')
+                world.save(update_fields=['data'])
+            # Overview pins are UUID references, not copied links to the source world.
+            if destination is None and 'overview' in world.data:
+                from .dashboard import validate as validate_overview
+                if not isinstance(world.data['overview'], dict):
+                    raise ValueError('Overview settings must be an object.')
+                overview = remap(world.data['overview'])
+                if type(overview.get('revision')) is not int or overview['revision'] < 0:
+                    raise ValueError('Invalid overview revision in archive.')
+                retained = {'pins': [str(v) for v in world.resources.values_list('id', flat=True)]}
+                if isinstance(overview.get('briefing'), dict):
+                    # Archived references may intentionally point at recoverable Trash.
+                    # The general remapper above already replaced every original UUID.
+                    available = set(retained['pins'])
+                    briefing = overview['briefing']
+                    if any(not isinstance(v, str) for k, v in briefing.items() if k != 'cast') or not isinstance(briefing.get('cast', []), list) or any(not isinstance(v, str) for v in briefing.get('cast', [])):
+                        raise ValueError('Invalid campaign briefing references in archive.')
+                    if any(v and v not in available for k, v in briefing.items() if k != 'cast') or any(v not in available for v in briefing.get('cast', [])):
+                        raise ValueError('A campaign briefing reference is missing from the archive.')
+                    retained['briefing'] = briefing
+                overview = {**overview, **validate_overview(world, overview, retained)}
+                world.data = {**world.data, 'overview': overview}
+                world.save(update_fields=['data'])
+            if finalize is not None:
+                finalize(world, mapping)
             return world
     except Exception:
         for name in created_files:

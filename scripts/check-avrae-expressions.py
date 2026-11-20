@@ -11,11 +11,10 @@ from types import SimpleNamespace
 
 import d20
 import draconic
-import yaml
 
 
 def run(nodes, choice):
-    names = {"choice": choice, "caster": SimpleNamespace(name="Seija Kijin"),
+    names = {"choice": str(choice).lower(), "caster": SimpleNamespace(name="Seija Kijin"),
              "target": SimpleNamespace(name="Target"), "intelligenceMod": 5,
              "proficiencyBonus": 3, "spell_level": None, "max": max, "min": min,
              "floor": math.floor, "ceil": math.ceil}
@@ -86,6 +85,14 @@ def run(nodes, choice):
                 raise AssertionError("Add explicit coverage for " + kind)
     walk(nodes)
     return found
+
+
+# Use command-like input; Avrae normalizes this before any routing expression.
+case_fixture=[{"type":"condition","condition":'choice == "fire"',
+               "onTrue":[{"type":"target","target":"each","effects":[
+                   {"type":"damage","damage":"1[fire]"}]}],"onFalse":[]}]
+assert run(case_fixture,"FiRe")["damage"]==["1[fire]"]
+assert run(case_fixture,"unknown")["damage"]==[]
 
 
 try:

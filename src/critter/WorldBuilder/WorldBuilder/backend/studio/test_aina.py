@@ -5,6 +5,26 @@ from .models import World
 
 @override_settings(ALLOWED_HOSTS=['testserver','127.0.0.1'])
 class AinaAccountsTests(TestCase):
+    def test_checklists_save_render_restore_and_import(self):
+        from .documents import from_source, render, validate_document, reader_document
+        from .services import save_resource
+        doc = from_source('- [ ] Find the key\n- [x] Speak to the guard')
+        self.assertEqual(doc['content'][0]['type'], 'taskList')
+        self.assertFalse(doc['content'][0]['content'][0]['attrs']['checked'])
+        self.assertTrue(doc['content'][0]['content'][1]['attrs']['checked'])
+        imported = from_source(render(doc), 'html')
+        self.assertEqual(imported, doc)
+        user = User.objects.create_user('checklist-owner')
+        world = World.objects.create(owner=user, name='Checklist test')
+        entry = save_resource(world, {'title':'Tasks', 'kind':'note', 'document':doc})
+        entry.refresh_from_db()
+        self.assertEqual(entry.document, doc)
+        self.assertEqual(entry.revisions.first().snapshot['document'], doc)
+        private = {'type':'doc','content':[{'type':'privateBlock','content':doc['content']}]}
+        self.assertNotIn('taskList', json.dumps(reader_document(private)))
+        with self.assertRaises(ValueError):
+            validate_document({'type':'doc','content':[{'type':'taskItem','attrs':{'checked':'yes'}}]})
+
     def test_revision_preview_is_read_only_and_owner_scoped(self):
         from .services import save_resource
         owner = User.objects.create_user('revision-owner')

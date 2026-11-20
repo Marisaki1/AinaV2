@@ -1,3 +1,5 @@
+import { ManuscriptRoom } from "./ManuscriptRoom";
+import { Overview } from "./Overview";
 import { ConnectionManager } from "./Connections";
 import { AffinityWorkspace } from "./AffinityWeb";
 import { SearchableSelect } from "./SearchableSelect";
@@ -6,6 +8,9 @@ import { MediaLibrary } from "./MediaLibrary";
 import { LibraryOrganizer } from "./Collections";
 import { FamilyExplorer, NodeDiagram } from "./GraphViews";
 import { SavedGraphLibrary } from "./SavedGraphs";
+import { FloorConnections } from "./CampaignFloors";
+import { FloorSelect, useCampaignFloor } from "./FloorScope";
+import { RelationshipExplorer } from "./RelationshipExplorer";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import DOMPurify from "dompurify";
 import {
@@ -161,289 +166,7 @@ export function EntryCard({ entry, ctx }: { entry: Entry; ctx: AppContext }) {
   );
 }
 export function Home({ ctx }: { ctx: AppContext }) {
-  const articles = ctx.entries.filter(
-      (e) => e.kind === "article" || e.kind === "character",
-    ),
-    maps = ctx.entries.filter((e) => e.kind === "map"),
-    recent = [...ctx.entries]
-      .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
-      .slice(0, 6);
-  return (
-    <div className="page home-page">
-      <div className="home-welcome">
-        <div>
-          <span className="eyebrow">YOUR PRIVATE WORKSPACE</span>
-          <h1>Welcome to your world.</h1>
-          <p>A place for every person, place, and possibility.</p>
-        </div>
-        <span className="local-pill">
-          <span />
-          On this computer
-        </span>
-      </div>
-      <section className="world-hero">
-        <div className="hero-copy">
-          <span className="eyebrow">THE WORLD YOU'RE BUILDING</span>
-          <h2>{ctx.world.name}</h2>
-          <p>
-            {ctx.world.tagline ||
-              "Every great story starts with a world worth exploring."}
-          </p>
-          <div className="button-row">
-            <button
-              className="button parchment"
-              onClick={() => ctx.go("library")}
-            >
-              Explore your world
-              <ArrowRight size={16} />
-            </button>
-            <button
-              className="button hero-quiet"
-              onClick={() => ctx.go("settings")}
-            >
-              World settings
-            </button>
-          </div>
-        </div>
-        <div className="hero-atlas" aria-hidden="true">
-          <svg viewBox="0 0 440 300">
-            <defs>
-              <pattern
-                id="atlasgrid"
-                width="32"
-                height="32"
-                patternUnits="userSpaceOnUse"
-              >
-                <path
-                  d="M32 0H0V32"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth=".5"
-                />
-              </pattern>
-            </defs>
-            <rect
-              width="440"
-              height="300"
-              fill="url(#atlasgrid)"
-              opacity=".3"
-            />
-            <path
-              d="M23 188c21-42 38-14 54-46s26-76 65-54 29-34 67-9 16 58 53 56 37-35 66-5 12 65-27 81-37-17-72 13-58 7-83-15-31 4-59 10-49-4-64-31Z"
-              fill="currentColor"
-              opacity=".12"
-            />
-            <path
-              d="M23 188c21-42 38-14 54-46s26-76 65-54 29-34 67-9 16 58 53 56 37-35 66-5 12 65-27 81-37-17-72 13-58 7-83-15-31 4-59 10-49-4-64-31Z"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.2"
-            />
-            <path
-              d="m77 164 45-33 54 20 43-37 62 50"
-              fill="none"
-              stroke="currentColor"
-              strokeDasharray="3 6"
-            />
-            <circle cx="176" cy="151" r="4" fill="currentColor" />
-            <circle cx="122" cy="131" r="3" fill="currentColor" />
-            <circle cx="281" cy="164" r="3" fill="currentColor" />
-            <g transform="translate(360 65)">
-              <circle r="29" fill="none" stroke="currentColor" opacity=".6" />
-              <path
-                d="m0-23 5 18 18 5-18 5-5 18-5-18-18-5 18-5Z"
-                fill="none"
-                stroke="currentColor"
-              />
-              <text
-                y="-37"
-                textAnchor="middle"
-                fill="currentColor"
-                fontSize="10"
-              >
-                N
-              </text>
-            </g>
-            <path
-              d="M70 260h140m-140-4v8m70-8v8m70-8v8"
-              stroke="currentColor"
-              opacity=".5"
-            />
-          </svg>
-        </div>
-      </section>
-      <div className="stats-row">
-        {[
-          [FileText, articles.length, "Lore entries", "library"],
-          [Map, maps.length, "Interactive maps", "maps"],
-          [GitBranch, ctx.edges.length, "Connections", "relationships"],
-          [
-            BookOpen,
-            ctx.entries.filter((e) => e.kind === "manuscript").length,
-            "Manuscripts",
-            "writing",
-          ],
-        ].map(([Icon, count, label, route]: any) => (
-          <button
-            key={label}
-            className="stat-card"
-            onClick={() => ctx.go(route)}
-          >
-            <span className="stat-icon">
-              <Icon size={22} />
-            </span>
-            <div>
-              <strong>{count}</strong>
-              <span>{label}</span>
-            </div>
-            <ChevronRight size={17} />
-          </button>
-        ))}
-      </div>
-      <div className="section-heading page-section-heading">
-        <div>
-          <span className="eyebrow">PICK UP A THREAD</span>
-          <h2>Recently in your world</h2>
-        </div>
-        <button className="text-button" onClick={() => ctx.go("library")}>
-          View library
-          <ArrowRight size={15} />
-        </button>
-      </div>
-      {recent.length ? (
-        <div className="card-grid">
-          {recent.map((e) => (
-            <EntryCard key={e.id} entry={e} ctx={ctx} />
-          ))}
-        </div>
-      ) : (
-        <div className="getting-started">
-          <div className="getting-copy">
-            <span className="eyebrow">
-              A BLANK PAGE. ENDLESS POSSIBILITIES.
-            </span>
-            <h2>
-              Start with someone.
-              <br />
-              Or somewhere.
-            </h2>
-            <p>
-              Create your first entry, or bring in the campaign notes you've
-              already written.
-            </p>
-            <div className="button-row">
-              <button
-                className="button primary"
-                onClick={() => ctx.create("article")}
-              >
-                <Plus size={16} />
-                Create your first entry
-              </button>
-              <button
-                className="button secondary"
-                onClick={() => ctx.go("import")}
-              >
-                <Upload size={16} />
-                Import campaign notes
-              </button>
-            </div>
-          </div>
-          <div className="getting-suggestions">
-            {[
-              [
-                "character",
-                "A memorable character",
-                "Give your world a familiar face.",
-              ],
-              [
-                "geography",
-                "A place to discover",
-                "A village, a mountain, another realm.",
-              ],
-              [
-                "plot",
-                "A story taking shape",
-                "Follow a thread and see where it leads.",
-              ],
-            ].map(([kind, title, desc]) => (
-              <button key={kind} onClick={() => ctx.create("article")}>
-                <KindIcon
-                  kind={
-                    kind === "character"
-                      ? "character"
-                      : kind === "geography"
-                        ? "map"
-                        : "scene"
-                  }
-                  size={19}
-                />
-                <div>
-                  <strong>{title}</strong>
-                  <small>{desc}</small>
-                </div>
-                <Plus size={16} />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      <div className="home-bottom">
-        <Section title="Worldbuilding at a glance">
-          <div className="world-checklist">
-            {[
-              [
-                "Find the shape of your world",
-                "Write down its themes, tone and rules.",
-                "settings",
-              ],
-              [
-                "Connect the details",
-                "Bring characters, places and factions together.",
-                "relationships",
-              ],
-              [
-                "Keep your world safe",
-                "Create a complete backup of your work.",
-                "settings",
-              ],
-            ].map(([title, description, route]) => (
-              <button key={title} onClick={() => ctx.go(route)}>
-                <span className="check-circle">
-                  <Check size={14} />
-                </span>
-                <div>
-                  <strong>{title}</strong>
-                  <small>{description}</small>
-                </div>
-                <ArrowRight size={15} />
-              </button>
-            ))}
-          </div>
-        </Section>
-        <Section title="Recent activity">
-          <div className="activity-list">
-            {ctx.world.activities?.length ? (
-              ctx.world.activities.slice(0, 5).map((a) => (
-                <div key={a.id}>
-                  <span className="activity-dot" />
-                  <div>
-                    <strong>{a.title}</strong>
-                    <small>
-                      {human(a.kind)} · {when(a.created_at)}
-                    </small>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="muted">
-                Your world’s story will unfold here as you add to it.
-              </p>
-            )}
-          </div>
-        </Section>
-      </div>
-    </div>
-  );
+  return <Overview key={ctx.world.id} ctx={ctx} />;
 }
 
 export function Library(props: {
@@ -656,25 +379,33 @@ function BasicLibrary({
   );
 }
 
-export function Relationships({ ctx }: { ctx: AppContext }) {
-  const [mode, setMode] = useState("all"),
+export function Relationships({ ctx, scope = [] }: { ctx: AppContext; scope?: string[] }) {
+  const [mode, setMode] = useState(() => { try { const saved = localStorage.getItem("worldbuilder.relationship-mode:" + ctx.world.id); return ["all", "affinity", "family", "diplomacy", "saved", "manage"].includes(saved || "") ? saved! : "all"; } catch { return "all"; } }),
     [form, setForm] = useState<any>(null),
     [busy, setBusy] = useState(false);
-  const edges = ctx.edges.filter(
-    (e) =>
-      mode === "all" ||
-      (mode === "family"
-        ? ["parent", "spouse", "sibling"].includes(e.kind)
-        : mode === "diplomacy"
-          ? e.kind === "diplomacy"
-          : true),
-  );
-  const ids = new Set(edges.flatMap((e) => [e.source, e.target]));
-  const nodes = ctx.entries.filter((e) => ids.has(e.id));
+  useEffect(() => { try { localStorage.setItem("worldbuilder.relationship-mode:" + ctx.world.id, mode); } catch {} }, [ctx.world.id, mode]);
+  const campaigns = ctx.entries.filter((entry) => entry.kind === "campaign");
+  const tower = campaigns.find((entry) => entry.data.tower_campaign);
+  const campaignId = scope[0] === "world" ? "" :
+    campaigns.find((entry) => entry.id === scope[0])?.id || tower?.id || "";
+  const floorScope = useCampaignFloor(ctx.entries, campaignId);
+  const routeFloor = floorScope.floors.find((floor) => floor.id === scope[1]);
+  const selection = routeFloor?.id || floorScope.selection;
+  useEffect(() => {
+    if (routeFloor) floorScope.select(routeFloor.id);
+  }, [routeFloor?.id]);
+  const floor = floorScope.floors.find((entry) => entry.id === selection);
+  const edges = campaignId
+    ? ctx.edges.filter((edge) => floorScope.includesConnection(edge, selection))
+    : ctx.edges;
+  const graphKey = campaignId ? campaignId + ":" + selection : "";
   const save = async () => {
     try {
       setBusy(true);
-      await post("/worlds/" + ctx.world.id + "/connections", form);
+      await post("/worlds/" + ctx.world.id + "/connections", {
+        ...form,
+        ...(floor ? { floor_id: floor.id } : {}),
+      });
       await ctx.refresh();
       setForm(null);
       ctx.notify("Connection added.");
@@ -685,7 +416,7 @@ export function Relationships({ ctx }: { ctx: AppContext }) {
     }
   };
   return (
-    <div className="page">
+    <div className="page relationships-page">
       <PageHeading
         eyebrow="THE THREADS BETWEEN"
         title="Relationships"
@@ -728,27 +459,35 @@ export function Relationships({ ctx }: { ctx: AppContext }) {
           </button>
         ))}
       </div>
+      {campaigns.length > 0 && (
+        <div className="campaign-scope-toolbar">
+          <EntryPicker label="Relationship campaign" entries={campaigns} value={campaignId}
+            empty="Whole world" onChange={(id) => ctx.go("relationships/" + (id || "world"))} />
+          {campaignId && (
+            <FloorSelect {...floorScope} selection={selection} select={(id) => {
+              floorScope.select(id);
+              if (scope[1]) ctx.go("relationships/" + campaignId);
+            }} />
+          )}
+          {floor && <FloorConnections key={floor.id} ctx={ctx} floor={floor} />}
+        </div>
+      )}
       {mode === "saved" ? (
-        <SavedGraphLibrary ctx={ctx} />
+        <SavedGraphLibrary ctx={ctx} floorScope={campaignId ? { ...floorScope, selection } : undefined} />
       ) : mode === "manage" ? (
-        <ConnectionManager ctx={ctx} />
+        <ConnectionManager key={graphKey} ctx={ctx} initialEdges={edges} />
       ) : mode === "affinity" ? (
-        <AffinityWorkspace ctx={ctx} />
+        <AffinityWorkspace key={graphKey} ctx={ctx} campaignId={campaignId}
+          floorScope={campaignId ? { ...floorScope, selection } : undefined} />
       ) : mode === "family" ? (
-        <FamilyExplorer ctx={ctx} />
-      ) : nodes.length ? (
-        <NodeDiagram
-          nodes={nodes.map((node, i) => ({
-            ...node,
-            level: Math.floor(i / 4),
-          }))}
-          edges={edges}
-          onOpen={(id) => ctx.go("entry/" + id)}
-        />
+        <FamilyExplorer key={graphKey} ctx={ctx} campaignId={campaignId} floor={selection} />
+      ) : edges.some((edge) => !edge.deleted_at && (mode !== "diplomacy" || edge.kind === "diplomacy")) ? (
+        <RelationshipExplorer key={ctx.world.id + mode + graphKey} ctx={{ ...ctx, edges }}
+          diplomacy={mode === "diplomacy"} scope={graphKey} />
       ) : (
         <Empty
           icon={Network}
-          title="Everything begins with a connection"
+          title={campaignId ? "No connections in this view" : "Everything begins with a connection"}
           action={() =>
             setForm({
               source: "",
@@ -765,10 +504,6 @@ export function Relationships({ ctx }: { ctx: AppContext }) {
           shaping your world.
         </Empty>
       )}
-      {mode !== "family" &&
-        mode !== "saved" &&
-        mode !== "manage" &&
-        !!edges.length && <ConnectionManager ctx={ctx} initialEdges={edges} />}
       {form && (
         <Modal title="Add a connection" onClose={() => setForm(null)}>
           <EntryPicker
@@ -1066,265 +801,5 @@ export function Media({ ctx }: { ctx: AppContext }) {
 }
 
 export function Writing({ ctx, bookId }: { ctx: AppContext; bookId?: string }) {
-  const books = ctx.entries.filter((e) => e.kind === "manuscript");
-  const book = books.find((e) => e.id === bookId);
-  const [scene, setScene] = useState(""),
-    [mode, setMode] = useState("write"),
-    [name, setName] = useState("");
-  const chapters = ctx.entries
-    .filter((e) => e.kind === "chapter" && e.parent === bookId)
-    .sort((a, b) => a.position - b.position);
-  const ids = new Set([bookId, ...chapters.map((e) => e.id)]);
-  const scenes = ctx.entries
-    .filter((e) => e.kind === "scene" && ids.has(e.parent || ""))
-    .sort((a, b) => a.position - b.position);
-  const selected = scenes.find((e) => e.id === scene) || scenes[0];
-  const create = async (kind: string) => {
-    if (!book) return;
-    if (saveBeforeNavigate.current && !(await saveBeforeNavigate.current()))
-      return;
-    try {
-      const value = await post<Entry>(
-        "/worlds/" + ctx.world.id + "/resources",
-        {
-          kind,
-          title:
-            name.trim() ||
-            (kind === "scene" ? "Untitled scene" : "New chapter"),
-          parent: book.id,
-          position: scenes.length + chapters.length,
-          data: { goal: 0, label: "First draft" },
-        },
-      );
-      await ctx.refresh();
-      setName("");
-      if (kind === "scene") setScene(value.id);
-    } catch (e: any) {
-      ctx.notify(e.message, true);
-    }
-  };
-  if (!book)
-    return (
-      <div className="page">
-        <PageHeading
-          eyebrow="LET THE STORY UNFOLD"
-          title="Writing room"
-          action={
-            <button
-              className="button primary"
-              onClick={() => ctx.create("manuscript")}
-            >
-              <Plus size={17} />
-              New manuscript
-            </button>
-          }
-        >
-          Your stories and your world, finally on the same page.
-        </PageHeading>
-        {books.length ? (
-          <div className="manuscript-grid">
-            {books.map((b) => (
-              <button
-                key={b.id}
-                className="manuscript-card"
-                onClick={() => ctx.go("writing/" + b.id)}
-              >
-                <div className="book-cover">
-                  <BookOpen size={42} />
-                  <h2>{b.title}</h2>
-                  <span>{b.data.label || "A story in progress"}</span>
-                </div>
-                <div>
-                  <h3>{b.title}</h3>
-                  <p>{b.summary || "Open your writing workspace."}</p>
-                  <span>
-                    Enter writing room
-                    <ArrowRight size={15} />
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <Empty
-            icon={BookOpen}
-            title="There’s a story only you can tell"
-            action={() => ctx.create("manuscript")}
-            label="Start a manuscript"
-          >
-            Outline, draft and revise, with your world always within reach.
-          </Empty>
-        )}
-      </div>
-    );
-  const move = async (entry: Entry, delta: number) => {
-    if (saveBeforeNavigate.current && !(await saveBeforeNavigate.current()))
-      return;
-    const index = scenes.findIndex((e) => e.id === entry.id),
-      other = scenes[index + delta];
-    if (!other) return;
-    try {
-      await post("/worlds/" + ctx.world.id + "/reorder", {
-        entries: [
-          { id: entry.id, position: index + delta, revision: entry.revision },
-          { id: other.id, position: index, revision: other.revision },
-        ],
-      });
-      await ctx.refresh();
-    } catch (e: any) {
-      ctx.notify(e.message, true);
-    }
-  };
-  return (
-    <div className="writing-workspace">
-      <div className="writing-heading">
-        <button className="text-button" onClick={() => ctx.go("writing")}>
-          <ChevronLeft size={16} />
-          Manuscripts
-        </button>
-        <h1>{book.title}</h1>
-        <div className="view-toggle">
-          <button
-            className={mode === "write" ? "selected" : ""}
-            onClick={() => setMode("write")}
-          >
-            Write
-          </button>
-          <button
-            className={mode === "board" ? "selected" : ""}
-            onClick={async () => {
-              if (
-                !saveBeforeNavigate.current ||
-                (await saveBeforeNavigate.current())
-              )
-                setMode("board");
-            }}
-          >
-            Corkboard
-          </button>
-        </div>
-        <button
-          className="button secondary small"
-          onClick={() => ctx.go("entry/" + book.id)}
-        >
-          Book details
-        </button>
-      </div>
-      <div className="writing-progress">
-        <span>
-          {scenes.reduce((sum, e) => sum + e.word_count, 0).toLocaleString()}{" "}
-          words
-          {book.data.goal
-            ? " / " + Number(book.data.goal).toLocaleString() + " goal"
-            : ""}
-        </span>
-        <span>
-          {scenes.length} scenes · {chapters.length} chapters
-        </span>
-      </div>
-      <div className="writing-layout">
-        <aside className="writing-tree">
-          <span className="eyebrow">YOUR MANUSCRIPT</span>
-          {chapters.map((c) => (
-            <div className="chapter-label" key={c.id}>
-              <BookOpen size={15} />
-              <button onClick={() => ctx.go("entry/" + c.id)}>{c.title}</button>
-            </div>
-          ))}
-          {scenes.map((s, i) => (
-            <button
-              className={
-                "scene-link " + (selected?.id === s.id ? "active" : "")
-              }
-              key={s.id}
-              onClick={async () => {
-                if (
-                  !saveBeforeNavigate.current ||
-                  (await saveBeforeNavigate.current())
-                )
-                  setScene(s.id);
-              }}
-            >
-              <span>{String(i + 1).padStart(2, "0")}</span>
-              <div>
-                <strong>{s.title}</strong>
-                <small>{s.word_count} words</small>
-              </div>
-            </button>
-          ))}
-          <div className="quick-scene">
-            <input
-              aria-label="New scene or chapter title"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="New scene or chapter…"
-            />
-            <button
-              className="button primary small full-button"
-              onClick={() => create("scene")}
-            >
-              <Plus size={15} />
-              Add scene
-            </button>
-            <button className="text-button" onClick={() => create("chapter")}>
-              Add chapter
-            </button>
-          </div>
-        </aside>
-        <main className="writing-main">
-          {mode === "board" ? (
-            <div className="corkboard">
-              {scenes.map((s, i) => (
-                <div key={s.id}>
-                  <Badge>{s.data.label || "Draft"}</Badge>
-                  <h3>{s.title}</h3>
-                  <p>{s.summary || "Add a synopsis in the scene editor."}</p>
-                  <div className="button-row">
-                    <button
-                      className="text-button"
-                      onClick={() => {
-                        setScene(s.id);
-                        setMode("write");
-                      }}
-                    >
-                      Open scene
-                      <ArrowRight size={14} />
-                    </button>
-                    <button
-                      className="icon-button"
-                      disabled={i === 0}
-                      aria-label={"Move " + s.title + " earlier"}
-                      onClick={() => move(s, -1)}
-                    >
-                      <ArrowUp size={14} />
-                    </button>
-                    <button
-                      className="icon-button"
-                      disabled={i === scenes.length - 1}
-                      aria-label={"Move " + s.title + " later"}
-                      onClick={() => move(s, 1)}
-                    >
-                      <ArrowDown size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : selected ? (
-            <EntryEditor key={selected.id} id={selected.id} ctx={ctx} />
-          ) : (
-            <Empty
-              icon={BookOpen}
-              title="Begin with a scene"
-              action={() => create("scene")}
-              label="Write your first scene"
-            >
-              The first sentence doesn’t have to be perfect. It just has to
-              begin.
-            </Empty>
-          )}
-        </main>
-      </div>
-    </div>
-  );
+  return <ManuscriptRoom key={bookId || "manuscripts"} ctx={ctx} bookId={bookId} />;
 }

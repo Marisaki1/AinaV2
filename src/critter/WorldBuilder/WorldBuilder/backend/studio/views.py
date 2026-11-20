@@ -169,7 +169,7 @@ def history_event(request, world_id):
 def bootstrap(request):
     base = {
         "app": "worldbuilder-local",
-        "version": "0.23.0",
+        "version": "1.4.0",
         "aina_parent": getattr(settings,"AINA_PARENT", ""),
         "instance": settings.INSTANCE_ID,
         "csrf_cookie": settings.CSRF_COOKIE_NAME,
@@ -285,8 +285,12 @@ def worlds(request):
 
 @endpoint(["GET", "PATCH"])
 def world_detail(request, world_id):
+    from .local_images import configured_folder
+
     world = owned_world(request.user, world_id)
     if request.method == "PATCH":
+        original_data = copy.deepcopy(world.data)
+        original_updated_at = world.updated_at
         value = payload(request)
         for key, limit in [("name", 120), ("tagline", 240), ("description", 100000)]:
             if key in value:
@@ -304,8 +308,19 @@ def world_detail(request, world_id):
             if not isinstance(value["data"], dict):
                 raise ValueError("World settings must be an object.")
             check_json(value["data"])
-            world.data = value["data"]
-        world.save()
+            # The overview has its own conflict-checked endpoint. A settings form
+            # opened before a layout change must not overwrite that layout.
+            reserved = ('overview', '_transfer_receipts', 'search_workspace', 'explorer')
+            settings_data = {key: item for key, item in value['data'].items() if key not in reserved}
+            for key in reserved:
+                if key in world.data:
+                    settings_data[key] = world.data[key]
+            world.data = settings_data
+        if not World.objects.filter(pk=world.pk, data=original_data, updated_at=original_updated_at).update(
+            name=world.name, tagline=world.tagline, description=world.description,
+            data=world.data, updated_at=timezone.now(),
+        ):
+            raise Conflict('World settings changed in another tab. Reload before saving.')
     counts = {}
     for kind in world.resources.filter(deleted_at=None).values_list("kind", flat=True):
         counts[kind] = counts.get(kind, 0) + 1
@@ -325,8 +340,141 @@ def world_detail(request, world_id):
             "counts": counts,
             "activities": activities,
             "asset_count": world.assets.count(),
+            "local_image_folder": configured_folder(world) is not None,
         }
     )
+
+
+@endpoint(['GET', 'POST'])
+def overview(request, world_id):
+    from .dashboard import current, save
+    world = owned_world(request.user, world_id)
+    if request.GET.get('audience') == 'reader':
+        raise Http404()
+    return JsonResponse(current(world) if request.method == 'GET' else save(world, payload(request)))
+
+
+@endpoint(['POST'])
+def transfer_preview(request, world_id):
+    from .transfers import preview
+    if request.GET.get('audience') == 'reader':
+        raise Http404()
+    value = payload(request)
+    source = owned_world(request.user, world_id)
+    target = owned_world(request.user, value.get('target'))
+    return JsonResponse(preview(source, target, value))
+
+
+@endpoint(['GET', 'POST'])
+def transfer_commit(request, world_id):
+    from .transfers import commit, receipts, identity
+    if request.GET.get('audience') == 'reader':
+        raise Http404()
+    value = request.GET.dict() if request.method == 'GET' else payload(request)
+    source = owned_world(request.user, world_id)
+    target = owned_world(request.user, value.get('target'))
+    if request.method == 'GET':
+        key = identity(value.get('key'))
+        receipt = next((row for row in receipts(target) if row.get('key') == key and row.get('source') == str(source.id)), None)
+        return JsonResponse({'receipt': receipt})
+    return JsonResponse(commit(source, target, value))
+
+
+def manuscript_source(request, resource_id):
+    book = owned_resource(request.user, resource_id)
+    if book.kind != 'manuscript' or book.deleted_at:
+        raise Http404()
+    return book
+
+
+@endpoint(['GET', 'POST'])
+def manuscript_workspace(request, resource_id):
+    from .manuscripts import outline, change
+    book = manuscript_source(request, resource_id)
+    if request.GET.get('audience') == 'reader':
+        raise Http404()
+    return JsonResponse(outline(book, request.GET.get('q', '')) if request.method == 'GET' else change(book, payload(request)))
+
+
+@endpoint(['GET', 'POST'])
+def manuscript_checkpoint(request, resource_id, checkpoint_id):
+    from .manuscripts import restore_plan, restore
+    book = manuscript_source(request, resource_id)
+    if request.GET.get('audience') == 'reader':
+        raise Http404()
+    if request.method == 'GET':
+        return JsonResponse(restore_plan(book, str(checkpoint_id))[0])
+    return JsonResponse(restore(book, str(checkpoint_id), payload(request)))
+
+
+@endpoint(['GET'])
+def manuscript_compile(request, resource_id):
+    from .manuscripts import compilation, export
+    book = manuscript_source(request, resource_id)
+    reader = request.GET.get('audience') == 'reader'
+    format = request.GET.get('format', 'json')
+    if format == 'json':
+        return JsonResponse(compilation(book, reader))
+    contents, mime, extension = export(book, format, reader)
+    response = HttpResponse(contents, content_type=mime)
+    response['Content-Disposition'] = f'attachment; filename="manuscript.{extension}"'
+    response['Content-Security-Policy'] = "default-src 'none'; img-src data: https: http:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"
+    return response
+
+
+@endpoint(["POST"])
+def world_search(request, world_id):
+    from .worldsearch import search
+    world = owned_world(request.user, world_id)
+    value = payload(request)
+    if set(value) - {'filters', 'page'}:
+        raise ValueError('World search is an owner-only workspace.')
+    return JsonResponse(search(world, value))
+
+
+@endpoint(["POST"])
+def world_explorer(request, world_id):
+    from .explorer import browse
+    return JsonResponse(browse(owned_world(request.user, world_id), payload(request)))
+
+
+@endpoint(["GET", "POST"])
+def explorer_shelves(request, world_id):
+    from .explorer import current, save
+    world = owned_world(request.user, world_id)
+    if request.GET.get('audience'): raise Http404()
+    return JsonResponse(current(world) if request.method == 'GET' else save(world, payload(request)))
+
+
+@endpoint(["GET"])
+def explorer_entry(request, resource_id):
+    from .explorer import detail
+    if request.GET.get('audience'): raise Http404()
+    return JsonResponse(detail(owned_resource(request.user, resource_id)))
+
+
+@endpoint(["GET", "POST"])
+def saved_searches(request, world_id):
+    from .worldsearch import current, save
+    world = owned_world(request.user, world_id)
+    if request.GET.get('audience'):
+        raise Http404()
+    return JsonResponse(current(world) if request.method == 'GET' else save(world, payload(request)))
+
+
+@endpoint(["GET", "POST"])
+def entry_annotations(request, resource_id):
+    from .annotations import listing, act
+    source = owned_resource(request.user, resource_id)
+    if source.deleted_at or request.GET.get('audience'):
+        raise Http404()
+    if request.method == 'GET':
+        try:
+            page = int(request.GET.get('page', '0'))
+        except ValueError:
+            raise ValueError('Choose a valid research page.')
+        return JsonResponse(listing(source, request.GET.get('resolved') == '1', page))
+    return JsonResponse(act(source, payload(request)))
 
 
 @endpoint(["GET", "POST"])
@@ -355,10 +503,11 @@ def resource_detail(request, resource_id):
         if result is None:
             raise Http404()
         if request.GET.get("audience") != "reader":
+            from .structured import reference_ids as field_reference_ids
             result["backlinks"] = [
                 {"id": str(r.id), "title": r.title, "kind": r.kind}
                 for r in Resource.objects.filter(world=resource.world, deleted_at=None)
-                if str(resource.id) in reference_ids(r.document)
+                if str(resource.id) in reference_ids(r.document) | field_reference_ids(r.data)
             ]
         return JsonResponse(result)
     value = payload(request)
@@ -535,19 +684,23 @@ def restore_revision(request, resource_id):
 @endpoint(["POST"])
 def publish(request, resource_id):
     resource = owned_resource(request.user, resource_id)
+    if resource.data.get('annotation_source_id'):
+        raise ValueError('Research notes stay private. Copy the prose into an article to publish it.')
     value = payload(request)
     if resource.deleted_at:
         raise ValueError("Restore this entry before publishing.")
     if value.get("expected_revision") != resource.revision:
         raise Conflict("The entry changed. Save or reload before publishing.")
     if resource.template.startswith("custom:"):
-        template = owned_resource(request.user, resource.template.split(":", 1)[1])
-        if template.world_id != resource.world_id or template.kind != "template":
-            raise ValueError("Choose a template from this world.")
-        for field in template.data.get("fields", []):
-            value = resource.data.get("fields", {}).get(field["name"])
-            if field.get("required") and (value is None or value == ""):
-                raise ValueError("Complete the required field: " + field["name"])
+        from .structured import required
+        if not required(resource):
+            template = owned_resource(request.user, resource.template.split(":", 1)[1])
+            if template.world_id != resource.world_id or template.kind != "template":
+                raise ValueError("Choose a template from this world.")
+            for field in template.data.get("fields", []):
+                field_value = resource.data.get("fields", {}).get(field["name"])
+                if field.get("required") and (field_value is None or field_value == ""):
+                    raise ValueError("Complete the required field: " + field["name"])
     published = {**snapshot(resource), "_revision": resource.revision}
     changed = Resource.objects.filter(
         id=resource.id, revision=resource.revision
@@ -623,7 +776,22 @@ def connections(request, world_id):
                 action="deleted",
             )
         )
-    return JsonResponse(create_connection(world, value), status=201)
+    floor_id = value.pop("floor_id", "")
+    if not floor_id:
+        return JsonResponse(create_connection(world, value), status=201)
+    with transaction.atomic():
+        floor = Resource.objects.filter(world=world, deleted_at=None, id=floor_id, kind="note").first()
+        if not floor or floor.data.get("record_type") != "campaign-floor":
+            raise ValueError("Choose an available campaign floor in this world.")
+        edge = create_connection(world, value)
+        save_resource(world, {
+            "data": {
+                **floor.data,
+                "floor_connections": [*floor.data.get("floor_connections", []), edge["id"]],
+            },
+            "expected_revision": floor.revision,
+        }, floor)
+        return JsonResponse(edge, status=201)
 
 
 @endpoint(["GET", "PATCH", "DELETE"])
@@ -693,13 +861,24 @@ def connection_restore(request, connection_id):
 
 @endpoint(["GET"])
 def family_graph(request, world_id):
-    from .graphs import family_view
+    from .graphs import family_view, graph_records
 
     world = owned_world(request.user, world_id)
     try:
         depth = int(request.GET.get("depth", "6"))
     except ValueError:
         raise ValueError("Choose a whole-number family depth.")
+    reader = request.GET.get("audience") == "reader"
+    campaign = request.GET.get("campaign")
+    floor_scope = values = None
+    if campaign:
+        from .floor_scope import FloorScope
+
+        values = graph_records(world, reader)
+        if campaign in values and not reader:
+            floor_scope = FloorScope(values, campaign, request.GET.get("floor", "all"))
+        elif not reader:
+            raise ValueError("Choose an available campaign.")
     return JsonResponse(
         family_view(
             world,
@@ -708,7 +887,9 @@ def family_graph(request, world_id):
             request.GET.get("direction", "family"),
             depth,
             request.GET.get("adoptive") == "1",
-            request.GET.get("audience") == "reader",
+            reader,
+            values=values,
+            floor_scope=floor_scope,
         )
     )
 
@@ -798,6 +979,35 @@ def notebook_desk(request, world_id):
         raise Http404()
     world = owned_world(request.user, world_id)
     return JsonResponse(act(world, payload(request)) if request.method == "POST" else desk(world, request.GET))
+
+
+@endpoint(['GET','POST'])
+def checklist_desk(request, world_id):
+    from .checklists import checklist_view, toggle_task
+    world=owned_world(request.user,world_id)
+    return JsonResponse(toggle_task(world,payload(request)) if request.method=='POST' else checklist_view(world,request.GET))
+
+
+@endpoint(['GET'])
+def snippet_copy(request,resource_id):
+    from .snippets import materialize
+    resource=owned_resource(request.user,resource_id)
+    return JsonResponse({'document':materialize(resource),'source_revision':resource.revision})
+
+
+@endpoint(['GET','POST'])
+def field_schema(request,resource_id):
+    from .structured import review
+    with transaction.atomic():
+        resource=owned_resource(request.user,resource_id)
+        result=review(resource)
+        if request.method=='GET':return JsonResponse({k:v for k,v in result.items() if k!='data'})
+        value=payload(request)
+        if resource.deleted_at or not result['available']:raise ValueError('Choose an active article with an available custom template.')
+        if type(value.get('expected_revision')) is not int or value['expected_revision']!=resource.revision or value.get('template_revision')!=result['template_revision']:
+            raise Conflict('The article or template changed. Review the update again before applying it.')
+        updated=save_resource(resource.world,{'data':result['data'],'expected_revision':resource.revision},resource,schema_update=True)
+        return JsonResponse(serialize(updated))
 
 
 @endpoint(["GET"])
@@ -949,6 +1159,23 @@ def assets(request, world_id):
         raise ValueError("Media tags must be a list.") from error
     asset = store_asset(world, upload, request.POST.get("credit", ""), tags)
     return JsonResponse(asset_json(asset), status=201)
+
+
+@endpoint(["POST"])
+def sync_local_images(request, world_id):
+    from .local_images import configured_folder, is_link, sync
+
+    world = owned_world(request.user, world_id)
+    root = configured_folder(world)
+    if root is None:
+        raise Http404()
+    try:
+        available = root.is_dir() and not is_link(root.lstat())
+    except OSError:
+        available = False
+    if not available:
+        raise ValueError("The local campaign image folder is unavailable.")
+    return JsonResponse(sync(world, root))
 
 
 @endpoint(["GET", "PATCH"])
@@ -1141,16 +1368,24 @@ def dice(request):
 
 
 @endpoint(["POST"])
+def dice_preview(request):
+    from .tools import dice_spec
+    formula, match, count, sides, keep = dice_spec(payload(request).get('formula', ''))
+    modifier = int(match[5] or '0')
+    low, high = (-1, 1) if match[2] == 'f' else (1, sides)
+    return JsonResponse({'formula': formula, 'minimum': low * keep + modifier,
+                         'maximum': high * keep + modifier, 'count': count, 'keep': keep})
+
+
+@endpoint(["POST"])
 def roll_table(request, resource_id):
     resource = owned_resource(request.user, resource_id)
     if resource.kind not in ("table", "generator"):
         raise ValueError("Choose a table or generator.")
-    result = copy.deepcopy(weighted(resource.data.get("rows", [])))
-    result["rolled"] = {
-        col["id"]: dice_roll(result.get("cells", {}).get(col["id"], ""))
-        for col in resource.data.get("columns", [])
-        if col.get("type") == "dice" and result.get("cells", {}).get(col["id"])
-    }
+    if resource.deleted_at:
+        raise Http404('Entry unavailable.')
+    from .rolltables import generate
+    result = generate(resource, payload(request).get('seed'))
     Activity.objects.create(
         world=resource.world,
         kind="generated",
@@ -1158,6 +1393,34 @@ def roll_table(request, resource_id):
         data={"resource_id": str(resource.id), "result": result},
     )
     return JsonResponse({"result": result})
+
+
+@endpoint(["GET"])
+def live_source(request, resource_id):
+    resource = owned_resource(request.user, resource_id)
+    audience = request.GET.get('audience', 'owner')
+    if audience not in ('owner', 'reader'):
+        raise ValueError('Choose owner or reader preview.')
+    from .liveblocks import projection
+    value = projection(resource, reader=audience == 'reader')
+    if value is None:
+        raise Http404('Live source unavailable.')
+    return JsonResponse(value)
+
+
+@endpoint(["GET", "POST"])
+def table_exchange(request, resource_id):
+    resource = owned_resource(request.user, resource_id)
+    if resource.kind not in ('table', 'generator') or resource.deleted_at:
+        raise Http404('Table unavailable.')
+    from .rolltables import export_table, preview
+    if request.method == 'POST':
+        return JsonResponse(preview(payload(request), resource.world))
+    fmt = request.GET.get('format', 'json')
+    content = export_table(resource, fmt)
+    response = HttpResponse(content, content_type='application/json; charset=utf-8' if fmt == 'json' else 'text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="table-{resource.id}.{fmt}"'
+    return response
 
 
 @endpoint(["POST"])

@@ -1,0 +1,132 @@
+{
+  "__v": 0,
+  "_id": "6aa91af515443bd5efce5344",
+  "bestiaryId": "6a9bd89315443bd5efcdd7d2",
+  "flavor": {
+    "description": "Instinct-Driven Healer of the Palace of Earth Spirits",
+    "environment": "",
+    "faction": "Isekai",
+    "imageUrl": "https://cdn.donmai.us/original/50/1f/__komeiji_koishi_touhou_drawn_by_ruu_tksymkw__501f37a4a4343a6ec1844dd4e5eddbf2.png",
+    "nameIsProper": false
+  },
+  "name": "Koishi Komeiji",
+  "sharing": {
+    "linkSharingEnabled": true
+  },
+  "stats": {
+    "abilityScores": {
+      "charisma": 14,
+      "constitution": 14,
+      "dexterity": 10,
+      "intelligence": 8,
+      "strength": 14,
+      "wisdom": 20
+    },
+    "actions": [
+      {
+        "description": "<i>Melee Weapon Attack:</i> +8 to hit, reach 5 ft., one target. <i>Hit:</i> 8 (1d8 + 3) cold damage.\n\n<avrae hidden>\n_v: 2\nname: Morningstar\nactivation_type: 1\nautomation:\n- type: target\n  target: each\n  effects:\n  - type: attack\n    attackBonus: '8'\n    hit:\n    - type: damage\n      damage: (1d8+3)[cold]\n    miss: []\n</avrae>",
+        "name": "Morningstar"
+      }
+    ],
+    "additionalAbilities": [
+      {
+        "description": "spell attack rolls and attack rolls has disadvantage to her unless she is surrounded by 2 or more enemies.",
+        "name": "Unnotice Presence"
+      },
+      {
+        "description": "Morningstar+ (Unique): +1 to attack roll and damage. Converts all damage made by this weapon to cold damage",
+        "name": "Weapon +"
+      },
+      {
+        "description": "Heavy (16AC). +2 AC. Necrotic Resistance. Reduces incoming damage by 2, applies first before other reductions. Adds +1 to her death saving throw rolls.",
+        "name": "Armor ++"
+      }
+    ],
+    "alignment": "Chaotic Neutral",
+    "armorClass": 20,
+    "armorType": "Chain mail++ + Shield",
+    "challengeRating": 8,
+    "conditionImmunities": [
+      "frightened",
+      "sleep"
+    ],
+    "damageImmunities": [],
+    "damageResistances": [
+      "Necrotic"
+    ],
+    "damageVulnerabilities": [],
+    "experiencePoints": 3900,
+    "hitDieSize": 8,
+    "languages": [
+      "Common"
+    ],
+    "legendaryActions": [
+      {
+        "description": "3",
+        "name": "Potion"
+      },
+      {
+        "description": "(Action) A creature you touch is healed for 4d8 plus your spellcasting ability modifier. The healing increases by 4d8 for each spell point consumed additionally\n\n<avrae hidden>\n_v: 2\nname: Selfless Love\nactivation_type: 1\nautomation:\n- type: condition\n  condition: len(targets) == 1\n  onTrue:\n  - type: condition\n    condition: choice == '' or choice == \"0\"\n    onTrue:\n    - type: target\n      target: each\n      effects:\n      - type: damage\n        damage: -(4d8+5)\n        fixedValue: true\n    onFalse:\n    - type: condition\n      condition: choice == \"1\"\n      onTrue:\n      - type: target\n        target: each\n        effects:\n        - type: damage\n          damage: -(8d8+5)\n          fixedValue: true\n      onFalse:\n      - type: condition\n        condition: choice == \"2\"\n        onTrue:\n        - type: target\n          target: each\n          effects:\n          - type: damage\n            damage: -(12d8+5)\n            fixedValue: true\n        onFalse:\n        - type: condition\n          condition: choice == \"3\"\n          onTrue:\n          - type: target\n            target: each\n            effects:\n            - type: damage\n              damage: -(16d8+5)\n              fixedValue: true\n          onFalse:\n          - type: condition\n            condition: choice == \"4\"\n            onTrue:\n            - type: target\n              target: each\n              effects:\n              - type: damage\n                damage: -(20d8+5)\n                fixedValue: true\n            onFalse:\n            - type: condition\n              condition: choice == \"5\"\n              onTrue:\n              - type: target\n                target: each\n                effects:\n                - type: damage\n                  damage: -(24d8+5)\n                  fixedValue: true\n              onFalse:\n              - type: condition\n                condition: choice == \"6\"\n                onTrue:\n                - type: target\n                  target: each\n                  effects:\n                  - type: damage\n                    damage: -(28d8+5)\n                    fixedValue: true\n                onFalse:\n                - type: condition\n                  condition: choice == \"7\"\n                  onTrue:\n                  - type: target\n                    target: each\n                    effects:\n                    - type: damage\n                      damage: -(32d8+5)\n                      fixedValue: true\n                  onFalse:\n                  - type: condition\n                    condition: choice == \"8\"\n                    onTrue:\n                    - type: target\n                      target: each\n                      effects:\n                      - type: damage\n                        damage: -(36d8+5)\n                        fixedValue: true\n                    onFalse:\n                    - type: condition\n                      condition: choice == \"9\"\n                      onTrue:\n                      - type: target\n                        target: each\n                        effects:\n                        - type: damage\n                          damage: -(40d8+5)\n                          fixedValue: true\n                      onFalse:\n                      - type: condition\n                        condition: choice == \"10\"\n                        onTrue:\n                        - type: target\n                          target: each\n                          effects:\n                          - type: damage\n                            damage: -(44d8+5)\n                            fixedValue: true\n                        onFalse:\n                        - type: condition\n                          condition: choice == \"11\"\n                          onTrue:\n                          - type: target\n                            target: each\n                            effects:\n                            - type: damage\n                              damage: -(48d8+5)\n                              fixedValue: true\n                          onFalse:\n                          - type: text\n                            text: Select one creature and a number of extra spell points from 0 to 11.\n                          errorBehaviour: raise\n                        errorBehaviour: raise\n                      errorBehaviour: raise\n                    errorBehaviour: raise\n                  errorBehaviour: raise\n                errorBehaviour: raise\n              errorBehaviour: raise\n            errorBehaviour: raise\n          errorBehaviour: raise\n        errorBehaviour: raise\n      errorBehaviour: raise\n    errorBehaviour: raise\n  onFalse:\n  - type: text\n    text: Select one creature and a number of extra spell points from 0 to 11.\n  errorBehaviour: raise\n</avrae>",
+        "name": "Heart Sign \"Selfless Love\" (1 point)"
+      },
+      {
+        "description": "(Bonus Action) A creature of your choice that you can see within range 60ft. regains Hit Points equal to 4d4 plus your spellcasting ability modifier. The healing increases by 4d4 for each spell point consumed additionally\n\n<avrae hidden>\n_v: 2\nname: Healing Word+\nactivation_type: 3\nautomation:\n- type: condition\n  condition: len(targets) == 1\n  onTrue:\n  - type: condition\n    condition: choice == '' or choice == \"0\"\n    onTrue:\n    - type: target\n      target: each\n      effects:\n      - type: damage\n        damage: -(4d4+5)\n        fixedValue: true\n    onFalse:\n    - type: condition\n      condition: choice == \"1\"\n      onTrue:\n      - type: target\n        target: each\n        effects:\n        - type: damage\n          damage: -(8d4+5)\n          fixedValue: true\n      onFalse:\n      - type: condition\n        condition: choice == \"2\"\n        onTrue:\n        - type: target\n          target: each\n          effects:\n          - type: damage\n            damage: -(12d4+5)\n            fixedValue: true\n        onFalse:\n        - type: condition\n          condition: choice == \"3\"\n          onTrue:\n          - type: target\n            target: each\n            effects:\n            - type: damage\n              damage: -(16d4+5)\n              fixedValue: true\n          onFalse:\n          - type: condition\n            condition: choice == \"4\"\n            onTrue:\n            - type: target\n              target: each\n              effects:\n              - type: damage\n                damage: -(20d4+5)\n                fixedValue: true\n            onFalse:\n            - type: condition\n              condition: choice == \"5\"\n              onTrue:\n              - type: target\n                target: each\n                effects:\n                - type: damage\n                  damage: -(24d4+5)\n                  fixedValue: true\n              onFalse:\n              - type: condition\n                condition: choice == \"6\"\n                onTrue:\n                - type: target\n                  target: each\n                  effects:\n                  - type: damage\n                    damage: -(28d4+5)\n                    fixedValue: true\n                onFalse:\n                - type: condition\n                  condition: choice == \"7\"\n                  onTrue:\n                  - type: target\n                    target: each\n                    effects:\n                    - type: damage\n                      damage: -(32d4+5)\n                      fixedValue: true\n                  onFalse:\n                  - type: condition\n                    condition: choice == \"8\"\n                    onTrue:\n                    - type: target\n                      target: each\n                      effects:\n                      - type: damage\n                        damage: -(36d4+5)\n                        fixedValue: true\n                    onFalse:\n                    - type: condition\n                      condition: choice == \"9\"\n                      onTrue:\n                      - type: target\n                        target: each\n                        effects:\n                        - type: damage\n                          damage: -(40d4+5)\n                          fixedValue: true\n                      onFalse:\n                      - type: condition\n                        condition: choice == \"10\"\n                        onTrue:\n                        - type: target\n                          target: each\n                          effects:\n                          - type: damage\n                            damage: -(44d4+5)\n                            fixedValue: true\n                        onFalse:\n                        - type: condition\n                          condition: choice == \"11\"\n                          onTrue:\n                          - type: target\n                            target: each\n                            effects:\n                            - type: damage\n                              damage: -(48d4+5)\n                              fixedValue: true\n                          onFalse:\n                          - type: text\n                            text: Select one creature and a number of extra spell points from 0 to 11.\n                          errorBehaviour: raise\n                        errorBehaviour: raise\n                      errorBehaviour: raise\n                    errorBehaviour: raise\n                  errorBehaviour: raise\n                errorBehaviour: raise\n              errorBehaviour: raise\n            errorBehaviour: raise\n          errorBehaviour: raise\n        errorBehaviour: raise\n      errorBehaviour: raise\n    errorBehaviour: raise\n  onFalse:\n  - type: text\n    text: Select one creature and a number of extra spell points from 0 to 11.\n  errorBehaviour: raise\n</avrae>",
+        "name": "Healing Word+ (1 point)"
+      },
+      {
+        "description": "(Action) (Concentration) A Large bramble of roses appears (5ft) in a 30ft radius you can see, for the duration in an unoccupied space that you can see within range. It occupies that space and is invulnerable.\n\nAny enemy that moves to a space within 10 feet radius of the roses for the first time on a turn or starts its turn there makes a Dexterity saving throw, taking 20 Necrotic damage on a failed save or half as much damage on a successful one. The roses vanishes when it has dealt a total of 70 damage. \n\nThe bramble of roses lasts for 1 minute and does not provide cover\n\n<avrae hidden>\n_v: 2\nname: Subterranean Rose\nactivation_type: 1\nautomation:\n- type: target\n  target: each\n  effects:\n  - type: save\n    stat: dex\n    dc: '16'\n    fail:\n    - type: damage\n      damage: 20[necrotic]\n      fixedValue: true\n    success:\n    - type: damage\n      damage: 10[necrotic]\n      fixedValue: true\n</avrae>",
+        "name": "Subterranean Rose (2 points)"
+      }
+    ],
+    "legendaryActionsDescription": "Spellcasting points and Inventory. Koishi has a total of 12 spell points that can be consumed. Long rest restores all spell points, a short rest restores 3 spell points.\nShe has a DC of 16 and a +8 to spell hits",
+    "legendaryActionsPerRound": 0,
+    "numHitDie": 10,
+    "proficiencyBonus": 3,
+    "race": "Humanoid (Youkai)",
+    "reactions": [
+      {
+        "description": "Makes a creature 5ft of her change its target to Koishi instead.",
+        "name": "Representation \"Danmaku Paranoia\""
+      }
+    ],
+    "savingThrows": [
+      {
+        "ability": "charisma",
+        "proficient": true,
+        "value": 5
+      },
+      {
+        "ability": "wisdom",
+        "proficient": true,
+        "value": 8
+      }
+    ],
+    "senses": [
+      "darkvision 60 ft."
+    ],
+    "size": "Small",
+    "skills": [
+      {
+        "name": "Stealth",
+        "proficient": true,
+        "value": 3
+      },
+      {
+        "name": "Persuasion",
+        "proficient": true,
+        "value": 5
+      },
+      {
+        "name": "Deception",
+        "proficient": true,
+        "value": 5
+      },
+      {
+        "name": "Religion",
+        "proficient": true,
+        "value": 2
+      }
+    ],
+    "speed": "30 ft."
+  }
+}

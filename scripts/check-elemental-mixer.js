@@ -1,0 +1,51 @@
+// Isolated local browser fixture; no CritterDB writes or Discord messages.
+const {chromium}=require('playwright'),fs=require('fs'),os=require('os'),path=require('path'),assert=require('node:assert/strict');
+const {createService}=require('../src/critter/server');
+(async()=>{
+ const directory=fs.mkdtempSync(path.join(os.tmpdir(),'aina-elemental-'));
+ const service=createService({directory,port:0,ownerId:'fixture',client:{isReady:()=>true}});
+ service.bridge.channels=async()=>[];
+ let browser;
+ try{
+  await service.start();browser=await chromium.launch({executablePath:'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',headless:true});
+  const page=await browser.newPage();page.setDefaultTimeout(10000);console.log('browser started');const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.route('**/*',r=>new URL(r.request().url()).origin===service.url?r.continue():r.abort());
+  await page.goto(service.url+'/#library');console.log('page loaded');
+  await page.locator('#paste-json').evaluate(n=>n.closest('details').open=true);
+  await page.locator('#paste-json').fill(fs.readFileSync('exports/Patchouli_uploaded_original.json','utf8'));
+  await page.locator('#load-paste').click();console.log('imported');await page.locator('#elemental-mixer').waitFor().catch(async e=>{console.log((await page.locator('body').textContent()).slice(-5000));console.log(errors);throw e;});
+  await page.evaluate(async()=>{await mutate(w=>{const key=source().key;w.currentEncounter.entries=Array.from({length:25},(_,i)=>({id:'fixture-'+i,name:'Target '+(i+1),sourceName:'Patchouli Knowledge',sourceKey:key,quantity:'1'}));});await renderWorkspace();});
+  assert.match(await page.locator('.em-elements').textContent(),/Heal allies instead/);
+  assert.match(await page.locator('.em-elements').textContent(),/Double the damage or healing roll/);
+  await page.locator('[data-element="Fire"]').check();await page.locator('[data-element="Wood"]').check();
+  await page.locator('[data-infusion="sun"]').click();await page.locator('[data-infuse="Wood"]').click();
+  await page.locator('#mix-damage').selectOption('cold');
+  assert.match(await page.locator('#elemental-mixer').textContent(),/Fire - Wood/);
+  assert.match(await page.locator('#elemental-mixer').textContent(),/Sun infusion: Wood/);
+  assert.match(await page.locator('#elemental-mixer').textContent(),/2d10 × 3 cold/);
+  assert.equal(await page.locator('[data-pane-list="actions"] [data-pane-entry]').count(),1);
+  assert.ok(await page.locator('.em-target-list').evaluate(n=>n.clientHeight<=160&&n.scrollHeight>n.clientHeight));
+  await page.locator('[data-target-search]').fill('Target 25');
+  assert.equal(await page.locator('.em-target:visible').count(),1);
+  await page.locator('[data-mix-target][value="Target 25"]').check();
+  await page.locator('#mix-prepare').click();
+  assert.match(await page.locator('#command-lines').textContent(),/fire\+wood\|sunwood\/cold/);
+  await page.locator('[data-clear-targets]').click();
+  await page.locator('[data-pane-list="actions"] [data-pane-entry]').click();
+  assert.match(await page.locator('#command-lines').textContent(),/Choose spell targets/);
+  assert.doesNotMatch(await page.locator('#command-lines').textContent(),/Elemental Magic.*-rr/);
+  await page.locator('#elemental-mixer .em-wis summary').click();await page.locator('#mix-stored').selectOption('Earth');await page.locator('#mix-use-stored').check();
+  assert.match(await page.locator('#elemental-mixer').textContent(),/Fire - Wood - Earth/);
+  await page.locator('#mix-react').click();assert.match(await page.locator('#command-lines').textContent(),/Wis.*-choice "earth"/);
+  await page.reload();await page.locator('#elemental-mixer').waitFor();assert.equal(await page.locator('#mix-stored').inputValue(),'Earth');
+  await page.locator('[data-element="Fire"]').uncheck();await page.locator('[data-element="Water"]').check();await page.locator('#mix-use-stored').uncheck();
+  assert.equal(await page.locator('#mix-damage').count(),0);
+  await page.locator('[data-mix-target="allies"][value="Target 1"]').check();await page.locator('[data-mix-target="allies"][value="Target 2"]').check();
+  assert.equal(await page.locator('[data-mix-target="allies"]:checked').count(),1);
+  await page.setViewportSize({width:1600,height:1100});await page.evaluate(()=>document.documentElement.dataset.theme='dark');await page.locator('#elemental-mixer').screenshot({path:'.cache/patchouli-mixer-desktop.png'});
+  await page.setViewportSize({width:390,height:844});
+  assert.ok(await page.locator('#elemental-mixer').evaluate(n=>n.scrollWidth<=n.clientWidth+1));
+  await page.locator('#elemental-mixer').screenshot({path:'.cache/patchouli-mixer-mobile.png'});
+  assert.deepEqual(errors,[]);console.log('PASS local browser: compact migration, element selection, infusion replacement, damage selection, Wis, command preview, persistence; no external requests.');
+ }finally{if(browser)await browser.close();await service.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

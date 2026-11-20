@@ -1,0 +1,185 @@
+{
+  "__v": 0,
+  "_id": "6aeb1fba75da40a67aee5d1a",
+  "bestiaryId": "6a9bd89315443bd5efcdd7d2",
+  "flavor": {
+    "description": "A towering warlord who rose to the top of his crew by breaking every rival in it. Shuu leads from the front of every raid.",
+    "environment": "Any",
+    "faction": "Shuu's Bandits",
+    "imageUrl": "",
+    "nameIsProper": true
+  },
+  "name": "Bandit Boss Shuu",
+  "sharing": {
+    "linkSharingEnabled": false
+  },
+  "stats": {
+    "abilityScores": {
+      "charisma": 12,
+      "constitution": 22,
+      "dexterity": 14,
+      "intelligence": 8,
+      "strength": 24,
+      "wisdom": 12
+    },
+    "actions": [
+      {
+        "description": "Melee Weapon Attack: +11 to hit, reach 20 ft., one target. Hit: 1d6 + 12 Bludgeoning damage, or 1d6 + 14 while raging. Includes Dueling.\n\n<avrae hidden>\n_v: 2\nname: Quarterstaff +3\nactivation_type: 1\ncriton: 19\nautomation:\n  - type: target\n    target: each\n    effects:\n      - type: attack\n        attackBonus: \"11\"\n        hit:\n          - type: damage\n            damage: (1d6+12)[bludgeoning]\n        miss: []\n</avrae>",
+        "name": "Quarterstaff"
+      },
+      {
+        "description": "Bonus Action after attacking with the quarterstaff as part of the Attack action: +11 to hit, reach 20 ft., one target. Hit: 1d4 + 12 Bludgeoning damage, or 1d4 + 14 while raging.\n\n<avrae hidden>\n_v: 2\nname: Pole Strike\nactivation_type: 3\ncriton: 19\nautomation:\n  - type: target\n    target: each\n    effects:\n      - type: attack\n        attackBonus: \"11\"\n        hit:\n          - type: damage\n            damage: (1d4+12)[bludgeoning]\n        miss: []\n</avrae>",
+        "name": "Pole Strike"
+      },
+      {
+        "description": "After a quarterstaff hit, Shuu can force the target to make a DC 20 Constitution saving throw. On a failure it has the Prone condition.\n\n<avrae hidden>\n_v: 2\nname: Topple\nautomation:\n  - type: target\n    target: each\n    effects:\n      - type: save\n        stat: con\n        dc: \"20\"\n        fail:\n          - type: ieffect2\n            name: Prone\n            duration: -1\n            stacking: false\n            effects:\n              attack_advantage: -1\n            desc: Prone. Standing costs half speed. Incoming attack modifiers depend on distance.\n            buttons:\n              - label: Stand up\n                automation:\n                  - type: remove_ieffect\n        success: []\n</avrae>",
+        "name": "Topple"
+      },
+      {
+        "description": "Once per turn after a melee weapon hit against a creature within 5 ft., Shuu can force a DC 20 Strength saving throw. On failure, the target is Prone.\n\n<avrae hidden>\n_v: 2\nname: \"Shield Bash: Prone\"\nautomation:\n  - type: target\n    target: each\n    effects:\n      - type: save\n        stat: str\n        dc: \"20\"\n        fail:\n          - type: ieffect2\n            name: Prone\n            duration: -1\n            stacking: false\n            effects:\n              attack_advantage: -1\n            desc: Prone. Standing costs half speed. Incoming attack modifiers depend on distance.\n            buttons:\n              - label: Stand up\n                automation:\n                  - type: remove_ieffect\n        success: []\n</avrae>",
+        "name": "Shield Bash: Prone"
+      },
+      {
+        "description": "Once per turn after a melee weapon hit against a creature within 5 ft., Shuu can force a DC 20 Strength saving throw. On failure, Shuu pushes it 5 ft. away.\n\n<avrae hidden>\n_v: 2\nname: \"Shield Bash: Push\"\nautomation:\n  - type: target\n    target: each\n    effects:\n      - type: save\n        stat: str\n        dc: \"20\"\n        fail:\n          - type: text\n            text: The creature is pushed 5 feet away.\n        success: []\n</avrae>",
+        "name": "Shield Bash: Push"
+      },
+      {
+        "description": "Magic action; touch one creature. It regains 5d4 Hit Points. Once per Long Rest.\n\n<avrae hidden>\n_v: 2\nname: Healing Hands\nactivation_type: 1\nautomation:\n  - type: target\n    target: each\n    effects:\n      - type: damage\n        damage: -(5d4)\n        fixedValue: true\n</avrae>",
+        "name": "Healing Hands"
+      },
+      {
+        "description": "Bonus Action: regain 1d10 + 11 Hit Points. Four uses; a Short Rest restores one, and a Long Rest restores all.\n\n<avrae hidden>\n_v: 2\nname: Second Wind\nactivation_type: 3\nautomation:\n  - type: target\n    target: self\n    effects:\n      - type: damage\n        damage: -(1d10+11)\n        fixedValue: true\n</avrae>",
+        "name": "Second Wind"
+      }
+    ],
+    "additionalAbilities": [
+      {
+        "description": "Shuu makes three quarterstaff attacks when he takes the Attack action.",
+        "name": "Multiattack"
+      },
+      {
+        "description": "Bonus Action; three uses. While raging, Shuu has Advantage on Strength checks and Strength saving throws, resistance to Bludgeoning, Piercing, Slashing, Acid, Cold, Fire, Lightning, Poison and Thunder damage, and +2 damage with Strength attacks. Rage ends early if Shuu is Incapacitated, dons Heavy armor, or does not extend it; it can last up to 10 minutes. One use returns on a Short Rest; all return on a Long Rest.\n\n<avrae hidden>\n_v: 2\nname: \"Rage: Bear\"\nactivation_type: 3\nautomation:\n  - type: target\n    target: self\n    effects:\n      - type: ieffect2\n        name: \"Rage: Bear\"\n        duration: 100\n        stacking: false\n        effects:\n          damage_bonus: \"2\"\n          resistances:\n            - acid\n            - bludgeoning\n            - cold\n            - fire\n            - lightning\n            - piercing\n            - poison\n            - slashing\n            - thunder\n          check_adv:\n            - strength\n          save_adv:\n            - strength\n        desc: \"Bear Rage: advantage on Strength checks and saves; resistance to Acid, Bludgeoning, Cold, Fire, Lightning, Piercing, Poison, Slashing and Thunder. Extend Rage as required.\"\n        buttons:\n          - label: End effect\n            automation:\n              - type: remove_ieffect\n</avrae>",
+        "name": "Rage: Bear"
+      },
+      {
+        "description": "When Shuu makes his first attack on his turn, he can gain Advantage on Strength-based attack rolls until the start of his next turn. Attack rolls against him have Advantage until then.\n\n<avrae hidden>\n_v: 2\nname: Reckless Attack\nactivation_type: 2\nautomation:\n  - type: target\n    target: self\n    effects:\n      - type: ieffect2\n        name: Reckless Attack\n        duration: 1\n        stacking: false\n        effects:\n          attack_advantage: 1\n        desc: Strength-based attack rolls have Advantage; attack rolls against Shuu have Advantage.\n        buttons:\n          - label: End effect\n            automation:\n              - type: remove_ieffect\n</avrae>",
+        "name": "Reckless Attack"
+      },
+      {
+        "description": "Weapon attacks and Unarmed Strikes score a Critical Hit on a natural 19 or 20. Shuu has Advantage on Initiative rolls and Strength (Athletics) checks. Immediately after scoring a Critical Hit, he can move up to half his speed without provoking Opportunity Attacks. During combat, if Shuu starts his turn without Heroic Inspiration, he gains it.",
+        "name": "Champion"
+      },
+      {
+        "description": "Once per Short or Long Rest, Shuu can take one additional action on his turn, except the Magic action.",
+        "name": "Action Surge"
+      },
+      {
+        "description": "After attacking with his quarterstaff as part of the Attack action, Shuu can use a Bonus Action for a Pole Strike. He can also use his Reaction to make a quarterstaff attack against a creature entering its reach.",
+        "name": "Polearm Master"
+      },
+      {
+        "description": "Once per turn after a qualifying melee weapon hit within 5 ft., Shuu can bash the target with his shield. On a failed DC 20 Strength save, he chooses Prone or pushes it 5 ft. If a Dexterity save would allow half damage, he can use his Reaction to take no damage on a success.",
+        "name": "Shield Master"
+      },
+      {
+        "description": "While holding a melee weapon in one hand and no other weapon, Shuu gains +2 damage with that weapon. Included in his quarterstaff damage.",
+        "name": "Dueling"
+      },
+      {
+        "description": "Shuu has Resistance to Necrotic and Radiant damage.",
+        "name": "Celestial Resistance"
+      },
+      {
+        "description": "Shuu knows the Light cantrip. Charisma is his spellcasting ability for it.",
+        "name": "Light Bearer"
+      },
+      {
+        "description": "Once per Long Rest, Shuu can use a Bonus Action to transform for 1 minute, choosing Heavenly Wings, Inner Radiance, or Necrotic Shroud. Once on each of his turns, one target he damages with an attack or spell takes an extra 5 damage: Necrotic for Necrotic Shroud, Radiant for the other forms.",
+        "name": "Celestial Revelation"
+      },
+      {
+        "description": "Bonus Action; Celestial Revelation. For 1 minute, Shuu has a Fly Speed equal to his Speed.\n\n<avrae hidden>\n_v: 2\nname: Heavenly Wings\nactivation_type: 3\nautomation:\n  - type: target\n    target: self\n    effects:\n      - type: ieffect2\n        name: \"Celestial Revelation: Heavenly Wings\"\n        duration: 10\n        stacking: false\n        desc: Fly Speed equals Speed; one qualifying hit per turn can deal 5 additional Radiant damage.\n        buttons:\n          - label: End effect\n            automation:\n              - type: remove_ieffect\n        attacks:\n          - attack:\n              _v: 2\n              name: \"Celestial Revelation: radiant damage\"\n              activation_type: 2\n              automation:\n                - type: target\n                  target: each\n                  effects:\n                    - type: damage\n                      damage: 5[radiant]\n                      fixedValue: true\n</avrae>",
+        "name": "Heavenly Wings"
+      },
+      {
+        "description": "Bonus Action; Celestial Revelation. For 1 minute, Shuu sheds Bright Light in a 10-foot radius and Dim Light for another 10 feet. At the end of each of his turns, each creature within 10 feet takes 5 Radiant damage.\n\n<avrae hidden>\n_v: 2\nname: Inner Radiance\nactivation_type: 3\nautomation:\n  - type: target\n    target: self\n    effects:\n      - type: ieffect2\n        name: \"Celestial Revelation: Inner Radiance\"\n        duration: 10\n        stacking: false\n        desc: Bright Light 10 ft., Dim Light another 10 ft. At end of turn, creatures within 10 ft. take 5 Radiant damage.\n        buttons:\n          - label: End effect\n            automation:\n              - type: remove_ieffect\n        attacks:\n          - attack:\n              _v: 2\n              name: \"Celestial Revelation: radiant damage\"\n              activation_type: 2\n              automation:\n                - type: target\n                  target: each\n                  effects:\n                    - type: damage\n                      damage: 5[radiant]\n                      fixedValue: true\n          - attack:\n              _v: 2\n              name: \"Inner Radiance: end of turn\"\n              activation_type: 2\n              automation:\n                - type: target\n                  target: each\n                  effects:\n                    - type: damage\n                      damage: 5[radiant]\n                      fixedValue: true\n</avrae>",
+        "name": "Inner Radiance"
+      },
+      {
+        "description": "Bonus Action; Celestial Revelation. On transformation, creatures other than Shuu?s allies within 10 feet make a DC 14 Charisma saving throw or are Frightened of Shuu until the end of his next turn.\n\n<avrae hidden>\n_v: 2\nname: Necrotic Shroud\nactivation_type: 3\nautomation:\n  - type: target\n    target: self\n    effects:\n      - type: ieffect2\n        name: \"Celestial Revelation: Necrotic Shroud\"\n        duration: 10\n        stacking: false\n        desc: Once on each turn, a qualifying hit can deal 5 extra Necrotic damage.\n        buttons:\n          - &a1\n            label: End effect\n            automation:\n              - type: remove_ieffect\n        attacks:\n          - attack:\n              _v: 2\n              name: \"Celestial Revelation: necrotic damage\"\n              activation_type: 2\n              automation:\n                - type: target\n                  target: each\n                  effects:\n                    - type: damage\n                      damage: 5[necrotic]\n                      fixedValue: true\n  - type: target\n    target: each\n    effects:\n      - type: save\n        stat: cha\n        dc: \"14\"\n        fail:\n          - type: ieffect2\n            name: Frightened\n            duration: 2\n            end: true\n            tick_on_caster: true\n            stacking: false\n            desc: Frightened of Shuu until the end of his next turn.\n            buttons:\n              - *a1\n        success: []\n</avrae>",
+        "name": "Necrotic Shroud"
+      },
+      {
+        "description": "Once per Long Rest when Shuu fails a saving throw, he can reroll it with a +11 bonus, and must use the new roll.",
+        "name": "Indomitable"
+      }
+    ],
+    "alignment": "Chaotic Evil",
+    "armorClass": 18,
+    "armorType": "Unarmored Defense, +3 shield",
+    "challengeRating": 18,
+    "conditionImmunities": [
+      "Charmed",
+      "Frightened",
+      "poisoned"
+    ],
+    "damageImmunities": [],
+    "damageResistances": [
+      "Radiant",
+      "Necrotic"
+    ],
+    "damageVulnerabilities": [],
+    "experiencePoints": 20000,
+    "hitDieSize": 12,
+    "languages": [
+      "Common",
+      "Thieves Cant"
+    ],
+    "legendaryActions": [],
+    "legendaryActionsDescription": "",
+    "legendaryActionsPerRound": 0,
+    "numHitDie": 20,
+    "proficiencyBonus": 5,
+    "race": "Aasimar",
+    "reactions": [
+      {
+        "description": "When a creature enters the quarterstaff?s reach, Shuu can use his Reaction to make one quarterstaff attack against that creature.",
+        "name": "Reactive Strike"
+      }
+    ],
+    "savingThrows": [
+      {
+        "ability": "strength",
+        "proficient": true,
+        "value": 12
+      },
+      {
+        "ability": "constitution",
+        "proficient": true,
+        "value": 11
+      }
+    ],
+    "senses": [
+      "darkvision 60 ft."
+    ],
+    "size": "Medium",
+    "skills": [
+      {
+        "name": "Athletics",
+        "proficient": true,
+        "value": 12
+      },
+      {
+        "name": "Intimidation",
+        "proficient": true,
+        "value": 6
+      },
+      {
+        "name": "Perception",
+        "proficient": true,
+        "value": 6
+      }
+    ],
+    "speed": "40 ft."
+  }
+}

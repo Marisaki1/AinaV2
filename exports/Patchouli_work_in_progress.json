@@ -1,0 +1,165 @@
+{
+  "__v": 0,
+  "_id": "6abe01e115443bd5efcef40d",
+  "bestiaryId": "6a9bd89315443bd5efcdd7d2",
+  "flavor": {
+    "description": "The Unmoving Great Library",
+    "environment": "",
+    "faction": "Team Scarlet Masters",
+    "imageUrl": "",
+    "nameIsProper": true
+  },
+  "name": "Patchouli Knowledge",
+  "sharing": {
+    "linkSharingEnabled": true
+  },
+  "stats": {
+    "abilityScores": {
+      "charisma": 10,
+      "constitution": 12,
+      "dexterity": 14,
+      "intelligence": 20,
+      "strength": 8,
+      "wisdom": 16
+    },
+    "actions": [
+      {
+        "name": "Philosopher?s Stone ? Attack",
+        "description": "Magic action. One target: +8 to hit; 2d10 damage on a hit. Choose fire, cold, lightning, thunder, or radiant damage.\n\n<avrae hidden>\n_v: 2\nname: Philosopher?s Stone ? Attack\nactivation_type: 1\nautomation:\n  - type: condition\n    condition: choice == \"fire\" or choice == \"cold\" or choice == \"lightning\" or choice == \"thunder\" or choice == \"radiant\"\n    onTrue:\n      - type: target\n        target: each\n        effects:\n          - type: attack\n            attackBonus: \"8\"\n            hit:\n              - type: damage\n                damage: (2d10)[{choice}]\n            miss: []\n    onFalse:\n      - type: text\n        text: Choose fire, cold, lightning, thunder, or radiant damage.\n    errorBehaviour: raise\n</avrae>"
+      },
+      {
+        "name": "Philosopher?s Stone ? Area",
+        "description": "Magic action. Each target makes a DC 16 Dexterity saving throw, taking 2d10 damage on a failure, or half as much on a success. Choose fire, cold, lightning, thunder, or radiant damage.\n\n<avrae hidden>\n_v: 2\nname: Philosopher?s Stone ? Area\nactivation_type: 1\nautomation:\n  - type: condition\n    condition: choice == \"fire\" or choice == \"cold\" or choice == \"lightning\" or choice == \"thunder\" or choice == \"radiant\"\n    onTrue:\n      - type: roll\n        dice: (2d10)[{choice}]\n        name: damage\n        displayName: Damage\n      - type: target\n        target: each\n        effects:\n          - type: save\n            stat: dex\n            dc: \"16\"\n            fail:\n              - type: damage\n                damage: \"{damage}\"\n                fixedValue: true\n            success:\n              - type: damage\n                damage: ({damage})/2\n                fixedValue: true\n    onFalse:\n      - type: text\n        text: Choose fire, cold, lightning, thunder, or radiant damage.\n    errorBehaviour: raise\n</avrae>"
+      },
+      {
+        "name": "Philosopher?s Stone ? Wood ? Attack",
+        "description": "Magic action. One target: +8 to hit; (2d10)*2 damage on a hit. Choose fire, cold, lightning, thunder, or radiant damage.\n\n<avrae hidden>\n_v: 2\nname: Philosopher?s Stone ? Wood ? Attack\nactivation_type: 1\nautomation:\n  - type: condition\n    condition: choice == \"fire\" or choice == \"cold\" or choice == \"lightning\" or choice == \"thunder\" or choice == \"radiant\"\n    onTrue:\n      - type: target\n        target: each\n        effects:\n          - type: attack\n            attackBonus: \"8\"\n            hit:\n              - type: damage\n                damage: ((2d10)*2)[{choice}]\n            miss: []\n    onFalse:\n      - type: text\n        text: Choose fire, cold, lightning, thunder, or radiant damage.\n    errorBehaviour: raise\n</avrae>"
+      },
+      {
+        "name": "Philosopher?s Stone ? Wood ? Area",
+        "description": "Magic action. Each target makes a DC 16 Dexterity saving throw, taking (2d10)*2 damage on a failure, or half as much on a success. Choose fire, cold, lightning, thunder, or radiant damage.\n\n<avrae hidden>\n_v: 2\nname: Philosopher?s Stone ? Wood ? Area\nactivation_type: 1\nautomation:\n  - type: condition\n    condition: choice == \"fire\" or choice == \"cold\" or choice == \"lightning\" or choice == \"thunder\" or choice == \"radiant\"\n    onTrue:\n      - type: roll\n        dice: ((2d10)*2)[{choice}]\n        name: damage\n        displayName: Damage\n      - type: target\n        target: each\n        effects:\n          - type: save\n            stat: dex\n            dc: \"16\"\n            fail:\n              - type: damage\n                damage: \"{damage}\"\n                fixedValue: true\n            success:\n              - type: damage\n                damage: ({damage})/2\n                fixedValue: true\n    onFalse:\n      - type: text\n        text: Choose fire, cold, lightning, thunder, or radiant damage.\n    errorBehaviour: raise\n</avrae>"
+      },
+      {
+        "name": "Philosopher?s Stone ? Sun Wood ? Attack",
+        "description": "Magic action. One target: +8 to hit; (2d10)*3 damage on a hit. Choose fire, cold, lightning, thunder, or radiant damage.\n\n<avrae hidden>\n_v: 2\nname: Philosopher?s Stone ? Sun Wood ? Attack\nactivation_type: 1\nautomation:\n  - type: condition\n    condition: choice == \"fire\" or choice == \"cold\" or choice == \"lightning\" or choice == \"thunder\" or choice == \"radiant\"\n    onTrue:\n      - type: target\n        target: each\n        effects:\n          - type: attack\n            attackBonus: \"8\"\n            hit:\n              - type: damage\n                damage: ((2d10)*3)[{choice}]\n            miss: []\n    onFalse:\n      - type: text\n        text: Choose fire, cold, lightning, thunder, or radiant damage.\n    errorBehaviour: raise\n</avrae>"
+      },
+      {
+        "name": "Philosopher?s Stone ? Sun Wood ? Area",
+        "description": "Magic action. Each target makes a DC 16 Dexterity saving throw, taking (2d10)*3 damage on a failure, or half as much on a success. Choose fire, cold, lightning, thunder, or radiant damage.\n\n<avrae hidden>\n_v: 2\nname: Philosopher?s Stone ? Sun Wood ? Area\nactivation_type: 1\nautomation:\n  - type: condition\n    condition: choice == \"fire\" or choice == \"cold\" or choice == \"lightning\" or choice == \"thunder\" or choice == \"radiant\"\n    onTrue:\n      - type: roll\n        dice: ((2d10)*3)[{choice}]\n        name: damage\n        displayName: Damage\n      - type: target\n        target: each\n        effects:\n          - type: save\n            stat: dex\n            dc: \"16\"\n            fail:\n              - type: damage\n                damage: \"{damage}\"\n                fixedValue: true\n            success:\n              - type: damage\n                damage: ({damage})/2\n                fixedValue: true\n    onFalse:\n      - type: text\n        text: Choose fire, cold, lightning, thunder, or radiant damage.\n    errorBehaviour: raise\n</avrae>"
+      },
+      {
+        "name": "Moon Earth",
+        "description": "Moon Earth: Patchouli gains immunity to the next damage she receives.\n\n<avrae hidden>\n_v: 2\nname: Moon Earth\nactivation_type: 1\nautomation:\n  - type: target\n    target: self\n    effects:\n      - type: ieffect2\n        name: Moon Earth\n        duration: -1\n        stacking: false\n        effects:\n          immunities:\n            - acid\n            - bludgeoning\n            - cold\n            - fire\n            - force\n            - lightning\n            - necrotic\n            - piercing\n            - poison\n            - psychic\n            - radiant\n            - slashing\n            - thunder\n        desc: Immune to the next damage received. Remove immediately after that damage is blocked.\n        buttons:\n          - label: Remove after damage\n            automation:\n              - type: remove_ieffect\n</avrae>"
+      }
+    ],
+    "additionalAbilities": [
+      {
+        "description": "When Patchouli uses her Magic Action she can combine two different elements to create a spell that alters her basic spell with a range of touch (you can touch an empty space in front of you) that deals 2d10 damage.\nFire - 120ft by 5ft in front of you.\nWater - Heals allies instead\nWood - Doubles the damage roll\nMetal - becomes a line 5ft by 25ft wide centered to the space she touches.\nEarth - Ignores resistance\n\nShe can use the Water element equal to her Proficiency Bonus",
+        "name": "Fire Water Wood Metal Earth Sign \"Philosopher's Stone\""
+      },
+      {
+        "description": "Patchouli's damage spells can be changed to any of: Fire, Cold, Lightning, Thunder, or Radiant at will. \nBeing within 5 feet of an enemy doesn’t impose Disadvantage on your attack rolls with spells.",
+        "name": "Elemental Mastery"
+      },
+      {
+        "description": "Patchouli can further evolve one of the elements she used in her magic action by infusing it with sun or moon replacing the original effect of the selected element with a new effect. And only one infusion per turn.\nShe can use this ability equal to her Intelligence modifier.\nSun Infusion\nFire - becomes a line of 120ft by 5ft in which you control its path. Cannot hit the same target\nWater - Heals allies instead and adds temporary hit points equal to the healed amount\nWood - Triples the damage roll\nMetal - becomes a 15ft square radius centered to herself\nEarth - Enemy becomes vulnerable to the attack\n\nMoon Infusion\nFire - You teleport to a space you can see 60ft after casting a spell\nWater - Reduce movement speed to 0 until the end of their turn and becomes prone for the whole duration.\nWood - Gain 2 levels of exhaustion\nMetal - Becomes Stunned\nEarth - You gain immunity to the next damage you receive",
+        "name": "Sun Moon Sign \"Royal Diamond Ring\""
+      }
+    ],
+    "alignment": "neutral",
+    "armorClass": 15,
+    "armorType": "Natural Armor",
+    "challengeRating": 7,
+    "conditionImmunities": [],
+    "damageImmunities": [],
+    "damageResistances": [],
+    "damageVulnerabilities": [],
+    "experiencePoints": 2900,
+    "hitDieSize": 6,
+    "languages": [
+      "Common",
+      "Elvish",
+      "Infernal",
+      "Celestial"
+    ],
+    "legendaryActions": [
+      {
+        "description": "Fire + Metal. It becomes a 100ft by 10ft line in front of you",
+        "name": "Fire Metal Sign \"Saint Elmo's Pillar\""
+      },
+      {
+        "description": "Sun Fire + Metal. DC Dexterity Save Stuns all creatures in a 30ft radius of a point she can see",
+        "name": "Sun Sign \"Royal Flare\""
+      },
+      {
+        "description": "Moon Water + Earth. DC Dexterity Save ?????",
+        "name": "Moon Sign \"Silent Selene\""
+      }
+    ],
+    "legendaryActionsDescription": "Unique combo. Instead of the usual effect, you can choose the spell effects listed here instead",
+    "legendaryActionsPerRound": 0,
+    "numHitDie": 9,
+    "proficiencyBonus": 3,
+    "race": "Humanoid (Magician)",
+    "reactions": [
+      {
+        "description": "If Patchouli gets hit with an elemental damage. She can use her reaction to absorb that element in the next spell she creates (Cannot absorb more than 1). She can use this reaction a number of times equal to her Proficiency Bonus\nFire - Adds Fire \nCold - Adds Water\nRadiant - Adds Wood\nLightning - Adds Metal\nThunder - Adds Earth",
+        "name": "Wis"
+      }
+    ],
+    "savingThrows": [
+      {
+        "ability": "constitution",
+        "proficient": true,
+        "value": 4
+      },
+      {
+        "ability": "intelligence",
+        "proficient": true,
+        "value": 8
+      },
+      {
+        "ability": "wisdom",
+        "proficient": true,
+        "value": 6
+      },
+      {
+        "ability": "charisma",
+        "proficient": true,
+        "value": 3
+      }
+    ],
+    "senses": [
+      "darkvision 60 ft."
+    ],
+    "size": "Medium",
+    "skills": [
+      {
+        "name": "Arcana",
+        "proficient": true,
+        "value": 8
+      },
+      {
+        "name": "History",
+        "proficient": true,
+        "value": 8
+      },
+      {
+        "name": "Religion",
+        "proficient": true,
+        "value": 8
+      },
+      {
+        "name": "Investigation",
+        "proficient": true,
+        "value": 8
+      },
+      {
+        "name": "Intimidation",
+        "proficient": true,
+        "value": 3
+      }
+    ],
+    "speed": "20 ft."
+  }
+}

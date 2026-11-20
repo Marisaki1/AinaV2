@@ -1,4 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
+import { WritingTools } from "./WritingTools";
+import { TaskList, TaskItem } from "./TaskBlocks";
+import { SnippetNode } from "./SnippetNode";
+import { SourceBlock, DiceButton } from "./LiveBlocks";
+import { AppContext } from "./domain";
 import DOMPurify from "dompurify";
 import { post, saveBeforeNavigate } from "./domain";
 import { Modal, ErrorBox } from "./ui";
@@ -22,8 +27,10 @@ import {
   EyeOff,
   Minus,
   Braces,
+  PanelsTopLeft,
+  Dices,
 } from "lucide-react";
-import type { Doc } from "./domain";
+import type { Doc, Entry } from "./domain";
 const ResourceLink = Node.create({
   name: "resourceLink",
   group: "inline",
@@ -102,13 +109,31 @@ export function RichEditor({
   onReference,
   onImage,
   onVariable,
+  onSnippet,
+  onLiveSource,
+  ctx,
 }: {
   value: Doc;
+  ctx?: AppContext;
+  onLiveSource?: (insert: (id: string, label: string) => void) => void;
   onChange: (v: Doc) => void;
   onReference?: (insert: (id: string, label: string) => void) => void;
   onImage?: (insert: (url: string, name: string) => void) => void;
   onVariable?: (insert: (id: string, label: string) => void) => void;
+  onSnippet?: (
+    insert: (entry: Entry, copy: boolean) => void,
+    selection?: Doc,
+  ) => void;
 }) {
+  const ctxRef = useRef(ctx);
+  ctxRef.current = ctx;
+  const [diceDraft, setDiceDraft] = useState<{
+    formula: string;
+    label: string;
+  } | null>(null);
+  const [diceError, setDiceError] = useState("");
+  const [diceBusy, setDiceBusy] = useState(false);
+  const diceLock = useRef(false);
   const [markdown, setMarkdown] = useState<string | null>(null),
     [markdownError, setMarkdownError] = useState(""),
     [markdownPreview, setMarkdownPreview] = useState(""),
@@ -153,6 +178,11 @@ export function RichEditor({
       ResourceLink,
       PrivateBlock,
       Variable,
+      TaskList,
+      TaskItem,
+      SnippetNode,
+      SourceBlock.configure({ context: () => ctxRef.current }),
+      DiceButton.configure({ context: () => ctxRef.current }),
     ],
     content: value,
     editorProps: {
@@ -202,6 +232,75 @@ export function RichEditor({
   );
   return (
     <div className="rich-editor">
+      <WritingTools editor={editor} />
+      {diceDraft && (
+        <Modal
+          title="Insert dice button"
+          onClose={() => {
+            if (!diceBusy) setDiceDraft(null);
+          }}
+        >
+          <label className="field">
+            <span>Roll label</span>
+            <input
+              maxLength={180}
+              value={diceDraft.label}
+              onChange={(e) =>
+                setDiceDraft({ ...diceDraft, label: e.target.value })
+              }
+            />
+          </label>
+          <label className="field">
+            <span>Dice formula</span>
+            <input
+              value={diceDraft.formula}
+              onChange={(e) =>
+                setDiceDraft({ ...diceDraft, formula: e.target.value })
+              }
+            />
+          </label>
+          {diceError && <ErrorBox message={diceError} />}
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="button secondary"
+              disabled={diceBusy}
+              onClick={() => setDiceDraft(null)}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="button primary"
+              disabled={diceBusy}
+              onClick={async () => {
+                if (diceLock.current) return;
+                diceLock.current = true;
+                setDiceBusy(true);
+                setDiceError("");
+                try {
+                  await post("/tools/dice-preview", {
+                    formula: diceDraft.formula,
+                  });
+                  editor
+                    .chain()
+                    .focus()
+                    .insertContent({ type: "diceButton", attrs: diceDraft })
+                    .run();
+                  setDiceDraft(null);
+                } catch (e: any) {
+                  setDiceError(e.message);
+                } finally {
+                  diceLock.current = false;
+                  setDiceBusy(false);
+                }
+              }}
+            >
+              Insert roll
+            </button>
+          </div>
+        </Modal>
+      )}
       {markdown !== null && (
         <Modal
           title="Insert Markdown"
@@ -328,6 +427,18 @@ export function RichEditor({
           () => editor.chain().focus().toggleOrderedList().run(),
           editor.isActive("orderedList"),
         )}
+        <button
+          type="button"
+          className="editor-tool"
+          aria-label="Checklist"
+          title="Checklist"
+          aria-pressed={editor.isActive("taskList")}
+          onClick={() =>
+            editor.chain().focus().toggleList("taskList", "taskItem").run()
+          }
+        >
+          ☑
+        </button>
         {tool(
           "Quote",
           Quote,
@@ -386,6 +497,85 @@ export function RichEditor({
                 .run(),
             ),
           )}
+        {onLiveSource &&
+          tool("Insert live source", PanelsTopLeft, () =>
+            onLiveSource((id, label) =>
+              editor
+                .chain()
+                .focus()
+                .insertContent([
+                  { type: "sourceBlock", attrs: { id, label } },
+                  { type: "paragraph" },
+                ])
+                .run(),
+            ),
+          )}
+        {ctx &&
+          tool("Insert dice button", Dices, () => {
+            setDiceDraft({ formula: "1d20", label: "Roll" });
+            setDiceError("");
+          })}
+        {onSnippet && (
+          <>
+            <button
+              type="button"
+              className="editor-tool"
+              aria-label="Insert reusable snippet"
+              onClick={() =>
+                onSnippet((entry, copy) => {
+                  if (copy)
+                    editor
+                      .chain()
+                      .focus()
+                      .insertContent(entry.document?.content || [])
+                      .run();
+                  else
+                    editor
+                      .chain()
+                      .focus()
+                      .insertContent({
+                        type: "snippet",
+                        attrs: { id: entry.id, label: entry.title },
+                      })
+                      .run();
+                })
+              }
+            >
+              Snippets
+            </button>
+            <button
+              type="button"
+              className="editor-tool"
+              aria-label="Save selection as snippet"
+              disabled={editor.state.selection.empty}
+              onClick={() => {
+                const { from, to } = editor.state.selection;
+                onSnippet(
+                  (entry, copy) => {
+                    if (copy)
+                      editor
+                        .chain()
+                        .focus()
+                        .insertContent(entry.document?.content || [])
+                        .run();
+                    else
+                      editor
+                        .chain()
+                        .focus()
+                        .insertContent({
+                          type: "snippet",
+                          attrs: { id: entry.id, label: entry.title },
+                        })
+                        .run();
+                  },
+                  editor.state.doc.cut(from, to).toJSON() as Doc,
+                );
+              }}
+            >
+              Save selection
+            </button>
+          </>
+        )}
         <i />
         {tool("Undo", Undo2, () => editor.chain().focus().undo().run())}
         {tool("Redo", Redo2, () => editor.chain().focus().redo().run())}

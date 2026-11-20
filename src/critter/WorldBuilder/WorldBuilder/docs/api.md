@@ -234,3 +234,95 @@ GET `/api/resources/{book}/notebook-export?section={optional section UUID}&audie
 `POST /api/documents/parse` requires an authenticated owner session and accepts `{text: "Markdown source"}` (up to 200,000 characters). Returns `{document, html}` after Markdown parsing, sanitization, block normalization and document validation. It creates no resources or revisions; the original editor saves inserted content normally. Invalid requests reject with 400, unauthenticated requests with 401.
 
 Document image.src accepts validated HTTP/HTTPS URLs in addition to `/media/{UUID}`. Local media references still require an asset in the same world. data.cover_url accepts an empty string or validated HTTP/HTTPS image URL; UI selection of a linked portrait clears cover_asset and selection of an uploaded portrait clears cover_url. Reader projections use published source values. External URLs are stored, not fetched by the server or included as uploaded bytes in archives. Graph node portrait_url is projected alongside portrait_asset_id from the same owner/published source snapshot.
+
+
+### Manuscript workspace (local owner)
+
+- GET /api/resources/{book}/manuscript returns original ordered nodes, statistics,
+  book data, checkpoint metadata and expected_revisions. Optional q searches node
+  titles, summaries and full prose. Reader-audience requests reject.
+- POST the same route with action and the exact expected_revisions map. Actions:
+  move (id/parent/position), settings (goal/label/author/subtitle/cover_asset/
+  writing_research/writing_include), checkpoint (name), delete_checkpoint
+  (checkpoint_id), publish (explicit selected snapshot edition). Conflicts return
+  409 and mutations are transactional. This does not start online hosting.
+- GET /api/resources/{book}/manuscript/checkpoints/{checkpoint} returns the restore
+  review, retained newer nodes and current revision map. POST with that map restores
+  the reviewed draft atomically, preserving current publication/access. Reader
+  requests reject. Newer top-level subtrees detach into the library, retaining IDs.
+- GET /api/resources/{book}/manuscript/compile accepts audience=owner|reader and
+  format=json|html|text. Reader editions require published root/nodes and use
+  published structure/selection, with private metadata filtered. HTML/text are
+  downloads; HTML embeds local images up to 32 MB. External URLs remain external.
+
+Checkpoint storage uses the original manuscript JSON: five named checkpoints,
+200 nodes each, within existing record size limits. Complete world archives remap
+embedded node/parent references. No additional process or database table is needed.
+
+
+### Conversion and reviewed cross-world copy/move
+
+POST /api/worlds/{world}/notebooks action=note_article accepts original note id,
+expected_revision, title and template. It preserves the note, creates one private
+linked article and returns entry/note/reused. Later retries return that same target;
+new edits do not synchronize automatically. Source/capture provenance is private.
+
+POST /api/worlds/{source}/transfer/preview accepts ids (1?100), target, UUID key,
+mode=copy|move and descendants boolean. It returns a dependency/reference/media
+report and signed 15-minute token; it performs no mutation.
+
+POST /api/worlds/{source}/transfer accepts the same selection, token and explicit
+acknowledge_references=true when required. It validates both owned worlds, rejects
+stale review, imports current resource graphs privately and records a persistent
+idempotency receipt. Move retains selected source originals in Trash. Incoming or
+opaque references remain literal with acknowledged manual steps. GET the same path
+with target/key retrieves a committed receipt without repeating the operation.
+Reader audience/outsider requests reject. Source metadata, destination settings and
+reused image bytes remain protected on transactional failures. _transfer_receipts
+is reserved world metadata and cannot be replaced by the general settings endpoint.
+
+Limits and supported remapping/history semantics are in validation-1.0.md. This is
+not an account-to-account transfer, public sharing API or arbitrary JSON migration.
+
+## Campaign briefing and linked follow-ups
+
+The owner-only overview GET/POST accepts optional `briefing`: `overview`, `current`, `leads`, `reference` are same-world active resource UUIDs or empty strings; `cast` contains up to 12 distinct UUIDs. Previously saved references to Trash remain removable/recoverable. Omitted briefing in a legacy save retains it. Unsupported keys, foreign/new unavailable references and stale `expected_revision` reject. Portable archives remap these UUIDs; malformed or missing archive references abort restoration.
+
+The entry sidebar creates private ordinary tasks through the existing resource endpoint, with `data.source_note_id` and a native document resourceLink to the original. Source edits must save first. Task completion PATCH retains unrelated data and includes `expected_revision`. Board relationship editing uses the existing connection PATCH with its original ID and expected revision; conflicts keep the local form draft. No new authentication or public endpoint is introduced.
+
+## Typed tables and generation (1.1)
+
+Owner-only `GET /api/resources/{id}/table-exchange?format=json|csv` downloads a table/generator attachment. JSON uses `{format:"worldbuilder-table",version:1,kind,title,data}`; CSV contains header/cell values only. `POST` on that path accepts `{format,text,columns?}` and returns `{data,warnings}` without writing. Optional CSV `columns` specifies IDs/types in header order. Confirmed replacement uses ordinary resource PATCH with `expected_revision`; unknown target data is retained by the editor merge, while imported colliding keys intentionally replace it. Native History stores saved revisions.
+
+`POST /api/resources/{id}/roll` accepts optional string `seed` (at most 200 characters). It reads the saved original, returns `{result}`, and writes successful activity only after the entire composition succeeds. Existing row/cells/rolled fields remain; result also has `resource_id`, `source_title`, `source_revision`, `text`, optional `selection_roll` and ordered `children`. Linked generation has no reader/public endpoint.
+
+`data.roll_mode` is `weighted` (default) or `range`. Range mode uses `range_formula` (default `1d20`) and integer inclusive row `min`/`max`. Ranges cannot overlap; an uncovered roll is an error. `generator_steps` allows 12 ordered `{id,label,resource_id,when_column?,when_value?}` steps per source. A missing condition is unconditional; otherwise compare the selected cell exactly to the supplied string (numeric/boolean cells use JSON form). Steps must reference active same-world tables/generators. Runtime checks cycles, eight levels and 32 total table rolls. No expression evaluator or executable script is involved. Reader snapshots strip owner step configuration and hide unpublished entry-link UUIDs.
+
+## Native source blocks and dice (1.2)
+
+Document nodes `sourceBlock` use `{id,label}` attributes and may reference same-world table/generator/map/timeline/relationship originals. `diceButton` is an inline atom with `{formula,label}`. Labels are at most 180 characters; formulas use the existing bounded dice parser. Documents allow at most 40 interactive atoms total and no hidden child documents within atoms. Reference/backlink validation and native archive ID remapping include source blocks.
+
+Authenticated owner-only `GET /api/resources/{id}/live-source?audience=owner|reader` returns `{entry,links,assets,audience}`. Trash/unsupported/foreign sources return 404. Reader preview requires a currently public published source and uses its snapshot through the existing reader projection; private table links, generation-step configuration and private map layers/assets are excluded. `links` contains only needed table labels and `assets` only referenced map media. This is not anonymous or player-account access. The endpoint performs no writes.
+
+`POST /api/tools/dice-preview` validates `{formula}` and returns canonical formula/count/keep/minimum/maximum without consuming randomness or creating activity. Explicit owner rolls use the existing `/api/tools/dice` and table `/roll` endpoints. Frontend reader controls are disabled/omitted; no separate public roll endpoint exists.
+
+Server HTML includes escaped static source fallbacks: table previews cap at 12 rows and 8 columns; unsupported/unavailable targets become neutral placeholders. Reader source labels/IDs are redacted using the same resource projection as normal links. Local interactive hydration preserves source position in the prose; static exports require no editor scripts. Only native source references are supported; arbitrary iframe URLs or executable user scripts are not accepted.
+
+## Owner world search and research notes (1.3)
+
+`POST /api/worlds/{id}/search` accepts `{filters,page}`. Filter keys are `query` (200 characters), `scope` (`all|entries|images|relationships`), `kind`, `tag`, `status`, `visibility`, and `sort` (`relevance|recent|title`). Words must all match; double quotes retain a phrase. Returns `{results,total,page,pages,scopes,kinds,filters}` with 20 results per page, bounded excerpts and match-field labels. Type/scope facets describe matches before the selected type/scope restriction; other filters already apply. No article body is copied into a search index response. Image Recent uses upload time. This read workflow is authenticated owner-only and CSRF protected; it rejects reader-audience payloads and excludes Trash/dead relationship endpoints.
+
+`GET/POST /api/worlds/{id}/saved-searches` reads or changes `world.data.search_workspace` (`revision`, up to 30 saved definitions). POST uses `expected_revision`, `action:save|delete`, UUID `id`, and name/filters for save. Stale writes return 409, general world settings preserve the reserved key, and unknown world/definition data remains. Native world archives include the definitions. Browser-only last-query/panel preferences are separate from saved definitions.
+
+`GET /api/resources/{id}/annotations?resolved=1&page=0` returns ten private original research notes per page. Owner-only POST creates with `{action:create,key,source_revision,title,text,quote}`; body is up to 20,000 characters, excerpt up to 2,000. The current source revision must match. The transaction checks an existing source/key before the revision gate: same payload replay returns the original note, changed payload/key reuse returns 409. No automatic network retry is performed. Other actions use note `id` and `expected_revision`: `status` takes open/resolved, `edit` replaces the submitted note text/excerpt/title, and `trash` retains the original for normal recovery. The UI opens the normal rich editor for general note editing.
+
+Research metadata includes `annotation_source_id`, `annotation_source_revision`, capture key/fingerprint, quote, text and status. Existing source/capture provenance cannot be stripped or reassigned through generic saves. Records must be private notes; publication rejects them. Reader serialization/public references defensively omit even legacy improperly published research records. Quote/link text is rendered through native escaped documents. Archives remap source UUIDs and native links. Complete owner backups intentionally retain these private notes; reader notebook exports omit them. Co-author attribution/threads and online reader groups are outside this local delivery.
+
+## Owner World explorer (1.4.0)
+
+- `POST /api/worlds/{world}/explorer`: query, section (`all`, `people`, `places`, `groups`, `stories`, `reference`), tag, parent collection UUID, shelf UUID, sort (`title`, `recent`, `shelf`), zero-based page and explicit `include_internal` boolean. Returns 24 cards/page, matching subject counts, collection navigation and breadcrumbs. No source writes. Invalid/deleted collections and missing shelves require a new selection; foreign world access returns 404.
+- `GET /api/resources/{id}/explorer`: original owner serialization, up to 60 same-world live connections and up to 60 explicitly linked originals. Trashed endpoints/edges are excluded. No reader audience is supported.
+- `GET /api/worlds/{world}/explorer/shelves`: revisioned world shelf profile.
+- `POST /api/worlds/{world}/explorer/shelves`: `action: save|delete`, stable shelf UUID `id`, `expected_revision`; save includes name and ordered original UUID `entries`. Maximum 24 shelves, 120 distinct references each; normalized duplicate names reject. CAS covers the full world JSON to avoid lost concurrent settings. Unknown existing metadata is retained. Lost-response retries with the old revision reject instead of creating duplicate shelves; reload settings and reuse the same stable ID. Unavailable original references remain removable/recoverable, while new foreign/missing references reject.
+
+Authentication and normal CSRF checks apply. Whole-world archives remap shelf original IDs and validate missing references transactionally. No public hosting/player access is implied.

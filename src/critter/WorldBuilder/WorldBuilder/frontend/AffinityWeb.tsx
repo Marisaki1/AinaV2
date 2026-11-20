@@ -1,3 +1,4 @@
+import type { useCampaignFloor } from "./FloorScope";
 import React, { useEffect, useId, useRef, useState } from "react";
 import {
   GraphContextMenu,
@@ -932,16 +933,22 @@ export function AffinityDiagram({
 export function AffinityWorkspace({
   ctx,
   campaignId = "",
+  floorScope,
 }: {
   ctx: AppContext;
   campaignId?: string;
+  floorScope?: ReturnType<typeof useCampaignFloor>;
 }) {
-  const boards = ctx.entries.filter(
+  const available = ctx.entries.filter(
     (e) =>
       e.kind === "relationship" &&
-      e.data.layout === "affinity" &&
-      (!campaignId || e.data.campaign_id === campaignId),
+      e.data.layout === "affinity",
   );
+  const campaignBoards = available.filter((entry) => entry.data.campaign_id === campaignId);
+  const boards = !campaignId ? available :
+    campaignBoards.length ? campaignBoards :
+      available.filter((entry) => !entry.data.campaign_id);
+  const selectedFloor = floorScope?.floors.find((floor) => floor.id === floorScope.selection);
   const [chosen, setChosen] = useState(""),
     [creating, setCreating] = useState(false),
     [title, setTitle] = useState(""),
@@ -1000,6 +1007,24 @@ export function AffinityWorkspace({
       setBusy(false);
     }
   };
+  const scopedGraph = (() => {
+    if (!graph || graph.id !== board?.id) return null;
+    if (!floorScope) return graph.value;
+    const entries = new Map(graph.value.nodes.map((node) => [node.id, node.entry_id || node.id]));
+    const edges = graph.value.edges.filter((edge) => floorScope.includesConnection({
+      ...edge, source: entries.get(edge.source) || edge.source, target: entries.get(edge.target) || edge.target,
+    }, floorScope.selection));
+    const endpoints = new Set(edges.flatMap((edge) => [edge.source, edge.target]));
+    return {
+      ...graph.value,
+      edges,
+      nodes: graph.value.nodes.filter((node) => {
+        const id = entries.get(node.id)!;
+        return endpoints.has(node.id) ||
+          (floorScope.campaignIds.has(id) && floorScope.includes(id, floorScope.selection));
+      }),
+    };
+  })();
   return (
     <section className="affinity-workspace">
       <div className="section-heading">
@@ -1051,11 +1076,11 @@ export function AffinityWorkspace({
           Reload saved web
         </button>
       )}
-      {board && graph?.id === board.id ? (
+      {board && scopedGraph ? (
         <AffinityDiagram
-          key={board.id}
+          key={board.id + (floorScope?.selection || "")}
           ctx={ctx}
-          graph={graph.value}
+          graph={scopedGraph}
           campaignId={board.data.campaign_id || ""}
           busy={busy}
           onPositions={savePositions}
@@ -1179,7 +1204,7 @@ export function AffinityWorkspace({
                   summary: noteText.slice(0, 240),
                   document: docFromText(noteText),
                   visibility: "private",
-                  parent: campaignId || null,
+                  parent: selectedFloor?.id || campaignId || null,
                   data: {
                     record_type: "note",
                     campaign_id: campaignId,
@@ -1241,7 +1266,7 @@ export function AffinityWorkspace({
             ctx={{
               ...ctx,
               entries: ctx.entries.filter((e) =>
-                graph?.value.nodes.some((n) => n.id === e.id),
+                scopedGraph?.nodes.some((n) => n.id === e.id),
               ),
             }}
             data={form}
@@ -1278,7 +1303,10 @@ export function AffinityWorkspace({
                         ...fields,
                         expected_revision: form.revision,
                       })
-                    : post("/worlds/" + ctx.world.id + "/connections", fields));
+                    : post("/worlds/" + ctx.world.id + "/connections", {
+                        ...fields,
+                        ...(selectedFloor ? { floor_id: selectedFloor.id } : {}),
+                      }));
                   await ctx.refresh();
                   setForm(null);
                 } catch (e: any) {

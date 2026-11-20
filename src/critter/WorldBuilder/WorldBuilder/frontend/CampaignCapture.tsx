@@ -15,6 +15,7 @@ export function CampaignCapture({
   ctx,
   campaign,
   sessionId = "",
+  floorId,
   threadId = "",
   sceneId = "",
   onClose,
@@ -23,6 +24,7 @@ export function CampaignCapture({
   ctx: AppContext;
   campaign: Entry;
   sessionId?: string;
+  floorId?: string;
   threadId?: string;
   sceneId?: string;
   onClose: () => void;
@@ -135,6 +137,7 @@ export function CampaignCapture({
       }}
     >
       <form
+        onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); e.currentTarget.requestSubmit(); } }}
         onSubmit={async (e) => {
           e.preventDefault();
           if (busy || !title.trim()) return;
@@ -150,7 +153,7 @@ export function CampaignCapture({
                 summary: body.slice(0, 240),
                 document: docFromText(body),
                 visibility: "private",
-                parent: campaign.id,
+                parent: floorId || campaign.id,
                 tags: tags
                   .split(",")
                   .map((t) => t.trim())

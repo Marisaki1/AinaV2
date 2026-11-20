@@ -71,6 +71,12 @@ export function NoteForm({
       }}
     >
       <form
+        onKeyDown={(e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+            e.preventDefault();
+            e.currentTarget.requestSubmit();
+          }
+        }}
         onSubmit={async (e) => {
           e.preventDefault();
           if (busy || disabled) return;
@@ -814,18 +820,20 @@ export function BulkNoteTags({
   onSave: NoteSave;
   onClose: () => void;
 }) {
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]),
+    [removeTags, setRemoveTags] = useState<string[]>([]);
   return (
     <NoteForm
       title="Tag selected originals"
-      dirty={!!tags.length}
-      disabled={!tags.length}
-      submit="Add tags to originals"
+      dirty={!!tags.length || !!removeTags.length}
+      disabled={!tags.length && !removeTags.length}
+      submit="Apply tag changes"
       onClose={onClose}
       onSubmit={() =>
         onSave({
           action: "bulk",
           add_tags: tags,
+          remove_tags: removeTags,
           entries: entries.map((e) => ({ id: e.id, revision: e.revision })),
         })
       }
@@ -839,6 +847,12 @@ export function BulkNoteTags({
         value={tags}
         onChange={setTags}
         placeholder="clue, reviewed, session"
+      />
+      <TagField
+        label="Tags to remove"
+        value={removeTags}
+        onChange={setRemoveTags}
+        placeholder="Remove these tags from selected originals"
       />
     </NoteForm>
   );

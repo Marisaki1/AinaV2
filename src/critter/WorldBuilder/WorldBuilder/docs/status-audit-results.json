@@ -1,0 +1,1279 @@
+{
+  "schemaVersion": 1,
+  "reviewedOn": "2026-11-19",
+  "applicationFingerprint": "6fb67eaa9914d3cdffe57e6089b7c874bf5736fd945b018f05cd1e2cde019761",
+  "backendTestCount": 798,
+  "runs": [
+    {
+      "id": "django",
+      "command": "Isolated Django runner: run_tests([studio]), WORLDBUILDER_DATA set to a new temporary directory",
+      "exitCode": 0,
+      "result": "798 tests passed in 92.158 seconds with no system-check issues.",
+      "scope": "Backend assertions across existing modules; not a complete UI/load/accessibility certification."
+    },
+    {
+      "id": "browser",
+      "command": "node scripts/check-worldbuilder-campaign-ui.js",
+      "exitCode": 0,
+      "result": "Campaign floor creation, assignment, removal, floor isolation and refresh passed alongside relationship board, notes, follow-ups and briefing regressions.",
+      "scope": "Headless Edge with a disposable account and database. Production campaign import was separately verified against a pre-import SQLite backup.",
+      "artifacts": [
+        "C:/Users/Marisaki/AppData/Local/Temp/aina-campaign-ui-xACT8w"
+      ],
+      "baselineNote": "Search/research, explorer and managed editing/restart browser acceptance were recorded in the 1.4 release."
+    },
+    {
+      "id": "typescript",
+      "command": "npm.cmd run check; node node_modules/vite/bin/vite.js build --configLoader runner (WorldBuilder directory)",
+      "exitCode": 0,
+      "result": "TypeScript, 120 searchable-dropdown locations and the production build passed.",
+      "scope": "Current source/type checks and production bundling; no complete platform acceptance claim."
+    },
+    {
+      "id": "host",
+      "command": "node --test test/worldbuilder-host.test.js",
+      "exitCode": 0,
+      "result": "1 managed startup-failure lifecycle test passed.",
+      "scope": "Synthetic failure while stdin remains open; no owner data or real process killed.",
+      "baselineNote": "Prior synthetic host-failure fixture retained; host launcher code is unchanged. Managed startup/shutdown/restart was rechecked by the current integration browser suite."
+    },
+    {
+      "id": "knowledge",
+      "command": "node scripts/check-worldbuilder-knowledge.js",
+      "exitCode": 0,
+      "result": "Mention matching/format preservation and safe board SVG pure checks passed.",
+      "scope": "Pure transformations; no runtime or account writes.",
+      "baselineNote": "Retained prior pure transformation evidence; unchanged helper source. Current UI suites recheck connected campaign and relationship workflows."
+    },
+    {
+      "id": "tracker",
+      "command": "npm run test:worldbuilder:status",
+      "exitCode": 0,
+      "result": "16 tracker invariant tests passed, including source-fingerprint/count drift rejection.",
+      "scope": "Counts, original IDs, evidence paths, implementation/verification separation, confidence, dependencies and generated summary."
+    },
+    {
+      "id": "transfer-final",
+      "command": "npm run test:worldbuilder:transfer",
+      "exitCode": 0,
+      "result": "Final rebuilt transfer UI passed conversion/replay, dependency copying, Move recovery after lost responses, and 390/1024/1500 layouts.",
+      "scope": "Synthetic accounts/worlds; no existing user content transferred.",
+      "artifacts": [
+        "C:/Users/Marisaki/AppData/Local/Temp/aina-transfer-ui-EAyLaT"
+      ],
+      "baselineNote": "Retained earlier transfer-browser evidence; not rerun in the 1.3 search/research batch. Archive remapping and source preservation are directly covered by the current backend suite."
+    }
+  ],
+  "historicalArtifactReferences": [
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/backend-tests-0.10.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/concurrency-0.10.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/connections-stale-0.10.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/connections-ui-0.10.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/dropdowns-coverage-0.10.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/dropdowns-desktop-0.10.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/dropdowns-keyboard-0.10.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/dropdowns-mobile-0.10.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/dropdowns-tablet-0.10.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/main-0.10-before.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/main-0.10-browser.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/main-0.10-login.png",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/migration-check-0.10.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/recovery-0.10.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/recurrence-regression-0.10.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/smoke-0.10.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.10.md",
+      "artifact": ".preview/upgrade-0.10-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.11.md",
+      "artifact": ".preview/backend-tests-0.11.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.11.md",
+      "artifact": ".preview/main-0.11-before.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.11.md",
+      "artifact": ".preview/main-0.11-browser.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.11.md",
+      "artifact": ".preview/main-0.11-login.png",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.11.md",
+      "artifact": ".preview/recovery-0.11.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.11.md",
+      "artifact": ".preview/recurrence-regression-0.11.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.11.md",
+      "artifact": ".preview/smoke-0.11.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.11.md",
+      "artifact": ".preview/special-desktop-0.11.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.11.md",
+      "artifact": ".preview/special-maps-0.11.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.11.md",
+      "artifact": ".preview/special-mobile-0.11.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.11.md",
+      "artifact": ".preview/special-reader-0.11.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.11.md",
+      "artifact": ".preview/special-tablet-0.11.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.11.md",
+      "artifact": ".preview/special-ui-0.11.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.11.md",
+      "artifact": ".preview/upgrade-0.11-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.12.md",
+      "artifact": ".preview/backend-tests-0.12.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.12.md",
+      "artifact": ".preview/campaign-desktop-0.12.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.12.md",
+      "artifact": ".preview/campaign-journal-0.12.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.12.md",
+      "artifact": ".preview/campaign-links-0.12.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.12.md",
+      "artifact": ".preview/campaign-mobile-0.12.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.12.md",
+      "artifact": ".preview/campaign-preservation-0.12.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.12.md",
+      "artifact": ".preview/campaign-session-0.12.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.12.md",
+      "artifact": ".preview/campaign-tablet-0.12.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.12.md",
+      "artifact": ".preview/campaign-tests-0.12.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.12.md",
+      "artifact": ".preview/main-0.12-before.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.12.md",
+      "artifact": ".preview/main-0.12-browser.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.12.md",
+      "artifact": ".preview/main-0.12-login.png",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.12.md",
+      "artifact": ".preview/recovery-0.12.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.12.md",
+      "artifact": ".preview/smoke-0.12.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.12.md",
+      "artifact": ".preview/upgrade-0.12-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.13.md",
+      "artifact": ".preview/affinity-desktop-0.13.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.13.md",
+      "artifact": ".preview/affinity-interactions-0.13.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.13.md",
+      "artifact": ".preview/affinity-mobile-0.13.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.13.md",
+      "artifact": ".preview/affinity-reader-0.13.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.13.md",
+      "artifact": ".preview/affinity-tablet-0.13.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.13.md",
+      "artifact": ".preview/affinity-tests-0.13.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.13.md",
+      "artifact": ".preview/affinity-ui-0.13.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.13.md",
+      "artifact": ".preview/backend-tests-0.13.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.13.md",
+      "artifact": ".preview/campaign-regression-0.13.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.13.md",
+      "artifact": ".preview/main-0.13-before.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.13.md",
+      "artifact": ".preview/main-0.13-browser.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.13.md",
+      "artifact": ".preview/main-0.13-login.png",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.13.md",
+      "artifact": ".preview/recovery-0.13.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.13.md",
+      "artifact": ".preview/smoke-0.13.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.13.md",
+      "artifact": ".preview/upgrade-0.13-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/affinity-regression-0.14.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/auto-links-settings-0.14.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/auto-links-ui-0.14.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/backend-tests-0.14.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/guide-desktop-0.14.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/guide-link-tests-0.14.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/guide-mobile-0.14.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/guide-reader-0.14.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/guide-tablet-0.14.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/guide-ui-0.14.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/main-0.14-before.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/main-0.14-browser.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/main-0.14-login.png",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/map-history-regression-0.14.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/recovery-0.14.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/smoke-0.14.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.14.md",
+      "artifact": ".preview/upgrade-0.14-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.15.md",
+      "artifact": ".preview/backend-tests-0.15.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.15.md",
+      "artifact": ".preview/recovery-0.15.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.15.md",
+      "artifact": ".preview/smoke-0.15.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.15.md",
+      "artifact": ".preview/upgrade-0.15-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.16.md",
+      "artifact": ".preview/backend-tests-0.16.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.16.md",
+      "artifact": ".preview/recovery-0.16.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.16.md",
+      "artifact": ".preview/session-errors-0.16.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.16.md",
+      "artifact": ".preview/session-guide-0.16.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.16.md",
+      "artifact": ".preview/session-mobile-0.16.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.16.md",
+      "artifact": ".preview/session-reader-0.16.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.16.md",
+      "artifact": ".preview/smoke-0.16.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.16.md",
+      "artifact": ".preview/upgrade-0.16-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.17.md",
+      "artifact": ".preview/backend-tests-0.17.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.17.md",
+      "artifact": ".preview/location-errors-0.17.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.17.md",
+      "artifact": ".preview/location-mobile-0.17.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.17.md",
+      "artifact": ".preview/location-reader-0.17.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.17.md",
+      "artifact": ".preview/location-ui-0.17.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.17.md",
+      "artifact": ".preview/recovery-0.17.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.17.md",
+      "artifact": ".preview/smoke-0.17.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.17.md",
+      "artifact": ".preview/upgrade-0.17-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.18.md",
+      "artifact": ".preview/backend-tests-0.18.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.18.md",
+      "artifact": ".preview/recovery-0.18.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.18.md",
+      "artifact": ".preview/smoke-0.18.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.18.md",
+      "artifact": ".preview/upgrade-0.18-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.18.md",
+      "artifact": ".preview/workbench-capture-0.18.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.18.md",
+      "artifact": ".preview/workbench-desk-0.18.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.18.md",
+      "artifact": ".preview/workbench-errors-0.18.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.18.md",
+      "artifact": ".preview/workbench-integration-0.18.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.18.md",
+      "artifact": ".preview/workbench-mobile-0.18.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.18.md",
+      "artifact": ".preview/workbench-notebook-0.18.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.18.md",
+      "artifact": ".preview/workbench-reader-0.18.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.18.md",
+      "artifact": ".preview/workbench-threads-0.18.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.18.md",
+      "artifact": ".preview/workbench-world-reference-0.18.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.19.md",
+      "artifact": ".preview/backend-tests-0.19.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.19.md",
+      "artifact": ".preview/handout-download-0.19/campaign-handout.html",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.19.md",
+      "artifact": ".preview/planning-agenda-0.19.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.19.md",
+      "artifact": ".preview/planning-errors-0.19.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.19.md",
+      "artifact": ".preview/planning-handout-0.19.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.19.md",
+      "artifact": ".preview/planning-integration-0.19.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.19.md",
+      "artifact": ".preview/planning-mobile-0.19.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.19.md",
+      "artifact": ".preview/planning-preparation-0.19.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.19.md",
+      "artifact": ".preview/planning-review-0.19.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.19.md",
+      "artifact": ".preview/planning-tests-0.19.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.19.md",
+      "artifact": ".preview/planning-tray-0.19.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.19.md",
+      "artifact": ".preview/recovery-0.19.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.19.md",
+      "artifact": ".preview/smoke-0.19.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.19.md",
+      "artifact": ".preview/upgrade-0.19-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/backend-tests-0.20.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/bundle-upgrade-0.20.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/continuity-developments-0.20.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/continuity-errors-0.20.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/continuity-integration-0.20.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/continuity-item-history-0.20.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/continuity-journey-media-wrapup-0.20.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/continuity-mobile-0.20.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/continuity-party-inventory-0.20.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/continuity-persistence-0.20.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/continuity-roles-gm-0.20.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/continuity-tests-0.20.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/database-persistence-0.20.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/recovery-0.20.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/smoke-0.20.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.20.md",
+      "artifact": ".preview/upgrade-0.20-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.21.md",
+      "artifact": ".preview/backend-tests-0.21.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.21.md",
+      "artifact": ".preview/bundle-install-0.21.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.21.md",
+      "artifact": ".preview/database-persistence-0.21.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.21.md",
+      "artifact": ".preview/main-0.21-before.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.21.md",
+      "artifact": ".preview/notebook-audit-0.21.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.21.md",
+      "artifact": ".preview/notebook-board-export-0.21.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.21.md",
+      "artifact": ".preview/notebook-errors-0.21.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.21.md",
+      "artifact": ".preview/notebook-mobile-0.21.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.21.md",
+      "artifact": ".preview/notebook-organize-0.21.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.21.md",
+      "artifact": ".preview/notebook-persistence-0.21.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.21.md",
+      "artifact": ".preview/notebook-tests-0.21.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.21.md",
+      "artifact": ".preview/notebook-writing-0.21.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.21.md",
+      "artifact": ".preview/recovery-0.21.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.21.md",
+      "artifact": ".preview/smoke-0.21.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.21.md",
+      "artifact": ".preview/upgrade-0.21-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.22.md",
+      "artifact": ".preview/affinity-interactions-0.22.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.22.md",
+      "artifact": ".preview/backend-tests-0.22.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.22.md",
+      "artifact": ".preview/bundle-install-0.22.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.22.md",
+      "artifact": ".preview/graph-inputs-0.22.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.22.md",
+      "artifact": ".preview/input-media-0.22.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.22.md",
+      "artifact": ".preview/input-mobile-0.22.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.22.md",
+      "artifact": ".preview/main-0.22-before.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.22.md",
+      "artifact": ".preview/markdown-errors-0.22.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.22.md",
+      "artifact": ".preview/media-notebook-tests-0.22.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.22.md",
+      "artifact": ".preview/recovery-0.22.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.22.md",
+      "artifact": ".preview/smoke-0.22.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.22.md",
+      "artifact": ".preview/transfer-0.22.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.22.md",
+      "artifact": ".preview/upgrade-0.22-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.3.md",
+      "artifact": ".preview/main-0.3-before.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.3.md",
+      "artifact": ".preview/upgrade-0.3-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.4.md",
+      "artifact": ".preview/main-0.4-before.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.4.md",
+      "artifact": ".preview/main-0.4-login.png",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.4.md",
+      "artifact": ".preview/recovery-0.4.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.4.md",
+      "artifact": ".preview/upgrade-0.4-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.5.md",
+      "artifact": ".preview/graph-concurrency-0.5.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.5.md",
+      "artifact": ".preview/main-0.5-before.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.5.md",
+      "artifact": ".preview/main-0.5-login.png",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.5.md",
+      "artifact": ".preview/recovery-0.5.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.5.md",
+      "artifact": ".preview/upgrade-0.5-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.6.md",
+      "artifact": ".preview/graph-downloads-0.6.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.6.md",
+      "artifact": ".preview/main-0.6-before.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.6.md",
+      "artifact": ".preview/main-0.6-login.png",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.6.md",
+      "artifact": ".preview/offline-check-0.6.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.6.md",
+      "artifact": ".preview/offline-graph-0.6.png",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.6.md",
+      "artifact": ".preview/qa-download-cleanup-0.6.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.6.md",
+      "artifact": ".preview/recovery-0.6.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.6.md",
+      "artifact": ".preview/upgrade-0.6-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.7.md",
+      "artifact": ".preview/backend-tests-0.7.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.7.md",
+      "artifact": ".preview/calendar-boundaries-0.7.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.7.md",
+      "artifact": ".preview/calendar-desktop-0.7.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.7.md",
+      "artifact": ".preview/calendar-download-ui-0.7.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.7.md",
+      "artifact": ".preview/calendar-downloads-0.7.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.7.md",
+      "artifact": ".preview/calendar-mobile-0.7.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.7.md",
+      "artifact": ".preview/calendar-tablet-0.7.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.7.md",
+      "artifact": ".preview/calendar-ui-0.7.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.7.md",
+      "artifact": ".preview/main-0.7-before.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.7.md",
+      "artifact": ".preview/main-0.7-browser.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.7.md",
+      "artifact": ".preview/main-0.7-login.png",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.7.md",
+      "artifact": ".preview/recovery-0.7.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.7.md",
+      "artifact": ".preview/smoke-0.7.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.7.md",
+      "artifact": ".preview/upgrade-0.7-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.8.md",
+      "artifact": ".preview/backend-tests-0.8.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.8.md",
+      "artifact": ".preview/eras-desktop-0.8.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.8.md",
+      "artifact": ".preview/eras-mobile-0.8.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.8.md",
+      "artifact": ".preview/eras-regressions-0.8.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.8.md",
+      "artifact": ".preview/eras-tablet-0.8.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.8.md",
+      "artifact": ".preview/eras-ui-0.8.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.8.md",
+      "artifact": ".preview/eras-ui-0.8.png",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.8.md",
+      "artifact": ".preview/main-0.8-before.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.8.md",
+      "artifact": ".preview/main-0.8-browser.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.8.md",
+      "artifact": ".preview/main-0.8-login.png",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.8.md",
+      "artifact": ".preview/recovery-0.8.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.8.md",
+      "artifact": ".preview/smoke-0.8.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.8.md",
+      "artifact": ".preview/upgrade-0.8-result.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.9.md",
+      "artifact": ".preview/backend-tests-0.9.txt",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.9.md",
+      "artifact": ".preview/main-0.9-before.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.9.md",
+      "artifact": ".preview/main-0.9-browser.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.9.md",
+      "artifact": ".preview/main-0.9-login.png",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.9.md",
+      "artifact": ".preview/recovery-0.9.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.9.md",
+      "artifact": ".preview/recurrence-desktop-0.9.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.9.md",
+      "artifact": ".preview/recurrence-mobile-0.9.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.9.md",
+      "artifact": ".preview/recurrence-tablet-0.9.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.9.md",
+      "artifact": ".preview/recurrence-ui-0.9.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.9.md",
+      "artifact": ".preview/recurrence-ui-0.9.png",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.9.md",
+      "artifact": ".preview/smoke-0.9.json",
+      "present": false
+    },
+    {
+      "report": "src/critter/WorldBuilder/WorldBuilder/docs/validation-0.9.md",
+      "artifact": ".preview/upgrade-0.9-result.json",
+      "present": false
+    }
+  ],
+  "limitations": [
+    "Text/AST/symbol inventory covers every included authored file; semantic review is targeted, not an exhaustive line-by-line proof.",
+    "Dependency/generated/cache/account/media contents are excluded from source review.",
+    "Historical external documentation and CDP-only QA suites were not reverified live.",
+    "Owner content was not edited or seeded for tests. A consistent SQLite backup was created with integrity and 22 matching table counts; feature tests use isolated data.",
+    "No complete load, assistive-technology, physical network-disconnection or online player/group certification is claimed.",
+    "Cross-world transfer is bounded and partial: opaque references require explicit manual handling; full general revision histories are retained at the source rather than migrated."
+  ],
+  "historicalRuns": [
+    {
+      "applicationFingerprint": "1ffa3b78c66de4f4fc7761e5a3e05de7e18a1b9c8b976b9048ea488a53b4915b",
+      "backendTestCount": 676,
+      "runs": [
+        {
+          "id": "django",
+          "command": "Isolated Django runner: run_tests([studio]), WORLDBUILDER_DATA set to a new temporary directory",
+          "exitCode": 0,
+          "result": "702 tests passed in 113.735 seconds; no system-check issues.",
+          "scope": "Backend assertions across existing modules; not a complete UI/load/accessibility certification."
+        },
+        {
+          "id": "browser",
+          "command": "npm run test:worldbuilder",
+          "exitCode": 0,
+          "result": "Integrated, manuscript and reviewed note-conversion/transfer browser workflows passed.",
+          "scope": "Isolated headless Edge; existing regression plus note conversion, reviewed copies/moves, private destinations, reference remapping and confirmed receipt recovery after dropped responses.",
+          "artifacts": [
+            "C:/Users/Marisaki/AppData/Local/Temp/aina-worldbuilder-qs7zYd",
+            "C:/Users/Marisaki/AppData/Local/Temp/aina-manuscripts-xVOl5x",
+            "C:/Users/Marisaki/AppData/Local/Temp/aina-transfer-ui-oPrIcE"
+          ]
+        },
+        {
+          "id": "typescript",
+          "command": "npm run check (WorldBuilder directory)",
+          "exitCode": 0,
+          "result": "TypeScript passed; 107 searchable dropdown locations; production build passed.",
+          "scope": "Source/type guard; does not prove usability of every control."
+        },
+        {
+          "id": "host",
+          "command": "node --test test/worldbuilder-host.test.js",
+          "exitCode": 0,
+          "result": "1 managed startup-failure lifecycle test passed.",
+          "scope": "Synthetic failure while stdin remains open; no owner data or real process killed."
+        },
+        {
+          "id": "knowledge",
+          "command": "node scripts/check-worldbuilder-knowledge.js",
+          "exitCode": 0,
+          "result": "Mention matching/format preservation and safe board SVG pure checks passed.",
+          "scope": "Pure transformations; no runtime or account writes."
+        },
+        {
+          "id": "tracker",
+          "command": "npm run test:worldbuilder:status",
+          "exitCode": 0,
+          "result": "16 tracker invariant tests passed, including source-fingerprint/count drift rejection.",
+          "scope": "Counts, original IDs, evidence paths, implementation/verification separation, confidence, dependencies and generated summary."
+        },
+        {
+          "id": "transfer-final",
+          "command": "npm run test:worldbuilder:transfer",
+          "exitCode": 0,
+          "result": "Final rebuilt transfer UI passed conversion/replay, dependency copying, Move recovery after lost responses, and 390/1024/1500 layouts.",
+          "scope": "Synthetic accounts/worlds; no existing user content transferred.",
+          "artifacts": [
+            "C:/Users/Marisaki/AppData/Local/Temp/aina-transfer-ui-EAyLaT"
+          ]
+        }
+      ]
+    }
+  ],
+  "priorBaselineFingerprint": "7d33562ea85ba2dd4df1f691babef4eef23dfcadb9f8cf4068fb43f5c193b802",
+  "currentChangeScope": "Notes-first editor, local view restoration, draggable focused relationship board, responsive account menu. Data cleanup and character-name correction separately backed up and verified locally."
+}

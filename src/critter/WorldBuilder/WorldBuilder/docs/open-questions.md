@@ -1,6 +1,6 @@
 # Confirmed choices, unresolved details and research findings
 
-Date: 28 October 2026. Unresolved items remain in scope; they are not silently excluded or marked complete.
+Historical research baseline: 28 October 2026. External links/product descriptions below were not re-verified live during the 13 November local status audit. Current installation decisions and delivery classifications are in project-tracker.md and implementation-status.md. Unresolved items remain in scope; they are not silently excluded or marked complete.
 
 ## Confirmed with the user
 

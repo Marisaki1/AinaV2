@@ -1,5 +1,11 @@
 import { SearchableSelect } from "./SearchableSelect";
+import { KnowledgeLinks } from './KnowledgeLinks';
+import { SnippetLibrary } from './Snippets';
+import { TemplateFields, ArticleFields } from './StructuredFields';
 import { LinkedPortrait } from "./LinkedPortrait";
+import { EntryContext } from "./EntryContext";
+import { EntryAnnotations } from "./EntryAnnotations";
+import { LiveDocument, liveKinds } from "./LiveBlocks";
 import { isLocationEntry } from "./domain";
 import { CampaignRecordDetails } from "./CampaignRecords";
 import { MapGuide } from "./MapGuide";
@@ -87,10 +93,12 @@ function Details({
   entry,
   onData,
   ctx,
+  onUpgrade,
 }: {
   entry: Entry;
   onData: (value: Record<string, any>) => void;
   ctx: AppContext;
+  onUpgrade: (entry:Entry)=>void;
 }) {
   const data = entry.data,
     update = (key: string, value: any) => onData({ ...data, [key]: value });
@@ -119,6 +127,7 @@ function Details({
       entries={ctx.entries.filter((r) => r.kind === "campaign")}
     />
   );
+  if(entry.kind==='article'&&data.reusable_snippet)return <div className="field-grid"><Field label="Snippet collection" value={data.snippet_collection||''} onChange={v=>update('snippet_collection',v)}/><p className="muted">Live insertions read this original. Copied insertions keep their own text.</p></div>;
   if (entry.kind === "folder")
     return <CollectionRulesEditor data={data} onChange={onData} ctx={ctx} />;
   if (entry.kind === "relationship")
@@ -253,6 +262,15 @@ function Details({
           onChange={(v) => update("link_id", v)}
           entries={ctx.entries.filter((e) => e.id !== entry.id)}
         />
+        {entry.kind==='task' && <button type="button" className="button secondary" onClick={async()=>{
+          if(saveBeforeNavigate.current&&!(await saveBeforeNavigate.current()))return;
+          if(data.link_id){ctx.go('entry/'+data.link_id);return;}
+          try{
+            const latest=await api<Entry>('/resources/'+entry.id);
+            const result=await post<{entry:Entry}>(`/worlds/${ctx.world.id}/notebooks`,{action:'task_article',id:entry.id,expected_revision:latest.revision});
+            await ctx.refresh();ctx.go('entry/'+result.entry.id);
+          }catch(e:any){ctx.notify(e.message,true);}
+        }}>{data.link_id?'Open related entry':'Create linked article from task'}</button>}
       </div>
     );
   if (entry.kind === "variable")
@@ -263,85 +281,7 @@ function Details({
         {field("Tooltip", "tooltip")}
       </div>
     );
-  if (entry.kind === "template")
-    return (
-      <div>
-        <p className="muted">
-          These fields appear when this template is chosen for a new article.
-        </p>
-        {(data.fields || []).map((f: any, i: number) => (
-          <div className="schema-row" key={f.id || i}>
-            <input
-              aria-label={"Field " + (i + 1) + " name"}
-              value={f.name}
-              onChange={(e) =>
-                update(
-                  "fields",
-                  data.fields.map((r: any, n: number) =>
-                    n === i ? { ...r, name: e.target.value } : r,
-                  ),
-                )
-              }
-            />
-            <SearchableSelect
-              aria-label={"Field " + (i + 1) + " type"}
-              value={f.type || "text"}
-              onChange={(e) =>
-                update(
-                  "fields",
-                  data.fields.map((r: any, n: number) =>
-                    n === i ? { ...r, type: e.target.value } : r,
-                  ),
-                )
-              }
-            >
-              <option value="text">Text</option>
-              <option value="number">Number</option>
-              <option value="long">Long text</option>
-            </SearchableSelect>
-            <label className="check-label">
-              <input
-                type="checkbox"
-                checked={!!f.required}
-                onChange={(e) =>
-                  update(
-                    "fields",
-                    data.fields.map((r: any, n: number) =>
-                      n === i ? { ...r, required: e.target.checked } : r,
-                    ),
-                  )
-                }
-              />
-              Required
-            </label>
-            <button
-              className="icon-button"
-              aria-label="Remove field"
-              onClick={() =>
-                update(
-                  "fields",
-                  data.fields.filter((_: any, n: number) => n !== i),
-                )
-              }
-            >
-              <Trash2 size={15} />
-            </button>
-          </div>
-        ))}
-        <button
-          className="text-button"
-          onClick={() =>
-            update("fields", [
-              ...(data.fields || []),
-              { id: uid(), name: "New field", type: "text", required: false },
-            ])
-          }
-        >
-          <Plus size={16} />
-          Add field
-        </button>
-      </div>
-    );
+  if (entry.kind === "template") return <TemplateFields data={data} onData={onData}/>;
   if (entry.kind === "statblock")
     return (
       <>
@@ -498,6 +438,7 @@ function Details({
     return (
       <HierarchyEditor ctx={ctx} id={entry.id} data={data} onData={onData} />
     );
+  if(entry.template.startsWith("custom:")&&data.structured_schema) return <ArticleFields entry={entry} ctx={ctx} onData={onData} onUpgrade={onUpgrade}/>;
   const custom = ctx.entries.find((r) => "custom:" + r.id === entry.template);
   const fields = custom
     ? (custom.data.fields || []).map((f: any) => ({
@@ -554,13 +495,21 @@ export function EntryEditor({ id, ctx }: { id: string; ctx: AppContext }) {
       insert: (id: string, label: string) => void;
     } | null>(null),
     [history, setHistory] = useState<any[] | null>(null),
+    [livePicker, setLivePicker] = useState<{insert:(id:string,label:string)=>void;id:string}|null>(null),
+    [snippetPicker,setSnippetPicker]=useState<{insert:(entry:Entry,copy:boolean)=>void;selection?:any}|null>(null),
     [revisionPreview, setRevisionPreview] = useState<any>(null),
     [preview, setPreview] = useState<Entry | null>(null),
     [showPrivate, setShowPrivate] = useState(false),
     [focus, setFocus] = useState(false),
     [mapGuide, setMapGuide] = useState(false),
     [reading, setReading] = useState(false),
-    [linkedHtml, setLinkedHtml] = useState("");
+    [linkedHtml, setLinkedHtml] = useState(""),
+    [detailsOpen, setDetailsOpen] = useState(false);
+  const viewKey = `worldbuilder.entry-view:${ctx.world.id}:${id}`;
+  useEffect(() => {
+    if (loading) return;
+    try { localStorage.setItem(viewKey, JSON.stringify({ reading, detailsOpen, focus, showPrivate })); } catch {}
+  }, [viewKey, loading, reading, detailsOpen, focus, showPrivate]);
   const current = useRef<Entry | null>(null),
     dirty = useRef(false),
     generation = useRef(0),
@@ -618,6 +567,11 @@ export function EntryEditor({ id, ctx }: { id: string; ctx: AppContext }) {
         }
         current.current = restored;
         setDraft(restored);
+        try {
+          const view = JSON.parse(localStorage.getItem(viewKey) || "{}");
+          setDetailsOpen(view.detailsOpen === true); setFocus(view.focus === true); setShowPrivate(view.showPrivate === true);
+          if (view.reading === true && restored === value) { setLinkedHtml(value.html || ""); setReading(true); }
+        } catch {}
         if (restored === value) {
           dirty.current = false;
           setStatus("Saved");
@@ -798,6 +752,34 @@ export function EntryEditor({ id, ctx }: { id: string; ctx: AppContext }) {
       ctx.notify(e.message, true);
     }
   };
+  const noteFirst = ["article", "character", "note", "chapter", "scene", "manuscript", "quest", "session", "campaign"].includes(draft.kind);
+  const metadata = (<>
+          <textarea
+            className="entry-summary"
+            aria-label="Short description"
+            placeholder="A short description, a first impression, a reason to remember…"
+            value={draft.summary}
+            onChange={(e) => change({ summary: e.target.value })}
+          />
+          <div className="special-details">
+            <Details
+              entry={draft}
+              ctx={ctx}
+              onData={(data) => change({ data })}
+              onUpgrade={saved=>{current.current=saved;dirty.current=false;setDraft(saved);localStorage.removeItem(cache);setStatus("Schema saved to this computer");}}
+            />
+            {["campaign", "session", "note", "task", "quest"].includes(
+              draft.kind,
+            ) && (
+              <CampaignRecordDetails
+                entry={draft}
+                data={draft.data}
+                ctx={ctx}
+                onData={(data) => change({ data })}
+              />
+            )}
+          </div>
+  </>);
   return (
     <div
       className={
@@ -805,6 +787,7 @@ export function EntryEditor({ id, ctx }: { id: string; ctx: AppContext }) {
         (wide ? "wide-entry " : "") +
         (focus ? "focus-mode" : "")
       }
+      data-entry-id={id}
     >
       <div className="entry-topline">
         <button className="text-button" onClick={() => ctx.go("library")}>
@@ -916,6 +899,7 @@ export function EntryEditor({ id, ctx }: { id: string; ctx: AppContext }) {
           </button>
           <button
             className="button secondary small"
+            disabled={!!draft.data.annotation_source_id}
             onClick={async () => {
               try {
                 setPreview(
@@ -1021,30 +1005,7 @@ export function EntryEditor({ id, ctx }: { id: string; ctx: AppContext }) {
               />
             </div>
           </div>
-          <textarea
-            className="entry-summary"
-            aria-label="Short description"
-            placeholder="A short description, a first impression, a reason to remember…"
-            value={draft.summary}
-            onChange={(e) => change({ summary: e.target.value })}
-          />
-          <div className="special-details">
-            <Details
-              entry={draft}
-              ctx={ctx}
-              onData={(data) => change({ data })}
-            />
-            {["campaign", "session", "note", "task", "quest"].includes(
-              draft.kind,
-            ) && (
-              <CampaignRecordDetails
-                entry={draft}
-                data={draft.data}
-                ctx={ctx}
-                onData={(data) => change({ data })}
-              />
-            )}
-          </div>
+          {!noteFirst && metadata}
           <div className="tabs compact note-reading-tabs">
             <button
               className={!reading ? "active" : ""}
@@ -1072,21 +1033,21 @@ export function EntryEditor({ id, ctx }: { id: string; ctx: AppContext }) {
             </button>
           </div>
           {reading ? (
-            <div
-              className="reader-prose linked-reading-view"
-              dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(linkedHtml),
-              }}
-            />
+            <LiveDocument html={linkedHtml} ctx={ctx} className="reader-prose linked-reading-view" />
           ) : (
             <RichEditor
+              ctx={ctx}
+              onLiveSource={insert => setLivePicker({insert,id:""})}
               value={draft.document || EMPTY_DOC}
               onChange={(document) => change({ document })}
               onReference={(insert) => setPicker({ kind: "entry", insert })}
               onImage={(insert) => setPicker({ kind: "image", insert })}
               onVariable={(insert) => setPicker({ kind: "variable", insert })}
+              onSnippet={(insert,selection)=>setSnippetPicker({insert,selection})}
             />
           )}
+          {!reading && <KnowledgeLinks key={draft.id} entry={draft} entries={ctx.entries} onChange={document=>change({document})} />}
+          {noteFirst && <details className="entry-extra-details" open={detailsOpen} onToggle={event => setDetailsOpen(event.currentTarget.open)}><summary onClick={event=>{event.preventDefault();const next=!detailsOpen;setDetailsOpen(next);try{localStorage.setItem(viewKey,JSON.stringify({reading,detailsOpen:next,focus,showPrivate}));}catch{}}}>Details & short description</summary>{metadata}</details>}
           <div className="entry-bottom">
             <span>
               {draft.word_count || 0} words · Revision {draft.revision}
@@ -1114,6 +1075,9 @@ export function EntryEditor({ id, ctx }: { id: string; ctx: AppContext }) {
           )}
         </main>
         <aside className="entry-properties">
+          <EntryAnnotations key={id} ctx={ctx} entry={draft} beforeChange={flush}/>
+          <EntryContext ctx={ctx} entry={draft} beforeChange={flush} />
+          <div className="properties-divider" />
           <LinkedPortrait
             value={draft.data.cover_url || ""}
             onSave={async (url) => {
@@ -1129,6 +1093,7 @@ export function EntryEditor({ id, ctx }: { id: string; ctx: AppContext }) {
           <label className="field">
             <span>Visibility</span>
             <SearchableSelect
+              disabled={!!draft.data.annotation_source_id}
               value={draft.visibility}
               onChange={(e) =>
                 change({ visibility: e.target.value as Entry["visibility"] })
@@ -1178,7 +1143,7 @@ export function EntryEditor({ id, ctx }: { id: string; ctx: AppContext }) {
           <div className="properties-divider" />
           <h3>Reader version</h3>
           <p className="muted small-copy">
-            {draft.published_revision
+            {draft.data.annotation_source_id ? "Research notes stay private. Copy their prose to an article when you want to publish it." : draft.published_revision
               ? "Revision " +
                 draft.published_revision +
                 " is saved for reader preview. Later edits remain drafts."
@@ -1186,13 +1151,15 @@ export function EntryEditor({ id, ctx }: { id: string; ctx: AppContext }) {
           </p>
           <button
             className="button secondary full-button"
-            disabled={draft.visibility !== "public"}
+            disabled={draft.visibility !== "public" || !!draft.data.annotation_source_id}
             onClick={publishEntry}
           >
             Save reader version
           </button>
           <div className="properties-divider" />
           <h3>Linked from</h3>
+          {draft.data.source_note_id && ctx.entries.some(e=>e.id===draft.data.source_note_id&&e.kind==='note') && <button className="backlink" onClick={()=>ctx.go('entry/'+draft.data.source_note_id)}>Source note: {ctx.entries.find(e=>e.id===draft.data.source_note_id)?.title}</button>}
+          {draft.data.source_task_id && ctx.entries.some(e=>e.id===draft.data.source_task_id&&e.kind==='task') && <button className="backlink" onClick={()=>ctx.go('entry/'+draft.data.source_task_id)}>Source task: {ctx.entries.find(e=>e.id===draft.data.source_task_id)?.title}</button>}
           {draft.backlinks?.length ? (
             draft.backlinks.map((r) => (
               <button
@@ -1234,6 +1201,12 @@ export function EntryEditor({ id, ctx }: { id: string; ctx: AppContext }) {
           <MapGuide ctx={ctx} mapId={id} />
         </Modal>
       )}
+      {livePicker && <Modal title="Insert live source" onClose={()=>setLivePicker(null)}>
+        <EntryPicker label="Source entry" entries={ctx.entries.filter(e=>liveKinds.has(e.kind))} value={livePicker.id} onChange={id=>setLivePicker({...livePicker,id})}/>
+        <p className="muted">Use the original table, generator, map, timeline or relationship view. Changes stay on its original record.</p>
+        <div className="modal-actions"><button className="button secondary" onClick={()=>setLivePicker(null)}>Cancel</button><button className="button primary" disabled={!livePicker.id} onClick={()=>{const source=ctx.entries.find(e=>e.id===livePicker.id);if(source){livePicker.insert(source.id,source.title);setLivePicker(null);}}}>Insert source</button></div>
+      </Modal>}
+      {snippetPicker&&<Modal title="Insert or create reusable snippet" wide onClose={()=>setSnippetPicker(null)}><SnippetLibrary ctx={ctx} currentId={id} insert={snippetPicker.insert} selection={snippetPicker.selection} onClose={()=>setSnippetPicker(null)}/></Modal>}
       {picker && (
         <ResourcePicker
           ctx={ctx}

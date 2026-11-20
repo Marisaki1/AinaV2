@@ -1,9 +1,11 @@
+import { LiveDocument } from "./LiveBlocks";
 import { RecurrenceSummary } from "./Recurrence";
 import { CalendarReader } from "./Calendars";
 import { TimelineEmbed } from "./History";
 import { HierarchyView } from "./GraphViews";
 import { RelationshipView } from "./SavedGraphs";
 import React from "react";
+import { StructuredReader } from './StructuredFields';
 import DOMPurify from "dompurify";
 import { AppContext, Entry } from "./domain";
 import { MapGuide } from "./MapGuide";
@@ -38,7 +40,7 @@ export function ReaderContent({
       />
     );
   if (entry.kind === "character" || entry.template === "character")
-    return <CharacterDossier ctx={ctx} id={entry.id} reader={reader} />;
+    return <>{entry.template.startsWith('custom:')&&entry.data.structured_schema&&<StructuredReader entry={entry}/>}<CharacterDossier ctx={ctx} id={entry.id} reader={reader} /></>;
   if (entry.kind === "session")
     return (
       <SessionGuide
@@ -91,7 +93,7 @@ export function ReaderContent({
             ))}
         </dl>
       )}
-      {Object.keys(fields).length > 0 && (
+      {entry.template.startsWith('custom:')&&entry.data.structured_schema ? <StructuredReader entry={entry}/> : Object.keys(fields).length > 0 && (
         <dl className="reader-fields">
           {Object.entries(fields).map(([name, value]) => (
             <div key={name}>
@@ -173,12 +175,7 @@ export function ReaderContent({
         </div>
       )}
       {entry.kind !== "map" && (
-        <div
-          className="reader-prose"
-          dangerouslySetInnerHTML={{
-            __html: DOMPurify.sanitize(entry.html || ""),
-          }}
-        />
+        <LiveDocument html={entry.html || ""} ctx={ctx} reader={reader}/>
       )}
     </>
   );

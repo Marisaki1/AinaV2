@@ -55,6 +55,7 @@ export type World = {
   data: Record<string, any>;
   counts?: Record<string, number>;
   asset_count?: number;
+  local_image_folder?: boolean;
   activities?: any[];
 };
 export type Asset = {

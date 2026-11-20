@@ -2,7 +2,6 @@ import ast
 import math
 import random
 import re
-import secrets
 
 
 def integer(value, name, low=-1000000000, high=1000000000):
@@ -15,7 +14,7 @@ def integer(value, name, low=-1000000000, high=1000000000):
     return value
 
 
-def dice_roll(formula):
+def dice_spec(formula):
     formula = str(formula).replace(" ", "").lower()
     match = re.fullmatch(
         r"(\d{0,3})d(\d{1,5}|%|f)(?:(kh|kl)(\d{1,3}))?([+-]\d{1,6})?", formula
@@ -27,8 +26,14 @@ def dice_roll(formula):
     keep = int(match[4] or count)
     if not 1 <= count <= 100 or not 2 <= sides <= 10000 or not 1 <= keep <= count:
         raise ValueError("Use up to 100 dice, 10,000 sides, and a valid keep count.")
+    return formula, match, count, sides, keep
+
+
+def dice_roll(formula, rng=None):
+    formula, match, count, sides, keep = dice_spec(formula)
+    rng = rng or random.SystemRandom()
     rolls = [
-        secrets.randbelow(sides) + (0 if match[2] == "f" else 1) for _ in range(count)
+        rng.randrange(sides) + (0 if match[2] == "f" else 1) for _ in range(count)
     ]
     if match[2] == "f":
         rolls = [n - 1 for n in rolls]
@@ -45,7 +50,7 @@ def dice_roll(formula):
     }
 
 
-def weighted(rows, seed=None):
+def weighted(rows, seed=None, rng=None):
     if not isinstance(rows, list) or not 1 <= len(rows) <= 5000:
         raise ValueError("Add at least one row before rolling.")
     weights = []
@@ -61,7 +66,7 @@ def weighted(rows, seed=None):
         weights.append(value)
     if sum(weights) <= 0:
         raise ValueError("At least one row needs a positive weight.")
-    rng = random.Random(seed) if seed is not None else random.SystemRandom()
+    rng = rng or (random.Random(seed) if seed is not None else random.SystemRandom())
     return rows[rng.choices(range(len(rows)), weights=weights, k=1)[0]]
 
 

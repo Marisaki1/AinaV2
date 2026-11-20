@@ -20,7 +20,7 @@ function fixture() {
   const providers = voiceChoices({ provider: 'groq', groqVoice: 'autumn', voice: 'en-US-JennyNeural' });
   providers[0].configured = true; providers[0].error = '';
   providers[1].discovered = true;
-  const context = vm.createContext({ window: {}, crypto: webcrypto, Date,
+  const context = vm.createContext({ window: { LanguageUI: { render() {} } }, crypto: webcrypto, Date,
     $: selector => nodes.get(selector.slice(1)) || null, escape: s => String(s ?? '').replace(/</g, '&lt;'),
     ui: { tab: 'sender', channelId: CHANNEL }, workspace: Core.blankWorkspace(), revision: 0, C: Core,
     connected: true, channels: [{ id: CHANNEL, name: 'Server / #combat' }], commands: [], sending: false,
@@ -44,7 +44,8 @@ test('command panel uses Aina and the shared destination without account connect
   const f = fixture(); await f.start();
   const html = f.nodes.get('content-panel').innerHTML;
   assert(html.includes('Post as Aina')); assert(html.includes('Saved commands')); assert(html.includes('Filter saved commands'));
-  assert(html.includes('Paste it yourself')); assert.equal(f.nodes.get('selection-panel').innerHTML, '');
+  assert(html.includes('language-converter')); assert(!html.includes('sender-custom'));
+  assert.equal(f.nodes.get('selection-panel').innerHTML, '');
   assert.equal(f.nodes.get('sender-destination').textContent, 'Server / #combat');
   assert(!/Malow|Dummy|Reauthorize|password/.test(html));
   assert(f.calls.every(c => c.route === 'sender/status'));
@@ -55,8 +56,7 @@ test('rapid clicks send one request; drafts survive rendering; delivery does not
   await Promise.all([f.api.send('!r 1d20'), f.api.send('!r 1d20')]);
   assert.equal(f.calls.filter(c => c.route === 'sender/send').length, 1);
   assert.equal(f.calls.find(c => c.route === 'sender/send').data.channelId, CHANNEL);
-  f.nodes.get('sender-custom').value = '!i aoo Dragon Claw';
-  await f.api.render(); assert.equal(f.nodes.get('sender-custom').value, '!i aoo Dragon Claw');
+  await f.api.render(); assert(!f.nodes.has('sender-custom'));
   f.state.recent[0].delivery = 'uncertain'; f.state.recent[0].error = 'Check Discord';
   await f.api.refresh(); assert(f.nodes.get('sender-recent').innerHTML.includes('delivery uncertain'));
   assert.equal(f.calls.filter(c => c.route === 'sender/send').length, 1);

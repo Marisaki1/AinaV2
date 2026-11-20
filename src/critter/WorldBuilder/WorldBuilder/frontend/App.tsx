@@ -1,7 +1,11 @@
+import { WorldSearch } from "./WorldSearch";
+import { WorldExplorer } from "./WorldExplorer";
 import { AinaMenu } from "./AinaMenu";
+import { ReadingPosition } from "./ReadingPosition";
+import { NoteDesk } from "./NoteDesk";
+import { TransferDesk } from './TransferDesk';
 import { SearchableSelect } from "./SearchableSelect";
 import { ReferencePreviewController } from "./References";
-import { tagKey } from "./Collections";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
@@ -47,7 +51,7 @@ import {
   kindLabels,
   saveBeforeNavigate,
 } from "./domain";
-import { Modal, Field, Badge, ErrorBox, KindIcon } from "./ui";
+import { Modal, Field, ErrorBox, KindIcon } from "./ui";
 import { EntryEditor } from "./EntryEditor";
 import {
   Home as Dashboard,
@@ -72,6 +76,7 @@ import { Notebooks } from "./Notebooks";
 
 const nav = [
   ["home", "Overview", Home],
+  ["explorer", "World explorer", Compass],
   ["library", "World library", BookOpen],
   ["maps", "Maps & places", Map],
   ["history", "History & calendars", History],
@@ -79,6 +84,7 @@ const nav = [
   ["campaigns", "Campaigns", Flag],
   ["writing", "Writing room", FileText],
   ["notebooks", "Notebooks", NotebookPen],
+  ["transfers", "Copy & move", FolderOpen],
   ["tools", "Creative tools", Sparkles],
   ["media", "Media library", ImageIcon],
 ] as const;
@@ -229,9 +235,6 @@ export default function App() {
       parent?: string;
     } | null>(null),
     [search, setSearch] = useState(false),
-    [query, setQuery] = useState(""),
-    [results, setResults] = useState<Entry[]>([]),
-    [searching, setSearching] = useState(false),
     [help, setHelp] = useState(false),
     [mobileNav, setMobileNav] = useState(false),
     [newWorld, setNewWorld] = useState(false),
@@ -255,13 +258,14 @@ export default function App() {
     if (value.authenticated) {
       setWorlds(value.worlds);
       const saved = localStorage.getItem("worldbuilder.world");
-      setWorldId((old: string) =>
-        value.worlds.some((w: World) => w.id === old)
-          ? old
-          : value.worlds.some((w: World) => w.id === saved)
-            ? saved
-            : value.worlds[0]?.id || "",
-      );
+      const nextWorld=value.worlds.some((w:World)=>w.id===saved)?saved:value.worlds[0]?.id || '';
+      setWorldId(nextWorld);
+      if(nextWorld && (!location.hash || location.hash==='#/home')) {
+        try {
+          const previous=localStorage.getItem('worldbuilder.last-route:'+nextWorld);
+          if(previous && /^[a-zA-Z0-9_\/-]+$/.test(previous)) { location.hash='/'+previous;setRoute(previous); }
+        }catch{}
+      }
     } else {
       requestId.current++;setWorldId("");setWorld(null);setWorlds([]);setEntries([]);setAssets([]);setEdges([]);setRoute("home");location.hash="/home";
     }
@@ -307,12 +311,31 @@ export default function App() {
       });
     }
   }, [worldId]);
+  const hasLocalImages = world?.id === worldId && world.local_image_folder;
+  const inMediaLibrary = route.split("/")[0] === "media";
+  useEffect(() => {
+    if (!worldId || !hasLocalImages) return;
+    let active = true;
+    post<{ imported: number; existing: number; skipped: number; errors: string[] }>(
+      "/worlds/" + worldId + "/assets/sync-local",
+    ).then(async (result) => {
+      if (!active) return;
+      if (result.imported || result.existing) await refresh();
+      if (active && result.skipped)
+        notify(`${result.skipped} local images skipped. ${result.errors[0] || ""}`, true);
+    }).catch((error) => { if (active) notify(error.message, true); });
+    return () => { active = false; };
+  }, [worldId, hasLocalImages, inMediaLibrary, refresh, notify]);
   const go = useCallback(async (target: string) => {
     if (saveBeforeNavigate.current && !(await saveBeforeNavigate.current()))
       return;
     location.hash = "/" + target;
     setMobileNav(false);
   }, []);
+  useEffect(()=>{
+    if(!worldId||!boot?.authenticated)return;
+    try{localStorage.setItem('worldbuilder.last-route:'+worldId,route);}catch{}
+  },[route,worldId,boot?.authenticated]);
   useEffect(() => {
     const onHash = () => setRoute(location.hash.slice(2) || "home");
     const keys = (e: KeyboardEvent) => {
@@ -328,27 +351,6 @@ export default function App() {
       window.removeEventListener("keydown", keys);
     };
   }, []);
-  useEffect(() => {
-    if (!search || !worldId) return;
-    let alive = true;
-    setSearching(true);
-    const timer = setTimeout(
-      () =>
-        api("/worlds/" + worldId + "/resources?q=" + encodeURIComponent(query))
-          .then((r) => {
-            if (alive) setResults(r.resources.slice(0, 40));
-          })
-          .catch((e) => notify(e.message, true))
-          .finally(() => {
-            if (alive) setSearching(false);
-          }),
-      200,
-    );
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-    };
-  }, [search, query, worldId]);
   useEffect(() => {
     if (route.startsWith("handout/")) setHandout(route.split("/")[1]);
     const channel = new BroadcastChannel("worldbuilder-handout");
@@ -426,15 +428,6 @@ export default function App() {
             route.startsWith("threads/")
           ? "campaigns"
           : route.split("/")[0];
-  const matchingImages = query.trim()
-    ? assets
-        .filter((a) =>
-          tagKey(a.name + " " + a.credit + " " + a.tags.join(" ")).includes(
-            tagKey(query),
-          ),
-        )
-        .slice(0, 20)
-    : [];
   let page: React.ReactNode = null;
   if (world && world.id === worldId) {
     if (route.startsWith("entry/"))
@@ -511,10 +504,11 @@ export default function App() {
           <SessionGuide key={route} ctx={ctx} id={route.split("/")[1]} />
         </div>
       );
+    else if (currentNav === "explorer") page = <WorldExplorer key={world.id} ctx={ctx} />;
     else if (currentNav === "library") page = <Library ctx={ctx} />;
     else if (currentNav === "maps")
       page = <Library ctx={ctx} kind="map" heading="Maps & places" />;
-    else if (currentNav === "relationships") page = <Relationships ctx={ctx} />;
+    else if (currentNav === "relationships") page = <Relationships key={ctx.world.id} ctx={ctx} scope={route.split("/").slice(1)} />;
     else if (currentNav === "history") page = <HistoryPage ctx={ctx} />;
     else if (route === "tasks") page = <Notes ctx={ctx} initialTab="task" />;
     else if (currentNav === "notebooks")
@@ -528,6 +522,7 @@ export default function App() {
           noteId={route.split("/")[4] || ""}
         />
       );
+    else if (currentNav === "transfers") page = <TransferDesk key={world.id} ctx={ctx} />;
     else if (currentNav === "tools") page = <Tools ctx={ctx} />;
     else if (currentNav === "media") page = <Media ctx={ctx} />;
     else if (currentNav === "writing")
@@ -643,13 +638,15 @@ export default function App() {
                     : "Workspace")}
             </strong>
           </div>
-          <button className="global-search" onClick={() => setSearch(true)}>
+          {world && world.id === worldId && <NoteDesk key={world.id} ctx={ctx} />}
+          <button className="global-search" aria-label="Search your world" title="Search your world" onClick={() => setSearch(true)}>
             <Search size={16} />
             <span>Search your world…</span>
             <kbd>Ctrl K</kbd>
           </button>
           <button
             className="button primary topbar-create"
+            aria-label="Create"
             onClick={() => create("article")}
           >
             <Plus size={17} />
@@ -658,6 +655,7 @@ export default function App() {
           <details className="wb-account-menu"><summary aria-label="Account menu">{boot.user?.name||boot.user?.username}<ChevronDown size={14}/></summary><div><strong>{boot.user?.name||boot.user?.username}</strong><button type="button" onClick={()=>void signOut()}><LogOut size={16}/>Log out</button></div></details>
         </header>
         <main id="main-content">
+          {page && <ReadingPosition key={worldId + route} world={worldId} route={route} />}
           {error && (
             <div className="global-error">
               <ErrorBox message={error} />
@@ -682,7 +680,7 @@ export default function App() {
             Your work stays on this computer
           </span>
           <span>
-            WorldBuilder <span className="footer-flower">✦</span> Make room for
+            WorldBuilder {boot.version} <span className="footer-flower">✦</span> Make room for
             a world.
           </span>
         </footer>
@@ -820,78 +818,7 @@ export default function App() {
           </form>
         </Modal>
       )}
-      {search && (
-        <Modal title="Search your world" wide onClose={() => setSearch(false)}>
-          <label className="command-search">
-            <Search size={20} />
-            <input
-              aria-label="Search all world content"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Names, aliases, words from your notes…"
-              autoFocus
-            />
-          </label>
-          <div className="search-results">
-            {searching ? (
-              <div className="page-loading">
-                <Loader2 className="spin" size={18} />
-                Searching…
-              </div>
-            ) : results.length ? (
-              results.map((r) => (
-                <button
-                  key={r.id}
-                  onClick={() => {
-                    setSearch(false);
-                    go("entry/" + r.id);
-                  }}
-                >
-                  <span className="type-mark">
-                    <KindIcon kind={r.kind} />
-                  </span>
-                  <div>
-                    <strong>{r.title}</strong>
-                    <small>{r.summary || kindLabels[r.kind]}</small>
-                  </div>
-                  <Badge>{r.template}</Badge>
-                  <ArrowRight size={16} />
-                </button>
-              ))
-            ) : (
-              !matchingImages.length && (
-                <p className="empty-search">
-                  {query
-                    ? "No matching entries. Try another name or phrase."
-                    : "Your entries will appear here as you build your world."}
-                </p>
-              )
-            )}
-            {!!matchingImages.length && !searching && (
-              <>
-                <h3 className="search-media-heading">Images</h3>
-                {matchingImages.map((a) => (
-                  <button
-                    key={a.id}
-                    onClick={() => {
-                      setSearch(false);
-                      go("media/" + a.id);
-                    }}
-                  >
-                    <img className="search-image-thumb" src={a.url} alt="" />
-                    <div>
-                      <strong>{a.name}</strong>
-                      <small>{a.tags.join(" · ") || a.credit}</small>
-                    </div>
-                    <Badge>Image</Badge>
-                    <ArrowRight size={16} />
-                  </button>
-                ))}
-              </>
-            )}
-          </div>
-        </Modal>
-      )}
+      {search && world && <Modal title="Search your world" wide onClose={() => setSearch(false)}><WorldSearch key={world.id} ctx={ctx} close={() => setSearch(false)} /></Modal>}
       {newWorld && (
         <Modal
           title="Make room for another world"

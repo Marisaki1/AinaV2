@@ -16,5 +16,6 @@ src/critter/WorldBuilder/WorldBuilder/.aina-dependency-repair/
 src/critter/WorldBuilder/WorldBuilder/*.wbbackup.zip
 src/critter/WorldBuilder/WorldBuilder/transfers/
 src/critter/WorldBuilder/WorldBuilder/backend/**/__pycache__/
+test/__pycache__/
 
 src/critter/WorldBuilder/WorldBuilder/aina-data.json

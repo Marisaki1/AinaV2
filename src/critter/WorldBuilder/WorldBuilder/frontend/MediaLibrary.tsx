@@ -8,7 +8,7 @@ import {
   Search,
   Upload,
 } from "lucide-react";
-import { AppContext, Asset, api, patch, size } from "./domain";
+import { AppContext, Asset, api, patch, post, size } from "./domain";
 import { Empty, ErrorBox, Field, Modal, TagField } from "./ui";
 import { PageHeading } from "./Pages";
 import { tagKey } from "./Collections";
@@ -120,6 +120,7 @@ function ImageDetails({
 
 export function MediaLibrary({ ctx }: { ctx: AppContext }) {
   const [busy, setBusy] = useState(false),
+    [scanning, setScanning] = useState(false),
     [credit, setCredit] = useState(""),
     [uploadTags, setUploadTags] = useState<string[]>([]),
     [query, setQuery] = useState(""),
@@ -167,6 +168,24 @@ export function MediaLibrary({ ctx }: { ctx: AppContext }) {
       if (input.current) input.current.value = "";
     }
   };
+  const refreshLocalImages = async () => {
+    setScanning(true);
+    try {
+      const result = await post<{ imported: number; skipped: number; errors: string[] }>(
+        "/worlds/" + ctx.world.id + "/assets/sync-local",
+      );
+      await ctx.refresh();
+      ctx.notify(
+        `${result.imported} new images imported.` +
+          (result.skipped ? ` ${result.skipped} skipped. ${result.errors.join(" ")}` : ""),
+        result.skipped > 0,
+      );
+    } catch (error: any) {
+      ctx.notify(error.message, true);
+    } finally {
+      setScanning(false);
+    }
+  };
   return (
     <div className="page">
       <PageHeading
@@ -189,6 +208,14 @@ export function MediaLibrary({ ctx }: { ctx: AppContext }) {
       >
         Maps, portraits, places, and things. One home for every image.
       </PageHeading>
+      {ctx.world.local_image_folder && (
+        <div className="library-toolbar">
+          <span className="muted">Your local campaign folders are checked when you open the world or this library.</span>
+          <button className="button secondary" disabled={scanning} onClick={() => void refreshLocalImages()}>
+            {scanning ? "Checking folders…" : "Refresh local images"}
+          </button>
+        </div>
+      )}
       <input
         ref={input}
         type="file"

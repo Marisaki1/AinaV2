@@ -45,10 +45,15 @@ function createService({ client = null, directory, ownerId, port = Number(proces
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
   }
   const assets = { '/spellcasting-model.js': ['spellcasting-model.js','text/javascript'], '/spellcasting-ui.js': ['spellcasting-ui.js','text/javascript'], '/resource-ui.js': ['resource-ui.js','text/javascript'], '/critical-model.js': ['critical-model.js', 'text/javascript'], '/critical-editor.js': ['critical-editor.js', 'text/javascript'], '/attack-modifiers.js': ['attack-modifiers.js', 'text/javascript'], '/party-roster.js': ['party-roster.js', 'text/javascript'], '/ability-tools-model.js': ['ability-tools-model.js', 'text/javascript'], '/ability-extras-ui.js': ['ability-extras-ui.js', 'text/javascript'], '/ability-tools-ui.js': ['ability-tools-ui.js', 'text/javascript'], '/action-formulas.js': ['action-formulas.js', 'text/javascript'], '/combat-controls.js': ['combat-controls.js', 'text/javascript'], '/creature-fields.js': ['creature-fields.js', 'text/javascript'], '/creature-math.js': ['creature-math.js', 'text/javascript'], '/creature-panels.js': ['creature-panels.js', 'text/javascript'], '/workshop.css': ['workshop.css', 'text/css'], '/sender-ui.js': ['sender-ui.js', 'text/javascript'], '/sender.css': ['sender.css', 'text/css'], '/tab-bridge.js': ['tab-bridge.js', 'text/javascript'], '/search-select.js': ['search-select.js', 'text/javascript'], '/search-select.css': ['search-select.css', 'text/css'], '/direct-ui.js': ['direct-ui.js', 'text/javascript'], '/feedback.js': ['feedback.js', 'text/javascript'], '/authoring-model.js': ['authoring-model.js', 'text/javascript'], '/authoring-ui.js': ['authoring-ui.js', 'text/javascript'], '/mirror-model.js': ['mirror-model.js', 'text/javascript'], '/mirror-ui.js': ['mirror-ui.js', 'text/javascript'], '/combat-traits.js': ['combat-traits.js', 'text/javascript'], '/traits-ui.js': ['traits-ui.js', 'text/javascript'], '/combat-model.js': ['combat-model.js', 'text/javascript'], '/editor-ui.js': ['editor-ui.js', 'text/javascript'], '/': ['index.html', 'text/html'], '/advanced': ['advanced.html', 'text/html'], '/desk.js': ['desk.js', 'text/javascript'], '/desk.css': ['desk.css', 'text/css'], '/sources.js': ['sources.js', 'text/javascript'], '/app.js': ['app.js', 'text/javascript'], '/core.js': ['core.js', 'text/javascript'], '/remote-common.js': ['remote-common.js', 'text/javascript'], '/remote-ui.js': ['remote-ui.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'] };
+  assets['/elemental-magic.js'] = ['elemental-magic.js', 'text/javascript'];
+  assets['/elemental-magic-ui.js'] = ['elemental-magic-ui.js', 'text/javascript'];
+  assets['/elemental-magic-data.json'] = ['elemental-magic-data.json', 'application/json'];
   assets['/siege-ui.js'] = ['siege-ui.js', 'text/javascript'];
   assets['/worldbuilder-ui.js'] = ['worldbuilder-ui.js', 'text/javascript'];
   assets['/asset-picker.js'] = ['asset-picker.js', 'text/javascript'];
   assets['/roleplay-ui.js'] = ['roleplay-ui.js', 'text/javascript'];
+  assets['/language-ui.js'] = ['language-ui.js', 'text/javascript'];
+  assets['/language.css'] = ['language.css', 'text/css'];
   const server = http.createServer(async (request, response) => {
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Referrer-Policy', 'no-referrer');
@@ -67,12 +72,17 @@ function createService({ client = null, directory, ownerId, port = Number(proces
       if (request.headers['x-aina-local'] !== '1' || request.headers['sec-fetch-site'] === 'cross-site') return json(response, 403, { error: 'Use the local workspace interface.' });
       if(request.method==='GET'&&url.pathname==='/api/worldbuilder')return json(response,200,worldbuilder.status());
       if(request.method==='GET'&&url.pathname==='/api/roleplay')return json(response,200,roleplay.view());
+      if(request.method==='GET'&&url.pathname==='/api/languages')return json(response,200,roleplay.languageSettings());
+      if(request.method==='GET'&&url.pathname==='/api/languages/log')return json(response,200,roleplay.languageLog());
+      if(request.method==='POST'&&url.pathname==='/api/languages')return json(response,200,roleplay.saveLanguages(await body(request)));
+      if(request.method==='POST'&&url.pathname==='/api/languages/convert')return json(response,200,roleplay.previewLanguage(await body(request)));
       if(request.method==='POST'&&url.pathname.startsWith('/api/roleplay/')){const data=await body(request),route=url.pathname.slice('/api/roleplay/'.length);
         if(route==='folder')return json(response,200,roleplay.createFolder(String(data.folder||'')));
         if(route==='upload')return json(response,200,roleplay.upload(data));
         if(route==='save')return json(response,200,roleplay.save(data));
         if(route==='delete'){roleplay.remove(data.id);return json(response,200,{ok:true});}
         if(route==='config'){roleplay.configure(data);return json(response,200,{ok:true});}
+        if(route==='language')return json(response,200,roleplay.setLanguage(data.id,data.languageId));
         if(route==='send')return json(response,200,await roleplay.send(data));
         if(route==='edit-message')return json(response,200,await roleplay.editMessage(data));
         return json(response,404,{error:'Unknown roleplay action.'});}

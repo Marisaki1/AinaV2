@@ -27,6 +27,11 @@ TYPES = {
     "resourceLink",
     "privateBlock",
     "variable",
+    "taskList",
+    "taskItem",
+    "snippet",
+    "sourceBlock",
+    "diceButton",
 }
 MARKS = {"bold", "italic", "strike", "code", "underline", "link"}
 SAFE_TAGS = [
@@ -99,9 +104,10 @@ def validate_document(value):
     if not isinstance(value, dict) or value.get("type") != "doc":
         raise ValueError("The document must have a document root.")
     count = 0
+    live_count = 0
 
     def visit(node, depth=0):
-        nonlocal count
+        nonlocal count, live_count
         count += 1
         if depth > 30 or count > 18000:
             raise ValueError("This document is too complex.")
@@ -114,10 +120,29 @@ def validate_document(value):
         attrs = node.get("attrs", {})
         if not isinstance(attrs, dict):
             raise ValueError("Invalid block properties.")
+        if node['type'] == 'taskItem' and not isinstance(attrs.get('checked', False), bool):
+            raise ValueError('Checklist state must be true or false.')
         if node["type"] == "image" and not safe_url(attrs.get("src"), True):
             raise ValueError(
                 "Use a direct HTTP/HTTPS image URL or an image from this world’s media library."
             )
+        if node['type'] in ('sourceBlock', 'diceButton'):
+            live_count += 1
+            if live_count > 40:
+                raise ValueError('Use up to 40 interactive blocks per document.')
+            if node.get('content'):
+                raise ValueError('Interactive blocks cannot contain hidden document children.')
+            import uuid
+            if not isinstance(attrs.get('label', ''), str) or len(attrs.get('label', '')) > 180:
+                raise ValueError('Live block labels must be text up to 180 characters.')
+            if node['type'] == 'sourceBlock' and attrs.get('id'):
+                try:
+                    uuid.UUID(attrs['id'])
+                except (ValueError, AttributeError, TypeError) as error:
+                    raise ValueError('Choose a valid live source ID.') from error
+            if node['type'] == 'diceButton':
+                from .tools import dice_spec
+                dice_spec(attrs.get('formula', ''))
         children = node.get("content", [])
         if not isinstance(children, list):
             raise ValueError("Invalid block contents.")
@@ -155,7 +180,7 @@ def reference_ids(doc):
     result = set()
 
     def walk(n):
-        if n.get("type") in ("resourceLink", "variable") and n.get("attrs", {}).get(
+        if n.get("type") in ("resourceLink", "variable", "snippet", "sourceBlock") and n.get("attrs", {}).get(
             "id"
         ):
             result.add(str(n["attrs"]["id"]))
@@ -171,15 +196,34 @@ def reference_ids(doc):
     return result
 
 
-def render(doc, references=None, reader=False, auto_links=False, exclude=""):
+def render(doc, references=None, reader=False, auto_links=False, exclude="", _seen=(), _budget=None):
     references = references or {}
+    if _budget is None:
+        _budget=[18000,2000000]
     from .auto_links import linker
 
     link_text = linker(references, exclude) if auto_links else html.escape
 
     def walk(n, code=False):
+        _budget[0]-=1
+        _budget[1]-=len(n.get('text',''))
+        if _budget[0]<0 or _budget[1]<0:
+            return '<span>Snippet render limit reached</span>'
         kind = n.get("type", "paragraph")
         attrs = n.get("attrs") or {}
+        if kind == 'sourceBlock':
+            from .liveblocks import block_html
+            return block_html(attrs, references, reader)
+        if kind == 'diceButton':
+            formula = str(attrs.get('formula', ''))
+            return '<span class="dice-fallback" data-live-dice="' + html.escape(formula, quote=True) + '" data-dice-label="' + html.escape(attrs.get('label', '') or 'Roll', quote=True) + '">' + html.escape(attrs.get('label', '') or 'Roll') + ' (' + html.escape(formula) + ')</span>'
+        if kind == 'snippet':
+            identity=str(attrs.get('id',''));target=references.get(identity)
+            if not target or not target.get('data',{}).get('reusable_snippet') or not target.get('document'):
+                return '<span>Unavailable snippet</span>'
+            if identity in (*_seen,exclude) or len(_seen)>=8:
+                return '<span>Snippet cycle or depth limit</span>'
+            return '<section class="reusable-snippet">'+render(target['document'],references,reader,auto_links,identity,(*_seen,exclude),_budget)+'</section>'
         if kind == "privateBlock" and reader:
             return ""
         if kind in ("resourceLink", "variable"):
@@ -220,6 +264,10 @@ def render(doc, references=None, reader=False, auto_links=False, exclude=""):
                     text = f"<{tag}>{text}</{tag}>"
                 elif mark["type"] == "link":
                     url = safe_url(mark.get("attrs", {}).get("href", ""))
+                    internal = re.fullmatch(r'/#/entry/([a-f0-9-]{36})',url)
+                    if reader and internal and internal.group(1) not in references:
+                        text='Unavailable reference'
+                        continue
                     if url:
                         text = f'<a href="{html.escape(url, quote=True)}" rel="noopener noreferrer">{text}</a>'
             return text
@@ -239,6 +287,11 @@ def render(doc, references=None, reader=False, auto_links=False, exclude=""):
         )
         if kind == "doc":
             return children
+        if kind == 'taskList':
+            return '<ul class="checklist" data-type="taskList">' + children + '</ul>'
+        if kind == 'taskItem':
+            checked = bool(attrs.get('checked'))
+            return '<li data-type="taskItem" data-checked="' + str(checked).lower() + '"><input type="checkbox" disabled' + (' checked' if checked else '') + '>' + children + '</li>'
         if kind == "heading":
             tag = "h" + str(max(1, min(6, int(attrs.get("level", 2)))))
         else:
@@ -319,6 +372,10 @@ class DocumentParser(HTMLParser):
         attrs = dict(attrs)
         if tag in self.blocks:
             node = {"type": self.blocks[tag], "content": []}
+            if tag == 'ul' and attrs.get('data-type') == 'taskList':
+                node['type'] = 'taskList'
+            if tag == 'li' and attrs.get('data-type') == 'taskItem':
+                node.update(type='taskItem', attrs={'checked': attrs.get('data-checked') == 'true'})
             if tag.startswith("h") and len(tag) == 2:
                 node["attrs"] = {"level": int(tag[1])}
             self.append(node)
@@ -363,6 +420,7 @@ class DocumentParser(HTMLParser):
         if self.stack[-1]["type"] in (
             "doc",
             "listItem",
+            "taskItem",
             "tableCell",
             "tableHeader",
             "blockquote",
@@ -388,7 +446,7 @@ def from_source(text, fmt="markdown"):
     clean = bleach.clean(
         source,
         tags=SAFE_TAGS,
-        attributes={"a": ["href"], "img": ["src", "alt"]},
+        attributes={"a": ["href"], "img": ["src", "alt"], 'ul':['data-type'], 'li':['data-type','data-checked']},
         protocols=["https", "http", "mailto"],
         strip=True,
     )
@@ -426,4 +484,22 @@ def from_source(text, fmt="markdown"):
         return [node]
 
     blocks(parser.doc)
+    def checklists(node):
+        for child in node.get('content', []):
+            checklists(child)
+        if node['type'] != 'bulletList':
+            return
+        items = node.get('content', [])
+        for item in items:
+            first = (item.get('content') or [{}])[0]
+            text = (first.get('content') or [{}])[0]
+            if not re.match(r'^\[[ xX]\]\s', text.get('text', '')):
+                return
+        if items:
+            node['type'] = 'taskList'
+            for item in items:
+                text = item['content'][0]['content'][0]
+                item.update(type='taskItem', attrs={'checked': text['text'][1].lower() == 'x'})
+                text['text'] = text['text'][4:]
+    checklists(parser.doc)
     return validate_document(parser.doc)

@@ -1,6 +1,6 @@
 # CritterDB and Avrae creature authoring standard
 
-Maintained for Aina. Last reviewed: **2026-10-26**.
+Maintained for Aina. Last reviewed: **2026-11-13**.
 
 Use this document for every future creature creation or revision. Its purpose is
 to produce an editable CritterDB creature with usable native Avrae automation,
@@ -92,6 +92,17 @@ user's creature.
 
 The user does not need to answer every row for every creature. Ask only the
 questions the supplied data and existing conversation do not already settle.
+
+User answers and delegated design decisions persist. Do not repeat settled
+questions or ask permission for routine choices covered by that authorization.
+Finish authorized implementation before delivering it as complete. A missing
+optional validator is a limitation to report, not a reason to repeatedly deliver
+an unfinished draft as the requested result.
+
+Agree on the interaction surface early: local Aina panel, Discord interaction,
+portable Avrae action, or a combination. A browser panel does not create Discord
+selectors, and an Avrae command does not open an Aina panel. Implement the
+selected surface and say where the user will find it.
 
 ## 2. File shapes and identity
 
@@ -277,6 +288,13 @@ The hidden `name` is the Avrae command name. It can be shorter than a decorative
 CritterDB heading with spell names/costs, but it must be unique enough to select
 reliably. Quote names containing spaces in prepared commands.
 
+Use the native action's `activation_type` to display its actual activation:
+`1` action, `2` no action, `3` bonus action, `4` reaction, `8` special, `9`
+legendary action. This label does not spend an action/reaction or detect its
+trigger. A requested Reactive Strike needs executable attack/damage nodes, not
+only a readable reaction entry. A reaction attack may reuse the confirmed
+weapon mechanics while preserving its trigger and restrictions.
+
 ### Reminders are not executable actions
 
 For this project, **Multiattack and Extra Attack are readable attack-count
@@ -400,6 +418,24 @@ success. This project's compiled save pattern uses `fixedValue: true` on the
 application of a stored roll to prevent adding command bonuses twice. Decide
 where bonuses belong when adapting this pattern to another rule.
 
+### Healing and temporary hit points
+
+Healing uses a negative `damage` node inside a target. Test a wounded target,
+a nearly full target, and a full-health target. Distinguish rolled healing from
+HP actually restored: any benefit based on actual healing must cap at missing
+HP. Full HP can explain no HP change; it does not explain the absence of an
+expected healing roll. Use `displayName: Healing` for healing rolls.
+
+The native `temphp` node sets temporary HP; it is not an additive heal. If the
+rule retains the higher pool, compare with existing temporary HP before applying
+the node. Test an existing higher pool, a lower pool, and zero healing. See the
+[native TempHP implementation](https://github.com/avrae/avrae/blob/master/cogs5e/models/automation/effects/temphp.py).
+
+For shared rolls, roll once and reuse the value; for independent rolls, roll
+inside the recipient execution. Check target count before any roll or state
+change; selecting extra targets must not turn a single-target heal into an area
+heal. Keep ally healing and enemy debuffs scoped to the correct recipient sets.
+
 ### Typed damage and dice
 
 Use the selectable standard types:
@@ -421,6 +457,24 @@ Use a `roll` node for an arbitrary die roll; this alone does not cause damage.
 
 ## 6. Choices and upcasting
 
+### Element mixers
+
+For a creature whose power combines selectable elements, use an interactive
+mixer in Aina rather than exporting a visible action for every permutation.
+Show the selected elements as the spell's short preview title, such as
+`Fire - Water`. Keep Sun/Moon infusion selection separate: choose the infusion
+and which selected element it replaces. A stored reaction element is a distinct,
+per-copy input. Show only the resulting spell's relevant effects in the preview;
+do not repeat the full element reference in every action. Keep portable native
+automation behind a compact stable action and validate every encoded choice.
+Keep mutually exclusive choice branches shallow (sibling conditions or balanced
+routing). A long recursive `onFalse` chain can exceed Avrae's import-time
+recursion limit even when the JSON and individual expressions validate. Check
+the maximum payload depth and test each route; do not solve this by increasing
+the runtime recursion limit.
+Local preparation, recorded reaction state, resource use, and live Avrae effects
+are separate states; posting a preview does not prove a cast or spend resources.
+
 **Automation conditions use a restricted evaluator, not general Python or full
 alias scripting.** A valid JSON/YAML array is fine as structural data; a list
 literal inside an evaluated condition is not supported by the interpreter used
@@ -433,6 +487,25 @@ choice == '' or choice in ["0", "1", "2"]
 ```
 
 For literal allowed values, use scalar comparisons:
+
+Avrae normalizes the runtime `choice` string to lowercase. Encode command
+choices and all literal routing keys in lowercase, including element names
+inside compound choices. Test commands after this runtime normalization;
+directly assigning mixed-case test inputs can hide a branch that never runs
+in Discord. Visible names may retain normal capitalization.
+
+See [runtime variables](https://avrae.readthedocs.io/en/stable/automation_ref.html#runtime-variables).
+Test the exact generated command, including its `-choice` encoding and selected
+targets, after runtime normalization. Do not infer success from a manually
+supplied test string that differs from what Aina emits.
+
+For compound choices, validate separators, field count, allowed values, element
+membership, and required inputs before indexing or applying mechanics. Cover
+missing, malformed, uppercase, duplicate, and unrecognized values. Every valid
+selection must reach the expected executable leaf exactly once; an action
+title, an empty target branch, or a help message is not a successful spell.
+Invalid selections must produce useful feedback without rolling or partially
+changing HP/effects. Do not leave invalid routes silently empty.
 
 ```text
 choice == '' or choice == "0" or choice == "1" or choice == "2"
@@ -529,6 +602,38 @@ passive explicitly and state the remaining rules. Bleeding is a custom named
 effect: derive all damage, type, timing, duration and ending rules from that
 ability; never invent universal Bleeding mechanics.
 
+### Native defenses and armor class
+
+Avrae `ieffect2` passive effects support `resistances`, `immunities`,
+`vulnerabilities`, `ignored_resistances`, `ac_value`, and `ac_bonus`. Use the
+documented fields when the effect's scope and duration match the requested
+rule; effects can expire or be removed without rewriting base creature stats.
+`ac_value` sets AC while active, and `ac_bonus` adjusts it. The documented
+`ignored_resistances` field suppresses matching resistance, immunity **and**
+vulnerability: it is not a resistance-only bypass. Do not use it for a
+resistance-only rule without verifying a way to preserve the other defenses.
+Similarly, adding a vulnerability is not proof that a pre-existing resistance
+or immunity is removed; check Avrae's resolution and the intended interaction.
+
+An effect that ends on the next damage event needs a verified event-triggered
+removal mechanism. A duration or an end button alone does not detect that
+event, and a broad immunity effect must not silently block later damage.
+Explain any required explicit action and obtain the user's agreement before
+substituting it for the requested automatic trigger.
+
+The damage annotation `[^fire]` (or a trailing `^`) bypasses resistance **and
+immunity** while retaining vulnerability in the reviewed
+[damage resolution source](https://github.com/avrae/avrae/blob/master/cogs5e/models/sheet/resistance.py).
+For a resistance-only rule, explicitly preserve immunity using verified target
+metadata and test immune, resistant, vulnerable, and combined-defense cases.
+Do not replace a one-attack bypass with a persistent broad defense effect.
+
+Research native support before declaring a mechanic unsupported. Separate a
+supported stat change from its trigger, scope, and cleanup: AC changes,
+resistances and vulnerabilities exist, while next-damage removal needs its own
+verification. Do not call the whole mechanic unsupported because one trigger
+is unavailable.
+
 ### Reuse standard conditions first
 
 Before authoring a condition, inspect the actual current Avrae implementation
@@ -559,6 +664,8 @@ turning a standard condition into an invented creature ability.
 | Paralyzed | Includes Incapacitated and its other standard consequences. Automatic STR/DEX save failure is not disadvantage. Incoming attack advantage is not the victim's outgoing attack modifier. Proximity-dependent automatic criticals require proximity information or an explicit choice. Do not fake any of these with an unrelated passive. |
 | Prone | Separate outgoing attack rules, incoming attack distance, movement and standing cost. A Stand up button removes the relevant condition; it does not by itself validate or spend movement. |
 | Poisoned | Use the existing standard condition and only the applicable attack/check modifiers. Do not add saving-throw disadvantage. |
+| Stunned | Includes Incapacitated and automatic Strength/Dexterity save failure plus incoming attack advantage; preserve edition-specific rules. A passive effect description does not enforce action restrictions or automatic failures. |
+| Exhaustion | Establish edition and existing level before computing modifiers. 2014 and 2024 exhaustion differ. Do not silently replace existing exhaustion with a fixed penalty for two newly gained levels, omit relevant tests/speed consequences, or assume temporary source-specific levels are the target's total. |
 | Bleeding | Not a universal standard condition in this workflow. Only create it when the user defines its actual damage, timing and ending rules. |
 
 Condition immunities must be respected. A named effect is not proof of an
@@ -895,6 +1002,64 @@ surviving a CritterDB round trip.
    execution. Use a duplicate/test creature for authorized write testing; retain
    local work on failure and never silently use a live original as a test.
 
+### Required runtime scenarios and evidence
+
+Exercise the actual delivered artifact and command path, rather than only a
+structurally similar reference creature. For each changed ability record the
+expected roll, branch, damage/healing amount, affected targets, effect creation,
+and removal. Test these scenarios where relevant:
+
+| Mechanic | Required scenarios |
+| --- | --- |
+| Attack | Hit, miss, natural critical, command modifiers; no hit damage on a miss. |
+| Save | Pass and fail; odd half damage rounds correctly; debuff applies only on its specified branch. |
+| Selection | Exact emitted command; omitted and malformed input; runtime lowercase; all selectable routes. |
+| Targets | None, one, multiple, absent/unresolved names, separate allies/enemies; enforce single-target limits. |
+| Healing / THP | Wounded, nearly full, full HP; retained higher THP; benefits based on actual healing. |
+| Defenses | Normal, resistance, immunity, vulnerability, combinations, conditional defense qualifiers. |
+| Effects | Correct current/next start/end clock, source ownership, duplicate application, removal, independent encounter copies. |
+| Buttons / granted attacks | Their own runtime and target context; do not assume variables from the initial run persist. |
+| Limited use | Which operation spends a use, recovery, once-per-turn scope, and explicit manual tracking where applicable. |
+
+A test must assert the expected operation actually occurred. Parsing every
+condition or finding a `target` node is insufficient: a valid selection that
+reaches no damage/healing/effect is a failure. Use a matching interpreter with
+the builtins Avrae supplies; do not add invented helpers just to make a test
+pass. An isolated expression harness still does not prove live HP/effect writes.
+
+Keep evidence levels explicit: JSON import, strict hidden-block parsing, static
+audit, official schema import when available, actual restricted-expression/dice
+execution, local state simulation, browser interaction, remote save/readback,
+live bestiary import, and live encounter use. Report only levels actually run.
+Hundreds of local tests do not turn an untested Discord path into a verified one.
+
+Test UI behavior in the same interface the user uses. Display effect
+descriptions at selection time, keep target lists searchable and bounded, and
+show only relevant controls. A generic action button must route through any
+required mixer rather than emit a command missing required inputs. Check narrow
+layout, persisted selections, readability, and UTF-8 output for replacement
+characters or corrupted names. These are usability checks, not evidence of live
+Avrae execution.
+
+### Reusable static export audit
+
+```powershell
+node scripts/check-critter-export.js exports/Patchouli_Knowledge_CritterDB_Avrae.json
+```
+
+Pass any creature or bestiary JSON, or several file paths. The read-only audit
+uses `Core.importData`, checks every hidden YAML block with duplicate-key errors,
+and reports invalid action envelopes, duplicate command names, known mixed-case
+choice literals, condition length, missing target contexts, and excessive
+payload depth. Aina's automation inspection also displays action-level issues.
+The default 32-container depth budget is a conservative project convention,
+not a documented Avrae platform limit. Prefer much shallower routing.
+
+This audit is intentionally static. It does not evaluate expressions, prove
+every route has an effect, validate every official node field, enforce condition
+immunity, spend resources, or contact Discord/CritterDB. Run the relevant runtime
+scenarios above as well; passing this command is not a live-test receipt.
+
 ### Existing local checks
 
 From the project root in PowerShell:
@@ -977,6 +1142,24 @@ These arrows are required operations, not automatic synchronization.
 CritterDB, or a bestiary alone does not prove that this stored action changed.
 If the error still quotes `choice in [...]`, locate the stale executed payload;
 the command's choice syntax cannot repair that payload.
+
+### Diagnose the executed copy before changing mechanics
+
+| Symptom | Inspect first |
+| --- | --- |
+| Only the attack title appears | Exact command, normalized choice, target list, selected branch, and whether that leaf contains executable work. Do not call an empty result success. |
+| Healing roll appears, HP does not increase | Actual recipient, full/max HP, rolled amount versus restored amount, and whether the target is a real combatant. |
+| Old error persists after updating | Compare saved CritterDB data, publication, active bestiary, and the encounter combatant's stored payload. |
+| Bestiary update raises recursion error | Payload depth and recursive branch shape across every action, including nested granted actions/buttons. |
+| Effect appears but a condition rule does not occur | Actual configured native passive fields versus descriptive text, immunity, timing, and manual consequences. |
+| User cannot find selectors | Confirm whether they are using the browser desk or Discord, whether required assets were loaded, and whether the selected action routes through its input panel. |
+
+When isolating a source-copy problem, `!ma "Actual source name" "Action name"`
+and `!i aoo "Actual encounter alias" "Action name"` deliberately select different
+stored actions. Provide commands with the user's real names, targets, and choice
+arguments. A source lookup is diagnostic; it must not be described as using the
+encounter caster's active effects or resources. Never delete an active combatant
+as a routine troubleshooting step.
 
 Aina's **Post as Aina** posts a copyable preview. It does not force Avrae to
 execute an ordinary bot message. **Confirm** records owner-reported use and

@@ -236,7 +236,7 @@ export function CampaignRecordDetails({
           </label>
         </div>
       )}
-      {entry.kind === "note" && (
+      {entry.kind === "note" && data.record_type !== "campaign-floor" && (
         <div className="field-grid">
           <label className="field">
             <span>Campaign record type</span>

@@ -1,0 +1,107 @@
+.language-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--subtle);
+  margin: 16px 0 24px;
+  overflow: hidden;
+}
+.language-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.language-heading h2 { margin: 0; font-size: 16px; }
+.language-tabs, .language-switch, .language-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+.language-tabs button, .language-switch button {
+  padding: 6px 9px;
+  min-height: 30px;
+  font-size: 12px;
+  border-color: transparent;
+  background: transparent;
+}
+.language-card button[aria-pressed=true] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--line);
+}
+.language-body { padding: 14px 16px; }
+.language-card label, .language-card p { margin: 0; }
+.language-card label { min-width: 0; }
+.language-card .hint { overflow-wrap: anywhere; }
+.language-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.language-toolbar > label { flex: 1 1 180px; max-width: 310px; }
+.language-text-grid, .language-name-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.language-text-grid textarea { resize: vertical; font: inherit; min-height: 84px; }
+.language-text-grid textarea[readonly] { background: var(--card); }
+.language-actions { margin-top: 9px; }
+.language-status { padding: 0 16px 12px; }
+.language-status:empty { display: none; }
+.language-edit { display: grid; gap: 9px; }
+.language-letter-map { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.language-letter-map summary, .language-log summary { cursor: pointer; }
+.language-letter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(47px, 1fr));
+  gap: 5px;
+  margin-top: 8px;
+}
+.language-letter-grid label { font-size: 11px; text-align: center; }
+.language-letter-grid input { text-align: center; padding: 4px; margin-top: 2px; }
+.language-name-tools form { display: flex; align-items: end; gap: 5px; }
+.language-name-tools form label { flex: 1; }
+.language-names {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 7px;
+  max-height: 210px;
+  padding-top: 10px;
+  overflow: auto;
+}
+.language-name-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 2px 3px 2px 10px;
+  overflow-wrap: anywhere;
+}
+.language-name-chip button { padding: 3px 8px; border: 0; border-radius: 50%; }
+.language-log { max-height: 310px; margin-top: 8px; overflow: auto; }
+.language-log details { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.language-log .language-text-grid { margin-top: 8px; font-size: 12px; }
+.language-log p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.workspace[data-view=roleplay] {
+  width: 100%;
+  max-width: none;
+  grid-template-columns: clamp(225px, 18vw, 320px) minmax(0, 1fr);
+}
+.rp-slot-head > .ss-control { grid-column: 3; justify-self: stretch; }
+.rp-send-controls .rp-language { margin-right: auto; }
+.rp-language > select, .rp-language .ss-control { min-width: 108px; max-width: 175px; margin: 0; }
+.rp-language .ss-trigger { padding-block: 5px; font-size: 12px; }
+.rp-slot-bottom { flex-wrap: wrap; }
+.rp-slot-bottom .rp-send-controls { flex: 1; }
+@media (max-width: 560px) {
+  .language-text-grid, .language-name-tools { grid-template-columns: minmax(0, 1fr); }
+}

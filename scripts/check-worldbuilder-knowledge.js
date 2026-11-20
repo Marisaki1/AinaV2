@@ -1,0 +1,23 @@
+// Pure draft-transformation checks; no campaign database or live server writes.
+const path=require('node:path'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'../src/critter/WorldBuilder/WorldBuilder');
+const esbuild=require(path.join(root,'node_modules/esbuild'));
+const source=require('node:fs').readFileSync(path.join(root,'frontend/KnowledgeLinks.tsx'),'utf8').split('export function KnowledgeLinks(')[0].replace(/^import .*;\s*$/gm,'');
+const output=esbuild.transformSync(source,{loader:'ts',format:'cjs'});
+const mod={exports:{}};new Function('require','module','exports',output.code)(require,mod,mod.exports);
+const {findMentions,linkMentions}=mod.exports;
+const entries=[{id:'a',kind:'character',title:'Reimu Hakurei',aliases:['Reimu']},{id:'b',kind:'character',title:'Other Reimu',aliases:['Reimu']}];
+const document={type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Reimu Hakurei spoke to Reimu.',marks:[{type:'bold'}]}]},{type:'paragraph',content:[{type:'text',text:'Reimu',marks:[{type:'link',attrs:{href:'/#/entry/a'}}]}]}]};
+const original=JSON.stringify(document),mentions=findMentions(document,entries,'self');
+assert.equal(mentions.length,2);assert.equal(mentions[0].candidates.length,1);assert.equal(mentions[1].candidates.length,2);
+const linked=linkMentions(document,mentions.map(mention=>({mention,id:'a'})));
+assert.equal(JSON.stringify(document),original);assert.equal(linked.content[0].content[0].marks[0].type,'bold');
+assert.equal(findMentions(linked,entries,'self').length,0);
+assert.equal(linked.content[0].content.map(n=>n.text).join(''),'Reimu Hakurei spoke to Reimu.');
+assert.equal(linked.content[1].content[0].marks[0].attrs.href,'/#/entry/a');
+console.log('PASS longest-name matching, alias ambiguity, existing links, original text/format preservation, and pure transformations.');
+const exported=esbuild.transformSync(require('node:fs').readFileSync(path.join(root,'frontend/board-export.ts'),'utf8'),{loader:'ts',format:'cjs'});
+const svgModule={exports:{}};new Function('require','module','exports',exported.code)(require,svgModule,svgModule.exports);
+const svg=svgModule.exports.boardSVG({cards:[{id:'a',entry_id:'source',x:10,y:20,caption:'<script>unsafe</script>',color:'#ffffff'}],edges:[],shapes:[{id:'s',type:'rectangle',x:100,y:100,width:100,height:80,color:'#112233',text:'A & B'}],strokes:[{id:'p',points:[[0,0],[10,10]],color:'#112233'}]},[{id:'source',title:'<img onerror=unsafe>'}]);
+assert.ok(svg.includes('&lt;script&gt;'));assert.ok(!svg.includes('<script>'));assert.ok(svg.includes('<metadata>'));assert.ok(svg.includes('<polyline'));assert.ok(svg.includes('A &amp; B'));
+console.log('PASS safe board SVG export with shapes, strokes, source labels and recoverable metadata.');

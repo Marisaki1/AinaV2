@@ -148,11 +148,20 @@ def campaign_workbench(resource, query):
     values = graph_records(resource.world)
     campaign = values[str(resource.id)]
     identity = campaign["id"]
+    floor = query.get("floor", "")
+    floor_scope = None
+    if floor:
+        from .floor_scope import FloorScope
+
+        floor_scope = FloorScope(values, identity, floor)
     records = [
         v
         for v in values.values()
         if v["kind"] in ("note", "session", "quest", "task")
-        and membership(v) == identity
+        and (
+            membership(v) == identity
+            or floor_scope and v["id"] in floor_scope.membership
+        )
     ]
     sessions = sorted(
         (v for v in records if v["kind"] == "session"),
@@ -188,9 +197,14 @@ def campaign_workbench(resource, query):
     scoped = [
         v
         for v in records
-        if not session_id
-        or v["id"] == session_id
-        or v["data"].get("session_id") == session_id
+        if (not session_id or v["id"] == session_id or v["data"].get("session_id") == session_id)
+        and (
+            not floor_scope
+            or (
+                floor_scope.includes(v["id"])
+                and v["data"].get("record_type") != "campaign-floor"
+            )
+        )
     ]
     scoped.sort(
         key=lambda v: (

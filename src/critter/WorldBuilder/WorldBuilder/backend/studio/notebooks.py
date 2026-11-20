@@ -211,7 +211,8 @@ def validate(kind, data, world, historical=False, previous=None, resource_id=Non
     board = data.get("note_board", {"cards": [], "edges": []})
     if (
         not isinstance(board, dict)
-        or set(board) != {"cards", "edges"}
+        or not {'cards','edges'} <= set(board)
+        or set(board) - {'cards','edges','shapes','strokes'}
         or not isinstance(board["cards"], list)
         or not isinstance(board["edges"], list)
         or len(board["cards"]) > 150
@@ -265,10 +266,39 @@ def validate(kind, data, world, historical=False, previous=None, resource_id=Non
             raise ValueError("Board connections need unique IDs.")
         edge_ids.add(edge["id"])
         short(edge["label"], "Connection label", 180)
+    shape_ids=set()
+    def coordinate(v):
+        return type(v) in (int,float) and math.isfinite(v) and 0<=v<=5000
+    def color(v):
+        return isinstance(v,str) and re.fullmatch('#[0-9a-fA-F]{6}',v)
+    shapes=board.get('shapes',[]);strokes=board.get('strokes',[])
+    if not isinstance(shapes,list) or len(shapes)>100 or not isinstance(strokes,list) or len(strokes)>100:
+        raise ValueError('Use up to 100 shapes and 100 strokes.')
+    for shape in shapes:
+        if not isinstance(shape,dict) or set(shape)!={'id','type','x','y','width','height','text','color'}:
+            raise ValueError('Invalid board shape.')
+        uid(shape['id'])
+        if shape['id'] in shape_ids or shape['type'] not in ('rectangle','ellipse','text'):
+            raise ValueError('Choose distinct supported shapes.')
+        shape_ids.add(shape['id'])
+        if not all(coordinate(shape[k]) for k in ('x','y','width','height')) or min(shape['width'],shape['height'])<10 or not color(shape['color']):
+            raise ValueError('Invalid shape position, size or color.')
+        short(shape['text'],'Shape text',2000)
+    for stroke in strokes:
+        if not isinstance(stroke,dict) or set(stroke)!={'id','points','color'}:
+            raise ValueError('Invalid drawing stroke.')
+        uid(stroke['id'])
+        if stroke['id'] in shape_ids or not color(stroke['color']):raise ValueError('Invalid stroke identity or color.')
+        shape_ids.add(stroke['id'])
+        points=stroke['points']
+        if not isinstance(points,list) or not 2<=len(points)<=1000 or any(not isinstance(p,list) or len(p)!=2 or not all(coordinate(v) for v in p) for p in points):
+            raise ValueError('Use 2–1000 valid points per stroke.')
 
 
 def reader_data(data):
     for key in PRIVATE_KEYS:
+        data.pop(key, None)
+    for key in ('note_article_id', 'source_note_id', 'source_note_revision', 'source_task_id'):
         data.pop(key, None)
     return data
 
@@ -364,6 +394,8 @@ def desk(world, params):
         candidates = [r for r in originals.values() if r.kind in ("note", "task")]
         unavailable = 0
     view = params.get("view", "all")
+    if view == 'trash':
+        candidates=list(Resource.objects.filter(world=world,deleted_at__isnull=False,kind__in=['note','task']))
     if view == "inbox":
         candidates = [r for r in candidates if str(r.id) not in filed]
     if view == "favorites":
@@ -455,6 +487,75 @@ def act(world, value):
 
     with transaction.atomic():
         action = value.get("action")
+        if action == 'note_article':
+            note = row(world, value.get('id'))
+            if note.kind != 'note':
+                raise ValueError('Choose an original note.')
+            if note.data.get('note_article_id'):
+                article = Resource.objects.filter(world=world, id=uid(note.data['note_article_id'])).first()
+                if article and article.deleted_at:
+                    raise ValueError('The linked article is in Trash. Restore it before converting again; no duplicate was created.')
+                if not article or article.kind != 'article':
+                    raise ValueError('The linked conversion is unavailable. Restore the original article before continuing.')
+                return {'entry': serialize(article), 'note': serialize(note), 'reused': True}
+            expected(note, value.get('expected_revision'))
+            title = short(value.get('title') or note.title, 'Article title', 180, False)
+            template = short(value.get('template', 'generic'), 'Article template', 60, False)
+            from .catalog import templates
+            allowed = {entry['id'] for entry in templates()}
+            if template not in allowed and not template.startswith('custom:'):
+                raise ValueError('Choose a supported article template.')
+            details = {key: copy.deepcopy(item) for key, item in note.data.items()
+                       if key not in ('note_capture_key', 'note_capture_fingerprint', 'note_article_id')}
+            details.update(source_note_id=str(note.id), source_note_revision=note.revision)
+            article = save_resource(world, {'title': title, 'kind': 'article', 'template': template,
+                'document': copy.deepcopy(note.document), 'summary': note.summary,
+                'private_notes': note.private_notes, 'source': note.source,
+                'tags': copy.deepcopy(note.tags), 'aliases': copy.deepcopy(note.aliases),
+                'data': details, 'visibility': 'private', 'status': note.status})
+            note = save_resource(world, {'data': {**note.data, 'note_article_id': str(article.id)},
+                'expected_revision': note.revision}, note)
+            return {'entry': serialize(article), 'note': serialize(note), 'reused': False}
+        if action == 'task_article':
+            task=row(world,value.get('id'))
+            if task.kind!='task':raise ValueError('Choose a task.')
+            expected(task,value.get('expected_revision'))
+            if task.data.get('link_id'):
+                existing=row(world,task.data['link_id'])
+                return {'entry':serialize(existing),'task':serialize(task),'reused':True}
+            title=short(value.get('title') or task.title,'Article title',180,False)
+            article=save_resource(world,{'title':title,'kind':'article','template':'generic',
+                'document':copy.deepcopy(task.document),'visibility':'private',
+                'tags':copy.deepcopy(task.tags),
+                'data':{'source_task_id':str(task.id),'campaign_id':task.data.get('campaign_id','')}})
+            task=save_resource(world,{'data':{**task.data,'link_id':str(article.id)},'expected_revision':task.revision},task)
+            return {'entry':serialize(article),'task':serialize(task),'reused':False}
+        if action in ('trash', 'restore_bulk'):
+            from django.utils import timezone
+            from .services import snapshot, index_resource
+            selected = value.get('entries', [])
+            if not isinstance(selected, list) or not 1 <= len(selected) <= 100:
+                raise ValueError('Select one to 100 originals.')
+            if any(not isinstance(v, dict) or set(v) != {'id','revision'} for v in selected):
+                raise ValueError('Supply current original revisions.')
+            if len({v['id'] for v in selected}) != len(selected):
+                raise ValueError('Select each original once.')
+            originals=[]
+            for item in selected:
+                current=Resource.objects.filter(world=world,id=uid(item['id'])).first()
+                if current is None or current.data.get('notebook_type'):
+                    raise ValueError('Choose an original note or lore entry.')
+                expected(current,item['revision'])
+                if (action=='trash') == bool(current.deleted_at):
+                    raise ValueError('The original is no longer in the expected Trash state.')
+                originals.append(current)
+            restored=[]
+            for current in originals:
+                save_resource(world,{**snapshot(current),'expected_revision':current.revision},current,restore=action=='restore_bulk')
+                if action=='trash':
+                    current.deleted_at=timezone.now();current.save(update_fields=['deleted_at']);index_resource(current)
+                restored.append({'id':str(current.id),'revision':current.revision})
+            return {'entries':restored}
         if action == "book":
             current = row(world, value["id"], "notebook") if value.get("id") else None
             if current:
@@ -703,13 +804,14 @@ def act(world, value):
                 )
             else:
                 tags = strings(value.get("add_tags", []), "Tags")
+                remove_tags = {v.casefold() for v in strings(value.get('remove_tags', []), 'Tags')}
                 if "starred" in value and type(value["starred"]) is not bool:
                     raise ValueError("Choose a valid favorite state.")
                 for current in originals:
                     save_resource(
                         world,
                         {
-                            "tags": list(dict.fromkeys(current.tags + tags)),
+                            "tags": [tag for tag in dict.fromkeys(current.tags + tags) if tag.casefold() not in remove_tags],
                             "data": {
                                 **current.data,
                                 **(
@@ -735,10 +837,18 @@ def act(world, value):
                 book,
             )
             return {"entry": serialize(result)}
+        if action == 'board_preview':
+            book=row(world,value.get('book_id'),'notebook')
+            if value.get('world_id') != str(world.id):
+                raise ValueError('This board belongs to another world. Import that world archive to preserve its originals first.')
+            incoming=value.get('board')
+            validate(book.kind,{**book.data,'note_board':incoming},world,previous=book.data,resource_id=book.id)
+            return {'board':copy.deepcopy(incoming)}
         raise ValueError("Choose a supported notebook action.")
 
 
 def audit(world):
+    from .structured import reference_ids as field_reference_ids
     rows = {str(r.id): r for r in Resource.objects.filter(world=world, deleted_at=None)}
     names = defaultdict(set)
     broken = []
@@ -746,7 +856,7 @@ def audit(world):
         for name in [r.title, *r.aliases]:
             if name.strip():
                 names[name.casefold().strip()].add(key)
-        refs = reference_ids(r.document) | set(r.data.get("related_entries", []))
+        refs = reference_ids(r.document) | field_reference_ids(r.data) | set(r.data.get("related_entries", []))
         refs.update(
             v
             for section in r.data.get("notebook_sections", [])
@@ -853,6 +963,7 @@ def export_book(book, section_id="", private=False):
                 + html.escape(value["title"])
                 + "</h3>"
                 + value.get("html", "")
+                + value.get('structured_html','')
             )
             if private and value.get("private_notes"):
                 body += (

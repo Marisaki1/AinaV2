@@ -1,6 +1,7 @@
 const YAML = require('yaml');
 const { sections, splitDescription } = require('./public/core');
 const { fieldsFor } = require('./ability-editor');
+const { auditAction } = require('./export-audit');
 function containsAttack(value, seen = new WeakSet()) {
   if (!value || typeof value !== 'object' || seen.has(value)) return false;
   seen.add(value);
@@ -37,7 +38,7 @@ function inspectCreature(creature) {
         const actions = Array.isArray(parsed) ? parsed : [parsed];
         for (const action of actions) {
           if (!action || typeof action.name !== 'string' || !Array.isArray(action.automation)) warnings.push('YAML parsed, but this is not a recognized named automation action.');
-          else { names.push(action.name); const scale=scalingIn(action.automation);if(scale)scalingByName[action.name]=scale; }
+          else { names.push(action.name); warnings.push(...auditAction(action).map(i=>'['+i.code+'] '+i.message)); const scale=scalingIn(action.automation);if(scale)scalingByName[action.name]=scale; }
         }
       } catch (e) { warnings.push(`Invalid automation YAML: ${e.message.split('\n')[0]}`); }
     }

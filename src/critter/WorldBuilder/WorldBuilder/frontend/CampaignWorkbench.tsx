@@ -1,3 +1,5 @@
+import { FloorSelect, useCampaignFloor } from "./FloorScope";
+import { QuestDraft, QuestNotice } from "./QuestDraft";
 import React, { useEffect, useState } from "react";
 import DOMPurify from "dompurify";
 import {
@@ -149,12 +151,17 @@ export function CampaignWorkbench({
     [pinId, setPinId] = useState(""),
     [mapId, setMapId] = useState(""),
     [arc, setArc] = useState("");
+  const floorScope = useCampaignFloor(ctx.entries, id);
+  const floorFilter = floorScope.floors.length ? floorScope.selection : "";
+  const selectedFloor = floorScope.floors.find((floor) => floor.id === floorFilter);
+  const [questForm, setQuestForm] = useState<Entry | "new" | null>(null);
   const scope = JSON.stringify([ctx.world.id, id]),
     category =
       view === "notes" ? "notes" : view === "threads" ? "threads" : "all";
   const token = JSON.stringify([
     scope,
     category,
+    floorFilter,
     search,
     session,
     type,
@@ -177,6 +184,7 @@ export function CampaignWorkbench({
       `/resources/${id}/workbench?` +
         new URLSearchParams({
           category,
+          floor: floorFilter,
           q: search,
           session,
           type,
@@ -634,7 +642,12 @@ export function CampaignWorkbench({
           </p>
         </div>
         <div className="button-row">
-          <button className="button primary" onClick={() => setCapture(true)}>
+          {view === "threads" && (
+            <button className="button primary" onClick={() => setQuestForm("new")}>
+              Add quest
+            </button>
+          )}
+          <button className={view === "threads" ? "button secondary" : "button primary"} onClick={() => setCapture(true)}>
             Quick capture
           </button>
           <button
@@ -688,6 +701,23 @@ export function CampaignWorkbench({
             Reload latest campaign
           </button>
         </>
+      )}
+      {floorScope.floors.length > 0 && (
+        <div className="campaign-scope-toolbar">
+          <FloorSelect {...floorScope} select={(floor) => {
+            floorScope.select(floor);
+            setSession("");
+            setOffset(0);
+          }} />
+        </div>
+      )}
+      {questForm && campaign && (
+        <QuestDraft ctx={ctx} campaign={campaign} floors={floorScope.floors}
+          initialFloor={selectedFloor?.id} initialSession={session}
+          quest={questForm === "new" ? undefined : questForm}
+          onClose={() => setQuestForm(null)}
+          onSaved={() => { setOffset(0); setNonce((value) => value + 1); }}
+        />
       )}
       <div className="workbench-toolbar">
         <EntryPicker
@@ -934,7 +964,16 @@ export function CampaignWorkbench({
                           {e.title}
                         </button>
                       </h3>
-                      <p>{e.summary}</p>
+                      {floorFilter === "all" && (
+                        <p className="small-copy muted">
+                          {floorScope.floors.filter((floor) => floorScope.membership.get(e.id)?.has(floor.id))
+                            .map((floor) => floor.title).join(" ? ") || "Unassigned"}
+                        </p>
+                      )}
+                      {e.summary && <p>{e.summary}</p>}
+                      {e.data.quest_giver && <p>Offered by {e.data.quest_giver}</p>}
+                      {e.data.quest_reward && <p>Reward ? {e.data.quest_reward}</p>}
+                      {e.kind === "quest" && <QuestNotice ctx={ctx} quest={e} />}
                       {e.data.story_arc && (
                         <p className="small-copy">{e.data.story_arc}</p>
                       )}
@@ -970,6 +1009,10 @@ export function CampaignWorkbench({
                       >
                         Open thread guide
                       </button>
+                      {e.kind === "quest" && (
+                        <button className="text-button" disabled={loading}
+                          onClick={() => setQuestForm(e)}>Edit quest</button>
+                      )}
                       <button
                         className="text-button"
                         disabled={
@@ -1012,6 +1055,7 @@ export function CampaignWorkbench({
       )}
       {capture && (
         <CampaignCapture
+          floorId={selectedFloor?.id}
           ctx={ctx}
           campaign={campaign!}
           sessionId={session}

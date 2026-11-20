@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { AppContext, Entry, saveBeforeNavigate, api } from "./domain";
+import { AppContext, Entry, saveBeforeNavigate, api, post } from "./domain";
+import { BoardDrawing } from "./BoardDrawing";
+import { boardSVG } from "./board-export";
 import { EntryPicker, ErrorBox, Field } from "./ui";
 import { SearchableSelect } from "./SearchableSelect";
 import { NoteSave } from "./NotebookForms";
@@ -17,7 +19,7 @@ export function NotebookBoard({
 }) {
   const empty = { cards: [], edges: [] },
     [base, setBase] = useState(book),
-    [board, setBoard] = useState<any>(() =>
+    [board, setRawBoard] = useState<any>(() =>
       structuredClone(book.data.note_board || empty),
     ),
     [choice, setChoice] = useState(""),
@@ -26,14 +28,53 @@ export function NotebookBoard({
     [label, setLabel] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
+    [drawingHost, setDrawingHost] = useState<HTMLDivElement | null>(null),
+    [historyVersion, setHistoryVersion] = useState(0),
+    [recovered, setRecovered] = useState<any>(() => {
+      try {
+        return JSON.parse(
+          localStorage.getItem("worldbuilder.board-draft:" + book.id) || "null",
+        );
+      } catch {
+        return null;
+      }
+    }),
+    undo = useRef<any[]>([]),
+    redo = useRef<any[]>([]),
+    upload = useRef<HTMLInputElement>(null),
     drag = useRef<any>(null),
     surface = useRef<HTMLDivElement>(null);
   const dirty =
     JSON.stringify(board) !== JSON.stringify(base.data.note_board || empty);
+  const checkpoint = () => {
+    undo.current = [...undo.current.slice(-39), structuredClone(board)];
+    redo.current = [];
+    setHistoryVersion((n) => n + 1);
+  };
+  const setBoard = (next: any) => {
+    checkpoint();
+    setRawBoard(next);
+  };
+  useEffect(() => {
+    try {
+      if (!recovered) {
+        if (dirty)
+          localStorage.setItem(
+            "worldbuilder.board-draft:" + book.id,
+            JSON.stringify({ board, revision: base.revision }),
+          );
+        else localStorage.removeItem("worldbuilder.board-draft:" + book.id);
+      }
+    } catch {
+      setError(
+        "Board recovery storage is full. Save or export your draft before leaving.",
+      );
+    }
+  }, [board, base.revision, dirty, recovered]);
   useEffect(() => {
     if (!dirty && book.revision > base.revision) {
       setBase(book);
-      setBoard(structuredClone(book.data.note_board || empty));
+      setRawBoard(structuredClone(book.data.note_board || empty));
     }
   }, [book.revision, dirty]);
   useEffect(() => {
@@ -57,7 +98,7 @@ export function NotebookBoard({
     };
   }, [dirty, busy]);
   const update = (id: string, values: any) =>
-    setBoard((v: any) => ({
+    setRawBoard((v: any) => ({
       ...v,
       cards: v.cards.map((c: any) => (c.id === id ? { ...c, ...values } : c)),
     }));
@@ -69,6 +110,47 @@ export function NotebookBoard({
         connections. Previewing a source keeps your current draft open.
       </p>
       {error && <ErrorBox message={error} />}
+      {recovered && (
+        <div className="button-row">
+          <span>An unfinished board draft is available.</span>
+          <button
+            className="button secondary"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                const result = await post<any>(
+                  `/worlds/${ctx.world.id}/notebooks`,
+                  {
+                    action: "board_preview",
+                    book_id: base.id,
+                    world_id: ctx.world.id,
+                    board: recovered.board,
+                  },
+                );
+                setRawBoard(result.board);
+                setBase({ ...base, revision: recovered.revision });
+                setRecovered(null);
+              } catch (e: any) {
+                setError(e.message + " Your recovery copy is retained.");
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Recover board draft
+          </button>
+          <button
+            className="text-button"
+            onClick={() => {
+              setRecovered(null);
+              localStorage.removeItem("worldbuilder.board-draft:" + book.id);
+            }}
+          >
+            Discard recovered board
+          </button>
+        </div>
+      )}
       <fieldset disabled={busy} className="session-guide-form-fields">
         <EntryPicker
           label="Board original to add"
@@ -79,6 +161,117 @@ export function NotebookBoard({
           )}
         />
         <div className="button-row">
+          <button
+            className="text-button"
+            disabled={!undo.current.length}
+            onClick={() => {
+              redo.current.push(structuredClone(board));
+              setRawBoard(undo.current.pop());
+              setHistoryVersion((n) => n + 1);
+            }}
+          >
+            Undo board edit
+          </button>
+          <button
+            className="text-button"
+            disabled={!redo.current.length}
+            onClick={() => {
+              undo.current.push(structuredClone(board));
+              setRawBoard(redo.current.pop());
+              setHistoryVersion((n) => n + 1);
+            }}
+          >
+            Redo board edit
+          </button>
+          <button
+            className="text-button"
+            onClick={() => {
+              const url = URL.createObjectURL(
+                new Blob(
+                  [
+                    JSON.stringify(
+                      {
+                        format: "worldbuilder-note-board-v1",
+                        world_id: ctx.world.id,
+                        board,
+                      },
+                      null,
+                      2,
+                    ),
+                  ],
+                  { type: "application/json" },
+                ),
+              );
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "note-board.json";
+              a.click();
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }}
+          >
+            Export board JSON
+          </button>
+          <button
+            className="text-button"
+            onClick={() => upload.current?.click()}
+          >
+            Import board JSON
+          </button>
+          <button
+            className="text-button"
+            onClick={() => {
+              const url = URL.createObjectURL(
+                new Blob([boardSVG(board, ctx.entries)], {
+                  type: "image/svg+xml",
+                }),
+              );
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "note-board.svg";
+              a.click();
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }}
+          >
+            Export board SVG
+          </button>
+          <input
+            hidden
+            ref={upload}
+            type="file"
+            accept=".json"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setBusy(true);
+              try {
+                if (file.size > 4000000)
+                  throw Error("Use a board smaller than 4 MB.");
+                const data = JSON.parse(await file.text());
+                if (data.format !== "worldbuilder-note-board-v1")
+                  throw Error("Choose a WorldBuilder note board.");
+                const preview = await post<any>(
+                  `/worlds/${ctx.world.id}/notebooks`,
+                  {
+                    action: "board_preview",
+                    book_id: base.id,
+                    world_id: data.world_id,
+                    board: data.board,
+                  },
+                );
+                if (
+                  confirm(
+                    "Replace this board draft with the imported board? Save visual board commits it.",
+                  )
+                )
+                  setBoard(preview.board);
+              } catch (e: any) {
+                setError(e.message);
+              } finally {
+                setBusy(false);
+                e.target.value = "";
+              }
+            }}
+          />
           <button
             className="button secondary"
             disabled={!choice || board.cards.length >= 150}
@@ -116,6 +309,7 @@ export function NotebookBoard({
                   board,
                 });
                 setBase(result.entry);
+                setRecovered(null);
               } catch (e: any) {
                 setError(e.message + " Your board draft remains here.");
               } finally {
@@ -138,7 +332,10 @@ export function NotebookBoard({
               try {
                 const latest = await api<Entry>("/resources/" + book.id);
                 setBase(latest);
-                setBoard(structuredClone(latest.data.note_board || empty));
+                setRawBoard(structuredClone(latest.data.note_board || empty));
+                undo.current = [];
+                redo.current = [];
+                setRecovered(null);
                 setError("");
               } catch (e: any) {
                 setError(e.message);
@@ -150,9 +347,11 @@ export function NotebookBoard({
             Reload saved board
           </button>
         </div>
+        <div ref={setDrawingHost} />
         <div className="notebook-board-viewport" ref={surface}>
           <div
             className="notebook-board-surface"
+            style={{ pointerEvents: busy ? "none" : undefined }}
             onPointerMove={(e) => {
               if (!drag.current || !surface.current) return;
               const r = surface.current.getBoundingClientRect();
@@ -186,6 +385,13 @@ export function NotebookBoard({
               drag.current = null;
             }}
           >
+            <BoardDrawing
+              board={board}
+              edit={setBoard}
+              update={setRawBoard}
+              checkpoint={checkpoint}
+              toolbarHost={drawingHost}
+            />
             <svg className="notebook-board-lines" width="5300" height="5300">
               {board.edges.map((edge: any) => {
                 const a = board.cards.find((c: any) => c.id === edge.source),
@@ -232,6 +438,7 @@ export function NotebookBoard({
                     }
                     onPointerDown={(e) => {
                       if (busy) return;
+                      checkpoint();
                       const r =
                         e.currentTarget.parentElement!.getBoundingClientRect();
                       drag.current = {
@@ -250,6 +457,7 @@ export function NotebookBoard({
                       };
                       if (d[e.key]) {
                         e.preventDefault();
+                        checkpoint();
                         update(card.id, {
                           x: Math.max(0, Math.min(5000, card.x + d[e.key][0])),
                           y: Math.max(0, Math.min(5000, card.y + d[e.key][1])),

@@ -69,6 +69,7 @@ def family_view(
     reader=False,
     values=None,
     kinds=None,
+    floor_scope=None,
 ):
     if direction not in ("family", "ancestors", "descendants"):
         raise ValueError("Choose family, ancestors or descendants.")
@@ -78,13 +79,16 @@ def family_view(
     edges = [
         e
         for e in visible_connections(world, reader, values)
-        if e["kind"] in FAMILY and (not kinds or e["kind"] in kinds)
+        if e["kind"] in FAMILY
+        and (not kinds or e["kind"] in kinds)
+        and (not floor_scope or floor_scope.includes_connection(e))
     ]
     ids = {i for e in edges for i in (e["source"], e["target"])}
     ids |= {
         key
         for key, v in values.items()
-        if v["kind"] == "character" or v["template"] == "character"
+        if (v["kind"] == "character" or v["template"] == "character")
+        and (not floor_scope or key in floor_scope.campaign_ids and floor_scope.includes(key))
     }
     choices = sorted(
         (reference(values[i]) for i in ids),

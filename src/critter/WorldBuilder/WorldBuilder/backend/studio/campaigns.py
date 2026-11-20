@@ -1,7 +1,8 @@
 """Campaign records use ordinary versioned entries, with validated connections."""
 
 from datetime import date
-from .models import Resource
+from uuid import UUID
+from .models import Connection, Resource
 from .tools import integer
 
 
@@ -13,6 +14,14 @@ def validate_campaign_record(kind, data, world, historical=False, previous=None)
         kind == "article" and data.get("planning_type")
     ):
         return
+    if kind == "quest":
+        for key, label, limit in (
+            ("quest_giver", "Quest giver", 180),
+            ("quest_reward", "Quest reward", 300),
+            ("player_notice", "Player notice", 10000),
+        ):
+            if key in data:
+                short(data[key], label, limit)
     if kind in ("quest", "task"):
         for key in ("story_arc", "outcome", "gm_next_step"):
             if key in data:
@@ -58,8 +67,9 @@ def validate_campaign_record(kind, data, world, historical=False, previous=None)
         "note",
         "journal",
         "milestone",
+        "campaign-floor",
     ):
-        raise ValueError("Choose a note, journal entry or milestone.")
+        raise ValueError("Choose a note, journal entry, milestone or campaign floor.")
     if kind == "session":
         if "number" in data:
             integer(data["number"], "Session number", 1, 1000000)
@@ -90,6 +100,27 @@ def validate_campaign_record(kind, data, world, historical=False, previous=None)
         if target is None or (target.deleted_at and not historical and not unchanged):
             raise ValueError("Choose an available " + expected + " from this world.")
         references[key] = target
+    if kind == "note" and data.get("record_type") == "campaign-floor":
+        if "campaign_id" not in references:
+            raise ValueError("Choose a campaign for this floor.")
+        number = data.get("floor_number")
+        if type(number) is not int or not 0 <= number <= 999:
+            raise ValueError("Enter a whole floor number from 0 to 999.")
+        if data.get("floor_status") not in ("Planned", "Current", "Completed"):
+            raise ValueError("Choose a floor status.")
+        for key, model in (("floor_entries", Resource), ("floor_connections", Connection)):
+            ids = data.get(key, [])
+            if not isinstance(ids, list) or len(ids) > 500:
+                raise ValueError("Choose up to 500 floor references.")
+            try:
+                normalized = {str(UUID(identity)) for identity in ids}
+            except (TypeError, ValueError, AttributeError):
+                raise ValueError("Choose valid floor references.") from None
+            if len(normalized) != len(ids) or normalized != set(ids):
+                raise ValueError("Choose distinct floor references.")
+            new = normalized - set(previous.get(key, []))
+            if not historical and model.objects.filter(world=world, deleted_at=None, id__in=new).count() != len(new):
+                raise ValueError("Choose available floor references from this world.")
     if "marker_id" in data:
         short(data["marker_id"], "Map location", 100)
     if data.get("marker_id"):
@@ -168,7 +199,7 @@ def validate_campaign_record(kind, data, world, historical=False, previous=None)
 
 def reader_campaign_data(data, references):
     """Preparation and follow-up planning stay GM-only even on published sessions."""
-    for key in ("prep", "consequences", "next_steps", "gm_workspace", "gm_next_step"):
+    for key in ("prep", "consequences", "next_steps", "gm_workspace", "gm_next_step", "player_notice"):
         data.pop(key, None)
     for key in ("campaign_id", "session_id", "link_id", "thread_id"):
         if data.get(key) and data[key] not in references:

@@ -22,6 +22,9 @@ import {
   categories,
 } from "./NotebookForms";
 import { NotebookBoard } from "./NotebookBoard";
+import { ChecklistDesk } from "./ChecklistDesk";
+import { SnippetLibrary } from './Snippets';
+import { NoteConversion } from './NoteConversion';
 
 type Desk = {
   books: Entry[];
@@ -146,6 +149,9 @@ export function Notebooks({
     [preview, setPreview] = useState(""),
     [editorVersion, setEditorVersion] = useState(0),
     [audit, setAudit] = useState<any>(null);
+  const [trashed, setTrashed] = useState<{ id: string; revision: number }[]>(
+    [],
+  );
   useEffect(() => {
     try {
       sessionStorage.setItem(
@@ -279,7 +285,7 @@ export function Notebooks({
   const save = async (body: Record<string, any>) => {
     const value = await post(`/worlds/${ctx.world.id}/notebooks`, body);
     if (
-      (body.action === "metadata" && body.id === sourceId) ||
+      (["metadata", "note_article"].includes(body.action) && body.id === sourceId) ||
       (body.action === "bulk" &&
         body.entries?.some((e: any) => e.id === sourceId))
     )
@@ -431,6 +437,9 @@ export function Notebooks({
             ["all", "All notes"],
             ["inbox", "Unfiled inbox"],
             ["favorites", "Favorites"],
+            ["checklists", "Checklist desk"],
+            ['snippets','Reusable snippets'],
+            ["trash", "Trashed notes"],
             ["knowledge", "Facts & questions"],
             ["templates", "Note templates"],
             ["audit", "Reference audit"],
@@ -501,11 +510,15 @@ export function Notebooks({
           className={
             "notebook-workarea " +
             (preview ? "with-reference " : "") +
-            (sourceId && view !== "board" ? "has-editor" : "")
+            (sourceId && !["board", "checklists", "trash", "snippets"].includes(view)
+              ? "has-editor"
+              : "")
           }
         >
           <section className="notebook-results" aria-label="Notebook results">
-            {view === "board" ? (
+            {view==='snippets'?<SnippetLibrary ctx={ctx}/>:view === "checklists" ? (
+              <ChecklistDesk ctx={ctx} />
+            ) : view === "board" ? (
               book ? (
                 <NotebookBoard
                   key={book.id}
@@ -657,14 +670,90 @@ export function Notebooks({
                 <div className="button-row">
                   <button
                     className="text-button"
-                    disabled={!selected.length || busy}
+                    disabled={busy || !ready || !data?.results.length}
+                    onClick={() =>
+                      setSelected(data!.results.slice(0, 100).map((e) => e.id))
+                    }
+                  >
+                    Select this page
+                  </button>
+                  <button
+                    className="text-button"
+                    disabled={busy || !selected.length}
+                    onClick={() => setSelected([])}
+                  >
+                    Clear selection
+                  </button>
+                  <button
+                    className="text-button danger"
+                    disabled={busy || !selected.length}
+                    onClick={async () => {
+                      if (
+                        !(await guard()) ||
+                        (view !== "trash" &&
+                          !confirm(
+                            `Move ${selected.length} original entries to Trash? Their notebook references will remain for recovery.`,
+                          ))
+                      )
+                        return;
+                      setBusy(true);
+                      try {
+                        const originals = await Promise.all(
+                          selected.map((id) => api<Entry>("/resources/" + id)),
+                        );
+                        const result = await save({
+                          action: view === "trash" ? "restore_bulk" : "trash",
+                          entries: originals.map((e) => ({
+                            id: e.id,
+                            revision: e.revision,
+                          })),
+                        });
+                        if (view !== "trash") setTrashed(result.entries);
+                        setSelected([]);
+                        if (selected.includes(sourceId))
+                          ctx.go(route(view, bookKey, sectionKey, ""));
+                      } catch (e: any) {
+                        setError(e.message);
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    {view === "trash" ? "Restore selected" : "Trash selected"}
+                  </button>
+                  {!!trashed.length && (
+                    <button
+                      className="text-button"
+                      disabled={busy}
+                      onClick={async () => {
+                        if (!(await guard())) return;
+                        setBusy(true);
+                        try {
+                          await save({
+                            action: "restore_bulk",
+                            entries: trashed,
+                          });
+                          setTrashed([]);
+                        } catch (e: any) {
+                          setError(e.message);
+                        } finally {
+                          setBusy(false);
+                        }
+                      }}
+                    >
+                      Undo last trash ({trashed.length})
+                    </button>
+                  )}
+                  <button
+                    className="text-button"
+                    disabled={!selected.length || busy || view === "trash"}
                     onClick={() => open({ type: "file" })}
                   >
                     File selected ({selected.length})
                   </button>
                   <button
                     className="text-button"
-                    disabled={!selected.length || busy}
+                    disabled={!selected.length || busy || view === "trash"}
                     onClick={() => open({ type: "bulk-tags" })}
                   >
                     Tag selected
@@ -672,7 +761,7 @@ export function Notebooks({
                   {book && (
                     <button
                       className="text-button"
-                      disabled={!selected.length || busy}
+                      disabled={!selected.length || busy || view === "trash"}
                       onClick={async () => {
                         if (!(await guard())) return;
                         setBusy(true);
@@ -710,7 +799,7 @@ export function Notebooks({
                   )}
                   <button
                     className="text-button"
-                    disabled={!selected.length || busy}
+                    disabled={!selected.length || busy || view === "trash"}
                     onClick={async () => {
                       if (!(await guard())) return;
                       setBusy(true);
@@ -737,6 +826,34 @@ export function Notebooks({
                     }}
                   >
                     Favorite selected
+                  </button>
+                  <button
+                    className="text-button"
+                    disabled={busy || !selected.length || view === "trash"}
+                    onClick={async () => {
+                      if (!(await guard())) return;
+                      setBusy(true);
+                      try {
+                        const originals = await Promise.all(
+                          selected.map((id) => api<Entry>("/resources/" + id)),
+                        );
+                        await save({
+                          action: "bulk",
+                          starred: false,
+                          entries: originals.map((e) => ({
+                            id: e.id,
+                            revision: e.revision,
+                          })),
+                        });
+                        setSelected([]);
+                      } catch (e: any) {
+                        setError(e.message);
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    Unfavorite selected
                   </button>
                 </div>
                 <p className="small-copy muted">
@@ -780,6 +897,7 @@ export function Notebooks({
                             className="text-button"
                             disabled={busy}
                             onClick={() => star(e)}
+                            hidden={view === "trash"}
                             aria-label={
                               (e.data.note_starred
                                 ? "Unfavorite "
@@ -791,6 +909,7 @@ export function Notebooks({
                         </div>
                         <button
                           className="notebook-note-title"
+                          disabled={view === "trash"}
                           onClick={() =>
                             ctx.go(route(view, bookKey, sectionKey, e.id))
                           }
@@ -808,8 +927,33 @@ export function Notebooks({
                         <p className="notebook-excerpt">{e.note_excerpt}</p>
                         <small>{e.tags.join(" · ")}</small>
                         <div className="button-row">
+                          {view === "trash" && (
+                            <button
+                              className="button secondary small"
+                              disabled={busy}
+                              onClick={async () => {
+                                if (!(await guard())) return;
+                                setBusy(true);
+                                try {
+                                  await save({
+                                    action: "restore_bulk",
+                                    entries: [
+                                      { id: e.id, revision: e.revision },
+                                    ],
+                                  });
+                                } catch (error: any) {
+                                  setError(error.message);
+                                } finally {
+                                  setBusy(false);
+                                }
+                              }}
+                            >
+                              Restore note
+                            </button>
+                          )}
                           <button
                             className="text-button"
+                            disabled={view === "trash"}
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => peek(e.id)}
                           >
@@ -818,15 +962,20 @@ export function Notebooks({
                           <button
                             className="text-button"
                             onClick={() => open({ type: "metadata", entry: e })}
+                            hidden={view === "trash"}
                           >
                             Note metadata
                           </button>
                           <button
                             className="text-button"
                             onClick={() => open({ type: "file", ids: [e.id] })}
+                            hidden={view === "trash"}
                           >
                             File original
                           </button>
+                          {e.kind==='note'&&view!=='trash'&&(e.data.note_article_id?
+                            <button className="text-button" onClick={()=>ctx.go('entry/'+e.data.note_article_id)}>Open linked article</button>:
+                            <button className="text-button" onClick={()=>open({type:'convert',entry:e})}>Create linked article</button>)}
                         </div>
                       </article>
                     ))}
@@ -856,7 +1005,7 @@ export function Notebooks({
               </>
             )}
           </section>
-          {sourceId && view !== "board" && (
+          {sourceId && !["board", "checklists", "trash", "snippets"].includes(view) && (
             <section
               className="notebook-editor"
               inert={busy || undefined}
@@ -936,6 +1085,7 @@ export function Notebooks({
           onClose={close}
         />
       )}
+      {modal?.type==='convert'&&<NoteConversion ctx={ctx} entry={modal.entry} onSave={save} onClose={close}/>}
       {modal?.type === "file" && (
         <FileNotesForm
           books={books}

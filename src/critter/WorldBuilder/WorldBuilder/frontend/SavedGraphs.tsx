@@ -1,3 +1,4 @@
+import type { useCampaignFloor } from "./FloorScope";
 import { SearchableSelect } from "./SearchableSelect";
 import { AffinityDiagram } from "./AffinityWeb";
 import React, { useEffect, useState } from "react";
@@ -359,8 +360,18 @@ export function RelationshipEditor({
   );
 }
 
-export function SavedGraphLibrary({ ctx }: { ctx: AppContext }) {
-  const entries = ctx.entries.filter((e) => e.kind === "relationship");
+export function SavedGraphLibrary({ ctx, floorScope }: {
+  ctx: AppContext;
+  floorScope?: ReturnType<typeof useCampaignFloor>;
+}) {
+  const entries = ctx.entries.filter((entry) => {
+    if (entry.kind !== "relationship") return false;
+    if (!floorScope) return true;
+    const id = entry.data.root_id || entry.id;
+    return (floorScope.campaignIds.has(entry.id) || floorScope.campaignIds.has(id)) &&
+      (floorScope.includes(entry.id, floorScope.selection) && !entry.data.root_id ||
+        floorScope.includes(id, floorScope.selection));
+  });
   return (
     <section className="saved-graph-library">
       <div className="section-heading">

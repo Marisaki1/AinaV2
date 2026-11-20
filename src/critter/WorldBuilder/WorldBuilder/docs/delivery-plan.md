@@ -1,22 +1,22 @@
 # Delivery plan and acceptance gates
 
-Status: full-scope delivery plan, updated 12 November 2026. The current local release and its incomplete rows are recorded in [implementation-status.md](implementation-status.md). The requested destination is the full documented feature suite. Phases are dependency and verification order. The machine-readable [inventory](feature-inventory.json) records current status for every item; [the matrix](feature-matrix.md) is its readable counterpart. Read [project-tracker.md](project-tracker.md) for persistent user decisions and the current continuation point.
+Audited 13 November 2026. [feature-inventory.json](feature-inventory.json) is canonical; [implementation-status.md](implementation-status.md) is generated. The original 139 IDs remain traceable, but they are unequal scope rows, not a completion percentage.
 
-Release 0.19 delivers the approved related batch across P3/P4: reference overlays, adventure/scene ordering and routes, encounter preparation, agenda/running/capture, activity journal, follow-ups, recap/handoff and player-safe handouts. Future work must retain this substantial-batch approach and prioritize connected visual campaign notes. Calendar expansion remains deferred; online accounts/selective sharing remain later P5.
+## Current delivery contract
 
-Release 0.21 delivers a substantial note-taking batch: notebooks/sections, capture/inbox, templates, metadata/search/favorites, bulk organization, visual boards, side-by-side writing and exports. The user explicitly prioritizes usable notes and immediate implementation over speculative schedules or calendar expansion. Keep the original campaign workflows connected and verify database/recovery behavior.
+- Delivery states: planned, partial, implemented, external_boundary.
+- Verification states: not_verified, subset_passed, passed_local, external_dependency. Passing a related test does not complete a broad capability.
+- Separate local application work, mixed/later online work, named external integrations, and non-software service/content boundaries. Preserve original phase labels as history, not a priority schedule.
+- Each row has concrete acceptance checks, source/test evidence, known remaining work, confidence and dependencies. Old one-line acceptance statements remain as originalAcceptance only.
+- Prioritize connected local notes, campaign records, maps, search and recovery. Online membership/grants/deployment precede online social/public capabilities. Physical offline use, load, interruptions and accessibility are explicit quality gates.
+- External communities, human services and unavailable proprietary catalogues cannot be completed by local code. Named adapters need supported format/version fixtures and actual integration tests when required.
+- Keep immutable source IDs, rich prose, unknown fields, revision/Trash recovery and owner/reader isolation. No status/documentation operation should change production account/world data.
 
-Release 0.20 delivers all fourteen approved party/equipment/consequence features as one connected batch, using the existing server-side SQLite database and revision/history model. Transactional stock and relationship operations, original source preservation, browser workflows, database restart, privacy and recovery checks are required gates. Keep later hosting/accounts/grants separate from the current local tools.
+Evidence must name the tested application/source snapshot, commands, fixtures, outcomes and boundaries. Historical reports are not fresh verification. See [status-audit.md](status-audit.md) and the per-file index. A successful API response or existing UI control is not sufficient evidence for the capability named on it.
 
-## November 12 correction: normal input and portability
+## Historical phase baseline
 
-0.22 delivers natural graph mouse gestures/context menus, Markdown/image insertion, linked portraits, draft guards and a whole-project transfer package with database/media. Keep these input conventions in future diagram implementations. Local transfer does not advance network hosting/accounts/grants to complete.
-
-## What completion means
-
-A feature progresses through `planned`, `partial`, `implementing`, `implemented`, and `verified`. `Implemented` means code exists; `verified` means the listed acceptance check and representative user workflow have passed. Unresolved evidence remains separately marked U even if we implement a reasonable equivalent. A passing technical test does not establish good visual design or useful interaction.
-
-Every verification record must identify the feature IDs, application revision, scenario/fixtures, actual result, test date and any remaining limitations. A screen, menu item or generic editor is not sufficient evidence for the feature named on it.
+The following phase plan preserves the original intent. Its full-suite aspirations are not delivered status; current scope/priority/dependencies in the canonical inventory supersede its ordering. External services remain prerequisites, not mandatory software-completion rows.
 
 ## P0 — This research and discussion
 

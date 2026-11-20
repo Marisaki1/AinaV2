@@ -1,3 +1,6 @@
+import { FloorSelect, useCampaignFloor } from "./FloorScope";
+import { QuestDraft } from "./QuestDraft";
+import { CampaignFloors } from "./CampaignFloors";
 import React, { useState } from "react";
 import { AppContext, Entry, docFromText, human, patch, post } from "./domain";
 import { Badge, EntryPicker, ErrorBox, Field, Modal } from "./ui";
@@ -12,6 +15,7 @@ const today = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 };
 const tabs = [
+  ["floors", "Tower floors"],
   ["sessions", "Sessions"],
   ["journal", "Day-to-day journal"],
   ["notes", "Notes & tasks"],
@@ -32,7 +36,7 @@ export function CampaignWorkspace({
   run: boolean;
   onRun: (value: boolean) => void;
 }) {
-  const [tab, setTab] = useState("sessions"),
+  const [tab, setTab] = useState(campaign.data.tower_campaign ? "floors" : "sessions"),
     [query, setQuery] = useState(""),
     [creating, setCreating] = useState(""),
     [title, setTitle] = useState(""),
@@ -45,7 +49,13 @@ export function CampaignWorkspace({
     [error, setError] = useState(""),
     [linking, setLinking] = useState(false),
     [links, setLinks] = useState<Record<string, any>>({});
-  const records = ctx.entries.filter((e) => belongsToCampaign(e, campaign.id));
+  const floorScope = useCampaignFloor(ctx.entries, campaign.id);
+  const { floors, selection, membership } = floorScope;
+  const selectedFloor = floors.find((floor) => floor.id === selection);
+  const [quest, setQuest] = useState(false);
+  const records = ctx.entries.filter((e) =>
+    belongsToCampaign(e, campaign.id) || membership.has(e.id),
+  );
   const sessions = records
     .filter((e) => e.kind === "session")
     .sort(
@@ -64,7 +74,7 @@ export function CampaignWorkspace({
   ]);
   const library = ctx.entries.filter(
     (e) =>
-      (linkedIds.has(e.id) || belongsToCampaign(e, campaign.id)) &&
+      (linkedIds.has(e.id) || belongsToCampaign(e, campaign.id) || membership.has(e.id)) &&
       e.id !== campaign.id,
   );
   const matched = (e: Entry) =>
@@ -99,19 +109,25 @@ export function CampaignWorkspace({
                 (e) =>
                   e.kind === "task" ||
                   (e.kind === "note" &&
-                    !["journal", "milestone"].includes(e.data.record_type)),
+                    !["journal", "milestone", "campaign-floor"].includes(e.data.record_type)),
               )
             : library.filter((e) =>
                 tab === "maps"
                   ? e.kind === "map"
                   : ["article", "character", "statblock"].includes(e.kind),
               );
-  if (tab !== "sessions")
-    rows.sort((a, b) =>
-      (b.data.logged_on || b.updated_at).localeCompare(
-        a.data.logged_on || a.updated_at,
-      ),
-    );
+  const floorOrder = (entry: Entry) => {
+    const index = floors.findIndex((floor) => membership.get(entry.id)?.has(floor.id));
+    return index < 0 ? floors.length : index;
+  };
+  rows = rows.filter((entry) => floorScope.includes(entry.id, selection)).sort((a, b) =>
+    (selection === "all" ? floorOrder(a) - floorOrder(b) : 0) ||
+    (tab === "cast"
+      ? a.title.localeCompare(b.title)
+      : tab === "sessions"
+        ? (b.data.number || 0) - (a.data.number || 0)
+        : (b.data.logged_on || b.updated_at).localeCompare(a.data.logged_on || a.updated_at)),
+  );
   const openCreate = (kind: string) => {
     setCreating(kind);
     setTitle("");
@@ -195,10 +211,16 @@ export function CampaignWorkspace({
           Run session
         </button>
       </div>
-      {!run && tab === "affinity" && (
-        <AffinityWorkspace ctx={ctx} campaignId={campaign.id} />
+      {!run && (floors.length > 0 || campaign.data.tower_campaign) && (
+        <div className="campaign-scope-toolbar">
+          <FloorSelect {...floorScope} />
+        </div>
       )}
-      {!run && tab !== "affinity" && (
+      {!run && tab === "affinity" && (
+        <AffinityWorkspace ctx={ctx} campaignId={campaign.id} floorScope={floorScope} />
+      )}
+      {!run && tab === "floors" && <CampaignFloors ctx={ctx} campaign={campaign} scope={floorScope} />}
+      {!run && tab !== "affinity" && tab !== "floors" && (
         <>
           <div className="campaign-workspace-toolbar">
             <label className="field">
@@ -252,7 +274,7 @@ export function CampaignWorkspace({
                   </button>
                   <button
                     className="button secondary"
-                    onClick={() => openCreate("quest")}
+                    onClick={() => setQuest(true)}
                   >
                     Add campaign quest
                   </button>
@@ -263,7 +285,9 @@ export function CampaignWorkspace({
                   <button
                     className="button secondary"
                     onClick={() => {
-                      setLinks({ ...campaign.data });
+                      setLinks({
+                        related_entries: selectedFloor?.data.floor_entries || (selectedFloor ? [] : campaign.data.related_entries) || [],
+                      });
                       setLinking(true);
                       setError("");
                     }}
@@ -275,7 +299,7 @@ export function CampaignWorkspace({
                     onClick={() =>
                       ctx.create(
                         tab === "maps" ? "map" : "character",
-                        campaign.id,
+                        selectedFloor?.id || campaign.id,
                       )
                     }
                   >
@@ -346,6 +370,12 @@ export function CampaignWorkspace({
                         ?.title || "Unavailable session")
                     : ""}
                 </p>
+                {floors.length > 0 && selection === "all" && (
+                  <p className="small-copy muted">
+                    {floors.filter((floor) => membership.get(e.id)?.has(floor.id))
+                      .map((floor) => floor.title).join(" ? ") || "Unassigned"}
+                  </p>
+                )}
                 {e.summary && <p>{e.summary}</p>}
                 {tab === "cast" && isLocationEntry(e) && (
                   <button
@@ -455,6 +485,10 @@ export function CampaignWorkspace({
           </div>
         </>
       )}
+      {quest && (
+        <QuestDraft ctx={ctx} campaign={campaign} floors={floors} initialFloor={selectedFloor?.id}
+          onClose={() => setQuest(false)} />
+      )}
       {creating && (
         <Modal
           title={
@@ -506,7 +540,7 @@ export function CampaignWorkspace({
                   summary: kind === "session" ? "" : text.slice(0, 240),
                   document: docFromText(kind === "session" ? "" : text),
                   data,
-                  parent: campaign.id,
+                  parent: selectedFloor?.id || campaign.id,
                   visibility: "private",
                 });
                 await ctx.refresh();
@@ -588,7 +622,7 @@ export function CampaignWorkspace({
       )}
       {linking && (
         <Modal
-          title="Link campaign characters, maps & lore"
+          title={selectedFloor ? "Link entries to " + selectedFloor.title : "Link campaign characters, maps & lore"}
           wide
           onClose={() => {
             if (!busy) setLinking(false);
@@ -599,7 +633,7 @@ export function CampaignWorkspace({
             ctx={ctx}
             data={links}
             onData={setLinks}
-            exclude={campaign.id}
+            exclude={selectedFloor?.id || campaign.id}
           />
           <div className="modal-actions">
             <button
@@ -615,12 +649,13 @@ export function CampaignWorkspace({
               onClick={async () => {
                 setBusy(true);
                 try {
-                  await patch("/resources/" + campaign.id, {
+                  const target = selectedFloor || campaign;
+                  await patch("/resources/" + target.id, {
                     data: {
-                      ...campaign.data,
-                      related_entries: links.related_entries || [],
+                      ...target.data,
+                      [selectedFloor ? "floor_entries" : "related_entries"]: links.related_entries || [],
                     },
-                    expected_revision: campaign.revision,
+                    expected_revision: target.revision,
                   });
                   await ctx.refresh();
                   setLinking(false);

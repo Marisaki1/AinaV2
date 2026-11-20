@@ -3,7 +3,7 @@ import json
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
-from .models import World, Resource
+from .models import Connection, World, Resource
 from .services import save_resource, snapshot, world_archive, import_world_archive
 
 
@@ -51,6 +51,62 @@ class CampaignWorkbenchTests(TestCase):
 
     def workspace(self, **query):
         return self.client.get(f"/api/resources/{self.campaign.id}/workbench", query)
+
+    def test_floor_filters_quests_and_session_notes_by_recorded_membership(self):
+        floor = self.record(
+            "Forest", record_type="campaign-floor", floor_number=9, floor_status="Current",
+            floor_entries=[str(self.session.id)],
+        )
+        other_floor = self.record("Lake", record_type="campaign-floor", floor_number=20, floor_status="Planned")
+        draft = self.add(
+            "Guild delivery", "quest",
+            {
+                "campaign_id": str(self.campaign.id),
+                "quest_giver": "Guild",
+                "quest_reward": "40 gp",
+                "player_notice": "Deliver the supplies.",
+                "objectives": [{"id": "deliver", "text": "Deliver the supplies", "done": False}],
+            },
+            parent=str(floor.id), visibility="private", private_notes="The crate is a decoy.",
+        )
+        route = f"/api/resources/{draft.id}/thread-guide"
+        self.assertEqual(self.client.get(route + "?audience=reader").status_code, 404)
+        threads = self.workspace(category="threads", floor=str(floor.id)).json()
+        self.assertEqual([row["id"] for row in threads["records"]], [str(draft.id)])
+        self.assertEqual(threads["lane_counts"]["open"], 1)
+        self.assertEqual(threads["records"][0]["data"]["player_notice"], "Deliver the supplies.")
+        self.assertEqual(self.workspace(category="threads", floor=str(other_floor.id)).json()["total"], 0)
+        self.assertEqual(self.workspace(category="threads", floor="unassigned").json()["total"], 1)
+        self.assertEqual(self.workspace(category="threads", floor="all").json()["total"], 2)
+        notebook = self.workspace(category="notes", floor=str(floor.id)).json()
+        self.assertEqual({row["id"] for row in notebook["records"]}, {str(self.note.id), str(self.session.id)})
+        self.publish(draft)
+        reader = self.client.get(route + "?audience=reader").json()["thread"]
+        self.assertNotIn("player_notice", reader["data"])
+        self.assertFalse(reader["private_notes"])
+
+    def test_family_view_respects_floor_assignments_and_explicit_connections(self):
+        first = self.add("Forest relative", "character", {})
+        second = self.add("Another relative", "character", {})
+        distant = self.add("Distant relative", "character", {})
+        Connection.objects.create(world=self.world, source=first, target=second, kind="sibling")
+        floor = self.record(
+            "Forest", record_type="campaign-floor", floor_number=9, floor_status="Current",
+            floor_entries=[str(first.id), str(second.id)],
+        )
+        endpoint = f"/api/worlds/{self.world.id}/family"
+        query = {"campaign": str(self.campaign.id), "floor": str(floor.id), "root": str(first.id)}
+        result = self.client.get(endpoint, query).json()
+        self.assertEqual({row["id"] for row in result["nodes"]}, {str(first.id), str(second.id)})
+        response = self.client.post(
+            f"/api/worlds/{self.world.id}/connections",
+            json.dumps({"source": str(second.id), "target": str(distant.id), "kind": "sibling", "floor_id": str(floor.id)}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        result = self.client.get(endpoint, query).json()
+        self.assertEqual({row["id"] for row in result["nodes"]}, {str(first.id), str(second.id), str(distant.id)})
+        self.assertEqual(self.client.get(endpoint, {**query, "floor": "invalid"}).status_code, 400)
 
     def layout(self):
         return {

@@ -1,6 +1,56 @@
+# WorldBuilder in Aina - local milestone 1.4.0
+
+This is the daily notes workspace milestone, with checklists, reviewed knowledge links, find/replace, capture/recovery, notebook organization and revision review. Full World Anvil platform parity remains unfinished. See docs/validation-1.0.md and docs/implementation-status.md for tested scope and remaining work.
+
+## New in 1.3: world search and private research
+
+Press **Ctrl+K** or click **Search your world**. Search now spans entry titles, aliases, prose, GM notes and structured details; image names, credits and tags; and relationship labels, endpoints and connection notes. Words match together across fields; use double quotes for a phrase. Unicode normalization supports equivalent-width names. Results have matching excerpts, scope counts, 20-result pages and relevance/title/recent ordering. Recent means entry/connection modification time and image upload time. This is owner-only search; it is not a new public/player-search service or a large-world performance certification.
+
+Choose a result to preview it alongside the result list without replacing the current editor. Arrow keys select results; Enter opens the selected original after saving pending edits. Escape returns to the editor. **Filters** holds entry type, tag, writing state, visibility and ordering controls. Advanced filters are collapsible, and current filters/panel state are remembered per world in this browser. Filters with no corresponding field (such as writing state on an image) exclude that result type.
+
+**Save search** stores a named definition in the world database. **Manage saved searches** edits names/definitions or deletes them. The definitions survive restarts and world archives. Saves check their workspace revision; a conflicting form retains its name/filters and can reload definitions in place. Ordinary world-settings forms cannot replace a newer saved-search list. Up to 30 definitions are supported. Saving a search does not create or rewrite articles.
+
+In an entry sidebar, **Research notes** creates private source-linked editorial notes. Select passage text in the writer/linked-reading pane and use the scissors button to prefill **Source excerpt**, or press **+** to start an unquoted note. The title, body and optional excerpt remain a recoverable local draft until saved or explicitly discarded. Creation saves pending source edits first, captures its current revision and uses a replay key so retrying a lost response does not create a duplicate.
+
+Research notes are ordinary original note records with native backlinks and History, listed ten per page. **Edit note** opens their full editor; the sidebar can resolve/reopen them or send them to recoverable Trash. They remain private, and their captured source/identity cannot be stripped or reassigned by a normal edit. Reader projection/public links and notebook reader HTML exclude them, including legacy incorrectly published records. Copy the desired prose into another article when you intentionally want to publish it. Multi-author discussion threads are not implemented by this owner-only feature.
+
+This release does not change campaign notes or relationships automatically. Restart Aina after updating backend code, then refresh WorldBuilder. No separate process is needed.
+
+## New in 1.2: live source blocks and clickable dice
+
+In an entry's notes toolbar, choose **Insert live source**, search for an original table, generator, map, timeline or saved relationship view, then insert it at the cursor. The reference preserves its source UUID and ordinary backlinks. Tables filter and page through ten rows at a time; **Generate** runs the saved original, including conditional linked steps, and **Insert result below** writes a separate text snapshot into your note. Individual dice cells are clickable.
+
+Map blocks use the existing pan/zoom/popups; timeline and relationship blocks use their existing interactive views. Headers provide collapse, refresh, expand and open-original controls. Collapsed state is a per-browser preference. Blocks start loading near the viewport rather than initializing every distant map at once. Once opened, their components stay mounted while that document view remains open. The source stays independent: embedding or rolling it never changes its base data.
+
+**Insert dice button** validates a label/formula before insertion, without rolling or logging activity. Click the inserted button to roll; the result shows kept/discarded dice, modifier and total. Supported formulas use the existing bounded engine, such as `2d6+3`, `4d6kh3`, `2d20kl1`, `d%` and `4dF`. Results stay in the current view unless explicitly inserted/copied. Duplicate in-flight submissions are disabled. No Discord commands/messages are sent by these controls.
+
+**Read linked notes** keeps the same source blocks in place. Local **Reader preview** loads published source snapshots, omits private/unpublished references and disables rolls/generation. This is a local owner preview, not online player access. Other specialized guide/export surfaces may show the static fallback. HTML exports include an escaped table preview (up to 12 rows/8 columns), source links and readable dice labels; they do not embed an executable generator or depend on an editor session. Native backups retain/remap the live references.
+
+Failed saves retain the note's local draft, native block IDs and unrelated fields. A failed source refresh has its own retry control and does not replace the note. Current acceptance tests cover interrupted-save recovery, reconnect, published/draft separation, map zoom/popups, timeline/graph controls and 390/1024/1500 layouts. The mobile header now keeps search/create controls separate. Refresh restoration observes late-loaded live content as well as the fixed scrolling viewport.
+
+## New in 1.1: campaign briefing and table generation
+
+Overview can link your current situation, open leads, reference notes and up to 12 characters/groups. Configure these through **Edit briefing**; previews load original notes. Entry sidebars create source-linked private follow-ups and open connected records. Relationship cards edit existing connections with conflict protection.
+
+In **Creative tools ? Roll tables / Generators**, create columns and rows, filter the matrix (50 rows per page), reorder rows/columns, and choose weighted selection or inclusive dice ranges. Weights apply only to weighted selection; ranges must not overlap. A roll in an uncovered range fails explicitly. Optional seeds replay the same output for unchanged source data and step order.
+
+**Linked generation steps** roll other tables in order, optionally when a selected cell equals an exact value. For booleans match `true` or `false`; numbers use their stored JSON form; entry links match the UUID. Cycles, unavailable sources, more than eight levels or 32 table rolls fail with no successful activity entry. Generation runs only for the authenticated owner. Published reader snapshots omit linked-step configuration and private entry references; they do not offer interactive generation.
+
+**Import** previews CSV or WorldBuilder table JSON before replacement. CSV type selectors require validation before use. Errors identify the row/column. CSV exports contain cells, with true/false booleans and entry UUIDs; select the matching types when reimporting. CSV replaces weights with 1 and clears ranges/linked steps. **Table JSON** retains types, IDs, unknown table data, weights, ranges and steps; linked originals must already exist in the same world. Use **Copy & move** or a world archive to transfer dependencies to another world.
+
+**Keep as article** saves the displayed rolls and linked results as an independent private article. Later source edits/rerolls do not change it. Imports and edits use ordinary autosave, revision conflicts and History. Restart Aina after updating backend code, then refresh; no separate service is required.
+
 # Aina integration
 
-Start the combined application with `npm start` in the Aina project root, then select **WorldBuilder** in Aina. The backend is managed by Aina. Existing owner credentials and `data/` remain valid. Log in with username `owner` and the existing password, or use **Create account** for a separate local account and worlds. **Log out** is in the top-right account menu. In the integrated layout the Aina hamburger switches tools, and WorldBuilder occupies the entire window. The recovered transferred account also accepts its unique saved display name `a` as a login; its password has not changed. Aina preserves the loaded editor when changing tabs. See the Aina root README for combined startup and verification.
+## Campaign editing and relationship board
+
+Notes open directly below the entry title. Optional template fields and the short description are under **Details & short description**; their values are retained. The selected read/write mode, details panel, last route and reading position are remembered locally per world/entry.
+
+In **Relationships → All connections**, search for a person or group to explore its connections at readable size. Left-drag cards to arrange them, drag empty canvas to pan, and use the wheel or zoom buttons to zoom. **Fit** brings the visible cards into view; **Reset layout** resets that entry's arrangement. Additional neighbors are paginated, with full relationship notes below the canvas. Positions, zoom, filters, selected entry and expanded connection notes survive refresh in this browser and world. These view preferences do not change the relationships themselves.
+
+Start the combined application with `npm start` in the Aina project root, then select **WorldBuilder**. Aina manages its backend; no separate routine launch is required. Log in with your existing local account or use **Create account** for a separate local account/world. **Log out** is in the top-right account menu. Account names and data paths are installation-specific; this guide does not assume your username or inspect your database.
+
+The managed backend defaults to port 8777 and can be overridden with WORLDBUILDER_PORT. Data selection uses WORLDBUILDER_DATA or aina-data.json, falling back to data. Keep the selected existing data directory when transferring or restarting. Only WorldBuilder uses the compact Aina tool menu; other Aina tabs retain their usual navigation. The editor remains mounted when switching Aina tools.
 
 The standalone launchers below remain available for independent use. Close a standalone instance before starting the integrated version.
 
@@ -8,15 +58,15 @@ The standalone launchers below remain available for independent use. Close a sta
 
 A private worldbuilding and campaign workspace that runs in your browser on this Windows PC. Code, database, images and backups live here. Normal use requires no cloud account or subscription.
 
-**Release 0.22.0 - 12 November 2026.** This is a working local authoring application. The original 139-item World Anvil scope remains the long-term target; this release does **not** implement that entire platform. See [current coverage and remaining work](docs/implementation-status.md).
+**Current status audited 14 November 2026; runtime milestone 1.4.0.** This is a working local authoring application. The original 139-item World Anvil scope remains the long-term target; this release does **not** implement that entire platform. See [current coverage and remaining work](docs/implementation-status.md).
 
 ## Open it
 
-Double-click **[Open WorldBuilder.cmd](<Open WorldBuilder.cmd>)** and use **http://127.0.0.1:8767/**. Keep its window open while working; Ctrl+C stops the server. Launching again opens the existing instance.
+Double-click **[Open WorldBuilder.cmd](<Open WorldBuilder.cmd>)** and use **http://127.0.0.1:8777/**. Keep its window open while working; Ctrl+C stops the server. Launching again opens the existing instance.
 
 This PC already has the Python environment and compiled browser bundle. On another Windows installation, run **[Setup WorldBuilder.cmd](<Setup WorldBuilder.cmd>)** first. Setup requires Python 3.12+, Node.js 22+ and internet for dependency downloads. Everyday use needs only the installed Python environment and built browser files.
 
-First launch asks for your name, first world, and a local password of at least eight characters. Your real database contains no seeded campaigns. Browser tests use a separate `.preview/qa-data` installation.
+A new installation supports local account creation; an existing installation supports login to its existing accounts. Tests use isolated temporary data. No claim is made here about the contents of your real database.
 
 ## New in 0.22: mouse controls, Markdown and linked images
 
@@ -196,7 +246,33 @@ Current archive limits: 512 MB compressed, 1 GB expanded and 19,999 payload file
 
 Campaign files are copied after preview and selection. Original bytes and locations are preserved. Relative links and unsupported markup may need manual repair; the report identifies that limitation. Imports do not synchronize changes back to source files.
 
+## Notes and cross-world organization
+
+In Notebooks, Create linked article previews and copies a saved note into one
+independent private article while retaining the source. Copy & move in the sidebar
+reviews transfers between your owned worlds, including dependencies/media and
+references requiring manual attention. Move retains source originals in Trash.
+Committed operations can be recovered after a lost response without duplicate
+imports. Read [current validation](docs/validation-1.0.md) for supported remapping,
+history behavior and limits; full world archives remain the larger backup path.
+
 ## Verification and scope
+
+The current tracker separates implementation, verification, scope and dependencies. See [status audit](docs/status-audit.md) and [generated status](docs/implementation-status.md). Historical release test totals below are not current completion percentages.
+
+Writing room now connects nested chapters/scenes and research folders, docked lore,
+review/read/corkboard modes, named recoverable checkpoints and standalone HTML/text
+compilation. Review selects and publishes a local snapshot edition; this does not
+enable public hosting. See [current validation](docs/validation-1.0.md) for tested
+workflows and checkpoint/export limits. npm run test:worldbuilder runs both browser
+regressions; npm run test:worldbuilder:writing runs the isolated manuscript workflow.
+
+
+Current continuation: configurable Overview, versioned custom fields, snippets and
+interactive notes. Open Overview > Customize overview to choose/order sections and
+pin original entries. Layouts persist in SQLite and survive restart/portable restore.
+Current validation is recorded in [validation-1.0.md](docs/validation-1.0.md).
+
 
 **583 backend tests** pass in 0.22, including linked-image/Markdown/policy tests. Current browser, transfer and recovery evidence is in [validation-0.22.md](docs/validation-0.22.md). Historical 0.6 validation follows: **148 backend tests** passed, along with TypeScript checking, targeted Python error/unused-code checks and a production build. Browser verification covers 31 general routes plus saved-view creation/filtering/reopening, source tag changes, reader previews, actual SVG/HTML/JSON downloads and desktop/narrow layouts. The downloaded HTML was opened as a local file and its zoom/search tested without HTTP resources. Complete backup restoration and portable world archives were checked with database integrity, counts and asset hashes. [Validation details](docs/validation-0.6.md).
 
@@ -208,3 +284,17 @@ These checks establish the tested workflows, not a guarantee of zero defects. Co
 - [Architecture](docs/architecture.md), [API](docs/api.md), [import plan](docs/import-plan.md), [validation](docs/validation.md)
 
 WorldBuilder is independent of `Character Creator`; existing portraits can be attached through Media.
+
+## World explorer (1.4.0)
+
+Choose **World explorer** in the sidebar. Browse People, Places, Factions & groups, Campaign & stories or Reference. Cards reuse existing cover art and summaries; missing artwork has a neutral fallback. Search matches names, aliases and written passages; tags and nested collection breadcrumbs narrow the view. Card/list layout and filters are remembered per world. Raw transcripts and editorial research are hidden from this view until explicitly included, not deleted.
+
+Open a card to read the original notes, existing structured fields and recorded connections. The outline jumps within the reading pane; connections and recently read records open in place. Maps reuse the interactive map guide. Private GM notes are explicitly separated. **Edit original** opens the existing writer; exploration never rewrites lore. Refresh restores the selected entry and reading position, including late-loading artwork. This is an authenticated owner view, not a public player site.
+
+**New shelf** groups up to 120 original references without copying prose. Filter and check entries, arrange reading order, name it and save. Choose the shelf in the toolbar; its reader provides Previous/Next in shelf. You can rename, reorder or delete the shelf without deleting any originals. **Keep draft** retains an unfinished shelf on this browser; **Discard draft** clears it. Stale writes retain the selection and require an explicit settings reload. Shelves are stored with the world, retained by normal settings saves and remapped in whole-world archives; browser layout, reading positions and unfinished drafts are local preferences. Individual cross-world transfers do not copy world shelf settings.
+
+Verify the new workflow with `npm run test:worldbuilder:explorer` in the Aina root. It uses a disposable database and headless Edge. Large-library performance and full assistive-technology certification remain unmeasured.
+
+### Campaign floor records
+
+Open **Campaigns** and select a campaign, then choose **Tower floors**. Floor notes are private on creation and use the normal entry editor. **Edit floor details** changes the number, status and linked records. **Floor relationships** opens the scoped graph. Use **Manage floor connections** to assign or remove existing relationships. Removing a floor assignment leaves the underlying relationship in place. **All tagged floors** shows the campaign-wide union of its floor assignments.

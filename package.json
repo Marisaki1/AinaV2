@@ -35,7 +35,17 @@
     "test:critter:critical-party": "node scripts/check-critter-critical-party.js",
     "test:critter:spellcasting": "node scripts/check-critter-spellcasting.js",
     "test:avrae:expressions": "node scripts/check-avrae-compat.js",
-    "test:worldbuilder": "node scripts/check-worldbuilder-integration.js"
+    "test:worldbuilder": "node scripts/check-worldbuilder-integration.js && node scripts/check-worldbuilder-manuscripts.js && node scripts/check-worldbuilder-transfer.js && node scripts/check-worldbuilder-tables.js && node scripts/check-worldbuilder-liveblocks.js && node scripts/check-worldbuilder-research.js && node scripts/check-worldbuilder-explorer.js",
+    "test:worldbuilder:transfer": "node scripts/check-worldbuilder-transfer.js",
+    "test:worldbuilder:writing": "node scripts/check-worldbuilder-manuscripts.js",
+    "docs:worldbuilder:generate": "node scripts/check-worldbuilder-status.js --generate",
+    "docs:worldbuilder:check": "node scripts/check-worldbuilder-status.js",
+    "test:worldbuilder:status": "node scripts/check-worldbuilder-status.js --test",
+    "test:critter:export": "node scripts/check-critter-export.js",
+    "test:worldbuilder:tables": "node scripts/check-worldbuilder-tables.js",
+    "test:worldbuilder:liveblocks": "node scripts/check-worldbuilder-liveblocks.js",
+    "test:worldbuilder:research": "node scripts/check-worldbuilder-research.js",
+    "test:worldbuilder:explorer": "node scripts/check-worldbuilder-explorer.js"
   },
   "dependencies": {
     "@discordjs/voice": "^0.19.2",
