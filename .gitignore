@@ -6,8 +6,13 @@ data/
 history/
 assets/images/alarms/
 assets/audio/
-assets/critter/npcs/*
+assets/critter/npcs/**
+!assets/critter/npcs/**/
 !assets/critter/npcs/.gitkeep
+!assets/critter/npcs/**/*.[pP][nN][gG]
+!assets/critter/npcs/**/*.[jJ][pP][gG]
+!assets/critter/npcs/**/*.[jJ][pP][eE][gG]
+!assets/critter/npcs/**/*.[wW][eE][bB][pP]
 assets/critter/artwork-private/
 .npm-cache/
 .tts/

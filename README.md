@@ -311,8 +311,8 @@ Fabula is a **persistent tracker**: equipment does not automatically recompute D
 
 The **Roleplay** tab lets the workspace owner create and edit NPCs and post as them in a chosen channel. Roleplay and Siege browse the same artwork folders. In the NPC editor, choose **Upload to** and an optional artwork subfolder. The filename supplies the default NPC name. Keep PNG, JPEG and WebP shared artwork at 8 MB or less. Siege uses images up to 1 MB.
 
-- **Repository artwork** is stored in `assets/critter/artwork/`, ready to stage with `git add -- assets/critter/artwork/`. Review the staged files before committing. Everyone with access to the repository can see committed artwork.
-- **Private artwork** is stored in `assets/critter/artwork-private/`, which Git ignores. Back up this folder separately. Existing NPC portraits in `assets/critter/npcs/` stay available under their original paths. To share a copy, upload the original file to **Repository artwork**.
+- **Repository artwork** is stored in `assets/critter/artwork/`. Existing NPC portraits in `assets/critter/npcs/` can also be tracked at their original paths, including supported image files in subfolders. Stage the images you want in Git and review them before committing. Everyone with access to the repository can see committed artwork.
+- **Private artwork** is stored in `assets/critter/artwork-private/`, which Git ignores. Back up this folder separately.
 
 In **WorldBuilder → Media library**, browse either available shared location and select the images to add to the current world. WorldBuilder keeps the world's own media record so existing links, credits, and tags remain usable. The private library is available to worlds already configured for local campaign images. To upload from WorldBuilder, select a location under **Upload to** before choosing files or dropping them. **This world only** uses the original WorldBuilder upload flow.
 
